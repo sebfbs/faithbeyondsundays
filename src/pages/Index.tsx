@@ -1,14 +1,88 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import BottomNav, { TabId } from "@/components/fbs/BottomNav";
+import HomeTab from "@/components/fbs/HomeTab";
+import SermonTab from "@/components/fbs/SermonTab";
+import JournalTab from "@/components/fbs/JournalTab";
+import GuidedReflectionScreen from "@/components/fbs/GuidedReflectionScreen";
+import ProfileScreen from "@/components/fbs/ProfileScreen";
+import MoreSheet from "@/components/fbs/MoreSheet";
 
-const Index = () => {
+type OverlayScreen = "guided-reflection" | "profile" | null;
+
+export default function Index() {
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [overlay, setOverlay] = useState<OverlayScreen>(null);
+
+  const handleTabChange = (tab: TabId) => {
+    if (tab === "more") {
+      setMoreOpen(true);
+      return;
+    }
+    setMoreOpen(false);
+    setOverlay(null);
+    setActiveTab(tab);
+  };
+
+  const renderMain = () => {
+    // Overlay screens take priority
+    if (overlay === "guided-reflection") {
+      return (
+        <GuidedReflectionScreen onBack={() => setOverlay(null)} />
+      );
+    }
+    if (overlay === "profile") {
+      return (
+        <ProfileScreen onBack={() => setOverlay(null)} />
+      );
+    }
+
+    switch (activeTab) {
+      case "home":
+        return <HomeTab />;
+      case "sermon":
+        return (
+          <SermonTab onGuidedReflection={() => setOverlay("guided-reflection")} />
+        );
+      case "journal":
+        return <JournalTab />;
+      default:
+        return <HomeTab />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="app-container relative mx-auto" style={{ background: "hsl(var(--background))" }}>
+      {/* Horizon sky gradient header band */}
+      <div
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-[220px] z-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg, hsl(207, 65%, 76%) 0%, hsl(22, 55%, 90%) 60%, hsl(40, 30%, 97%) 100%)",
+        }}
+      />
+
+      {/* Scrollable main content */}
+      <main
+        className="relative z-10 scrollable-content pb-[84px] pt-[0px]"
+        style={{ minHeight: "100dvh" }}
+      >
+        {renderMain()}
+      </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* More sheet */}
+      {moreOpen && (
+        <MoreSheet
+          onClose={() => setMoreOpen(false)}
+          onProfile={() => {
+            setOverlay("profile");
+            setMoreOpen(false);
+          }}
+        />
+      )}
     </div>
   );
-};
-
-export default Index;
+}
