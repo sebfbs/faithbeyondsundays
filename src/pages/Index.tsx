@@ -100,6 +100,7 @@ export default function Index() {
         <MoreSheet
           onClose={() => setMoreOpen(false)}
           onProfile={() => {
+            setActiveTab("more");
             setOverlay("profile");
             setMoreOpen(false);
           }}
