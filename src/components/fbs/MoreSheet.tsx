@@ -1,15 +1,20 @@
 import { Users, Heart, User, X } from "lucide-react";
+import { FEATURE_FLAGS } from "./featureFlags";
 
 interface MoreSheetProps {
   onProfile: () => void;
   onClose: () => void;
 }
 
-const options = [
-  { icon: Users, label: "Groups", key: "groups" },
-  { icon: Heart, label: "Prayer", key: "prayer" },
-  { icon: User, label: "Profile", key: "profile" },
+const allOptions = [
+  { icon: Users, label: "Groups", key: "groups", featureKey: "groups" as string | null },
+  { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as string | null },
+  { icon: User, label: "Profile", key: "profile", featureKey: null },
 ];
+
+const options = allOptions.filter(
+  (opt) => !opt.featureKey || FEATURE_FLAGS[opt.featureKey]
+);
 
 export default function MoreSheet({ onProfile, onClose }: MoreSheetProps) {
   const handleOption = (key: string) => {
