@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, ChevronRight } from "lucide-react";
+import { Bookmark, ChevronRight, SlidersHorizontal, Check } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
 
 type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
@@ -14,6 +14,7 @@ export default function JournalTab({ entries }: JournalTabProps) {
   );
   const [selected, setSelected] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
@@ -106,20 +107,38 @@ export default function JournalTab({ entries }: JournalTabProps) {
             Your journey of faith and growth
           </p>
         </div>
-        <div className="flex gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setActiveFilter(f.value)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full tap-active transition-colors ${
-                activeFilter === f.value
-                  ? "text-amber bg-amber-bg"
-                  : "text-muted-foreground bg-muted"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={() => setFilterOpen((p) => !p)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full tap-active transition-colors ${
+              activeFilter !== "all"
+                ? "text-amber bg-amber-bg"
+                : "text-muted-foreground bg-muted"
+            }`}
+          >
+            <SlidersHorizontal size={12} />
+            {activeFilter === "all" ? "Filter" : filters.find(f => f.value === activeFilter)?.label}
+          </button>
+          {filterOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 z-50 bg-card rounded-2xl shadow-card border border-border py-2 min-w-[160px]">
+                {filters.filter(f => f.value !== "all").map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => {
+                      setActiveFilter(activeFilter === f.value ? "all" : f.value);
+                      setFilterOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground tap-active hover:bg-muted/50 transition-colors"
+                  >
+                    {f.label}
+                    {activeFilter === f.value && <Check size={14} className="text-amber" />}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
