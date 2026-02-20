@@ -53,14 +53,6 @@ export default function Index() {
 
   return (
     <div className="app-container relative mx-auto" style={{ background: "hsl(var(--background))" }}>
-      {/* Horizon sky gradient header band */}
-      <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-[220px] z-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(180deg, hsl(207, 65%, 76%) 0%, hsl(22, 55%, 90%) 60%, hsl(40, 30%, 97%) 100%)",
-        }}
-      />
 
       {/* Scrollable main content */}
       <main
