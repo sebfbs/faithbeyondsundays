@@ -21,7 +21,7 @@ export default function JournalTab({ entries }: JournalTabProps) {
 
   if (selectedEntry) {
     return (
-      <div className="px-5 pt-5 pb-6 space-y-5 animate-fade-in">
+      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
         <button
           onClick={() => setSelected(null)}
           className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
@@ -79,7 +79,7 @@ export default function JournalTab({ entries }: JournalTabProps) {
   }
 
   return (
-    <div className="px-5 pt-6 pb-6 space-y-5 animate-fade-in">
+    <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
