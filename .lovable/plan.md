@@ -1,32 +1,35 @@
 
 
-# Fix: Content Overlapping with iPhone Status Bar
+# Highlight "More" Icon When Profile is Open
 
-## The Problem
+## Problem
+When you tap "More" and then "Profile", the bottom nav still highlights whichever tab you were on before (e.g., Home). It should highlight the "More" icon instead, since Profile is accessed through "More".
 
-When running as a PWA in standalone mode with `black-translucent` status bar, your app's content renders underneath the iPhone's clock, signal bars, and Dynamic Island. This is because `black-translucent` removes the default status bar background and lets your content extend into that area -- which looks great for the gradient, but the text needs to be pushed down.
+## Fix
 
-## The Fix
+### Index.tsx
+- When the "Profile" option is selected from the MoreSheet, set `activeTab` to `"more"` so the bottom nav highlights the correct icon.
+- Update the `onProfile` callback to include `setActiveTab("more")`.
 
-Add safe-area top padding to each screen so the content starts just below the status bar. This uses `env(safe-area-inset-top)` -- a built-in iOS value that automatically adjusts for different iPhone models (notch vs. Dynamic Island vs. no notch).
+### BottomNav.tsx
+- No changes needed -- it already highlights based on `activeTab`, so setting it to `"more"` will light up the More icon automatically.
 
-## Files to Update
+## Technical Detail
+In `Index.tsx`, the `onProfile` handler inside the `MoreSheet` currently does:
+```tsx
+onProfile={() => {
+  setOverlay("profile");
+  setMoreOpen(false);
+}}
+```
+It will be updated to also call `setActiveTab("more")`:
+```tsx
+onProfile={() => {
+  setActiveTab("more");
+  setOverlay("profile");
+  setMoreOpen(false);
+}}
+```
 
-### 1. HomeTab.tsx
-- Change the greeting section's top padding from `pt-10` to include the safe area inset
-- Use `style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 2.5rem)" }}` so the greeting sits comfortably below the status bar
-
-### 2. SermonTab.tsx
-- Change the container's `pt-6` to include the safe area inset
-- Use `style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}`
-
-### 3. JournalTab.tsx
-- Same treatment for both the list view (`pt-6`) and the detail view (`pt-5`)
-- Use `style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}`
-
-## Technical Details
-
-The CSS function `env(safe-area-inset-top)` returns the height of the status bar/notch area on iOS devices. The `calc()` adds the original padding on top of that. On devices without a notch (or in a regular browser), the safe-area value defaults to `0px`, so the layout stays the same as before.
-
-No other changes needed -- the bottom nav already handles `safe-area-inset-bottom` correctly.
+This is a one-line addition. The same pattern should apply if Groups or Prayer screens are added later.
 
