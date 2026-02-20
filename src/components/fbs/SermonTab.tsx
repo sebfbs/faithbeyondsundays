@@ -47,7 +47,7 @@ function AccordionSection({
 
 export default function SermonTab({ onGuidedReflection, onPreviousSermons }: SermonTabProps) {
   return (
-    <div className="px-5 pt-6 pb-6 space-y-5 animate-fade-in">
+    <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Sermon</h1>
