@@ -24,9 +24,10 @@ type ChallengeStage = "idle" | "accepted" | "completed" | "reflected";
 interface HomeTabProps {
   onChallengeReflection: (entry: JournalEntry) => void;
   userName?: string;
+  churchName?: string;
 }
 
-export default function HomeTab({ onChallengeReflection, userName = "there" }: HomeTabProps) {
+export default function HomeTab({ onChallengeReflection, userName = "there", churchName }: HomeTabProps) {
   const [challengeStage, setChallengeStage] = useState<ChallengeStage>("idle");
   const [reflectionText, setReflectionText] = useState("");
   const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
@@ -66,7 +67,10 @@ export default function HomeTab({ onChallengeReflection, userName = "there" }: H
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
           {getGreeting()}, {userName}
         </h1>
-        <p className="text-sm mt-1 font-medium" style={{ color: "hsl(207 60% 92%)" }}>{formatDate()}</p>
+        {churchName && (
+          <p className="text-sm mt-0.5 font-medium" style={{ color: "hsl(0 0% 100% / 0.85)" }}>{churchName}</p>
+        )}
+        <p className="text-sm mt-0.5 font-medium" style={{ color: "hsl(207 60% 92%)" }}>{formatDate()}</p>
       </div>
 
       <div className="px-5 pt-6 pb-6 space-y-6">
