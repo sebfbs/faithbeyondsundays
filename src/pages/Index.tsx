@@ -98,7 +98,7 @@ export default function Index() {
 
     switch (activeTab) {
       case "home":
-        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} />;
+        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} churchName={user.churchName} />;
       case "sermon":
         return (
           <SermonTab
@@ -109,7 +109,7 @@ export default function Index() {
       case "journal":
         return <JournalTab entries={journalEntries} />;
       default:
-        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} />;
+        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} churchName={user.churchName} />;
     }
   };
 
