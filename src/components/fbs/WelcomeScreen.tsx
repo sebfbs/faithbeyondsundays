@@ -129,7 +129,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
                 setChurchName("");
               }}
               placeholder="Church code"
-              className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+              className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 uppercase font-mono tracking-widest"
             />
           </div>
 
