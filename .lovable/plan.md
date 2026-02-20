@@ -1,15 +1,18 @@
 
 
-# Add Back Buttons to Onboarding Steps
+# Replace Church Icon with FBS Logo on Welcome Screen
 
 ## What This Does
-Adds a back arrow button to Step 2 (Find Your Church) and Step 3 (Create Account) so you can navigate backwards through the onboarding flow.
+Replaces the Church icon on the Welcome screen (Step 1) with the uploaded FBS logo image.
 
 ## Changes
 
+### Copy Asset
+- Copy `user-uploads://FBS_Logo_white.png` to `src/assets/FBS_Logo_white.png`
+
 ### Modified: `src/components/fbs/WelcomeScreen.tsx`
-- Import the `ArrowLeft` icon from lucide-react
-- **Step 2 (Find Your Church)**: Add a back button in the top-left that returns to Step 1 (Welcome)
-- **Step 3 (Create Account)**: Add a back button in the top-left that returns to Step 2 (Church Code)
-- The back button is a simple arrow icon, positioned at the top of the screen above the heading, matching the style used elsewhere in the app (e.g., the guided reflection back button)
+- Import the logo: `import fbsLogo from "@/assets/FBS_Logo_white.png"`
+- Replace the icon container (the rounded box with the Church icon) with the logo image
+- Remove the `Church` import from lucide-react (if no longer used elsewhere in the file -- it's still used in Step 2, so keep it)
+- Display the logo at a larger size since it's a proper brand logo (e.g., `w-24 h-24` or similar)
 
