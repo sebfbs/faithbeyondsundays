@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Bookmark, ChevronRight } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
 
+type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
+
 interface JournalTabProps {
   entries: JournalEntry[];
 }
@@ -11,6 +13,20 @@ export default function JournalTab({ entries }: JournalTabProps) {
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );
   const [selected, setSelected] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+
+  const filters: { label: string; value: FilterType }[] = [
+    { label: "All", value: "all" },
+    { label: "Sermon", value: "sermon" },
+    { label: "Challenge", value: "challenge" },
+    { label: "Bookmarked", value: "bookmarked" },
+  ];
+
+  const filteredEntries = entries.filter((entry) => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "bookmarked") return bookmarks[entry.id];
+    return entry.type === activeFilter;
+  });
 
   const toggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,14 +106,26 @@ export default function JournalTab({ entries }: JournalTabProps) {
             Your journey of faith and growth
           </p>
         </div>
-        <button className="text-xs font-semibold text-amber bg-amber-bg px-3 py-1.5 rounded-full tap-active">
-          Filter
-        </button>
+        <div className="flex gap-2">
+          {filters.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setActiveFilter(f.value)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full tap-active transition-colors ${
+                activeFilter === f.value
+                  ? "text-amber bg-amber-bg"
+                  : "text-muted-foreground bg-muted"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Entries */}
       <div className="space-y-3">
-        {entries.map((entry) => (
+        {filteredEntries.map((entry) => (
           <button
             key={entry.id}
             onClick={() => setSelected(entry.id)}
