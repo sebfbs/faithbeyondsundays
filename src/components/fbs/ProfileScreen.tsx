@@ -26,7 +26,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
   const [notifTime, setNotifTime] = useState("Morning (8 AM)");
 
   return (
-    <div className="px-5 pt-5 pb-6 space-y-5 animate-fade-in">
+    <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
