@@ -22,14 +22,21 @@ export default function HomeTab() {
   const [challengeAccepted, setChallengeAccepted] = useState(false);
 
   return (
-    <div className="px-5 pt-6 pb-6 space-y-6 animate-fade-in">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground leading-tight">
+    <div className="animate-fade-in">
+      {/* Greeting — gradient header */}
+      <div
+        className="px-5 pt-10 pb-8"
+        style={{
+          background: "linear-gradient(160deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 50%, hsl(22, 55%, 88%) 100%)",
+        }}
+      >
+        <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
           {getGreeting()}, Jordan ✨
         </h1>
-        <p className="text-sm text-muted-foreground mt-1 font-medium">{formatDate()}</p>
+        <p className="text-sm mt-1 font-medium" style={{ color: "hsl(207 60% 92%)" }}>{formatDate()}</p>
       </div>
+
+      <div className="px-5 pt-6 pb-6 space-y-6">
 
       {/* Today's Spark */}
       <div className="bg-card rounded-3xl p-5 shadow-card">
@@ -110,6 +117,8 @@ export default function HomeTab() {
 
       {/* Bottom spacer for nav */}
       <div className="h-2" />
+      </div>
     </div>
   );
 }
+
