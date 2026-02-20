@@ -61,7 +61,7 @@ export default function HomeTab({ onChallengeReflection }: HomeTabProps) {
       }}
     >
       {/* Greeting */}
-      <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 2.5rem)" }}>
+      <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
           {getGreeting()}, Jordan
         </h1>
