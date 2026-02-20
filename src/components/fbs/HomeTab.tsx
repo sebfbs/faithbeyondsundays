@@ -22,14 +22,14 @@ export default function HomeTab() {
   const [challengeAccepted, setChallengeAccepted] = useState(false);
 
   return (
-    <div className="animate-fade-in">
-      {/* Greeting — gradient header */}
-      <div
-        className="px-5 pt-10 pb-8"
-        style={{
-          background: "linear-gradient(160deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 50%, hsl(22, 55%, 88%) 100%)",
-        }}
-      >
+    <div
+      className="animate-fade-in min-h-screen"
+      style={{
+        background: "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 20%, hsl(22, 55%, 88%) 55%, hsl(40, 30%, 97%) 100%)",
+      }}
+    >
+      {/* Greeting */}
+      <div className="px-5 pt-10 pb-2">
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
           {getGreeting()}, Jordan ✨
         </h1>
