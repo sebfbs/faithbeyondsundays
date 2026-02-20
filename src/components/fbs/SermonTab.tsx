@@ -11,6 +11,7 @@ import { SERMON, PREVIOUS_SERMONS_COUNT } from "./data";
 
 interface SermonTabProps {
   onGuidedReflection: () => void;
+  onPreviousSermons: () => void;
 }
 
 function AccordionSection({
@@ -44,7 +45,7 @@ function AccordionSection({
   );
 }
 
-export default function SermonTab({ onGuidedReflection }: SermonTabProps) {
+export default function SermonTab({ onGuidedReflection, onPreviousSermons }: SermonTabProps) {
   return (
     <div className="px-5 pt-6 pb-6 space-y-5 animate-fade-in">
       {/* Header */}
@@ -179,7 +180,10 @@ export default function SermonTab({ onGuidedReflection }: SermonTabProps) {
       </button>
 
       {/* Previous Sermons */}
-      <button className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left">
+      <button
+        onClick={onPreviousSermons}
+        className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
+      >
         <div>
           <p className="text-sm font-semibold text-foreground">
             Previous Sermons
