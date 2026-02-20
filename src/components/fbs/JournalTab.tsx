@@ -123,11 +123,11 @@ export default function JournalTab({ entries }: JournalTabProps) {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} />
               <div className="absolute right-0 top-full mt-2 z-50 bg-card rounded-2xl shadow-card border border-border py-2 min-w-[160px]">
-                {filters.filter(f => f.value !== "all").map((f) => (
+                {filters.map((f) => (
                   <button
                     key={f.value}
                     onClick={() => {
-                      setActiveFilter(activeFilter === f.value ? "all" : f.value);
+                      setActiveFilter(f.value);
                       setFilterOpen(false);
                     }}
                     className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground tap-active hover:bg-muted/50 transition-colors"
