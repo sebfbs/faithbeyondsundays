@@ -31,7 +31,7 @@ export default function HomeTab() {
       {/* Greeting */}
       <div className="px-5 pt-10 pb-2">
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
-          {getGreeting()}, Jordan ✨
+          {getGreeting()}, Jordan
         </h1>
         <p className="text-sm mt-1 font-medium" style={{ color: "hsl(207 60% 92%)" }}>{formatDate()}</p>
       </div>
