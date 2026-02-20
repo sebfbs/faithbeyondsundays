@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Sparkles, Target, CheckCircle2, Flame } from "lucide-react";
+import { Sparkles, Target, CheckCircle2, Flame, PenLine, Send } from "lucide-react";
 import { SERMON } from "./data";
+import type { JournalEntry } from "@/pages/Index";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -18,8 +19,39 @@ function formatDate() {
   });
 }
 
-export default function HomeTab() {
-  const [challengeAccepted, setChallengeAccepted] = useState(false);
+type ChallengeStage = "idle" | "accepted" | "completed" | "reflected";
+
+interface HomeTabProps {
+  onChallengeReflection: (entry: JournalEntry) => void;
+}
+
+export default function HomeTab({ onChallengeReflection }: HomeTabProps) {
+  const [challengeStage, setChallengeStage] = useState<ChallengeStage>("idle");
+  const [reflectionText, setReflectionText] = useState("");
+  const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
+
+  const handleSubmitReflection = () => {
+    if (!reflectionText.trim()) return;
+    const today = new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const newEntry: JournalEntry = {
+      id: `challenge-${Date.now()}`,
+      date: today,
+      type: "challenge" as const,
+      tag: "Challenge",
+      preview: reflectionText.slice(0, 120) + (reflectionText.length > 120 ? "..." : ""),
+      sermonTitle: SERMON.title,
+      bookmarked: false,
+      fullText: reflectionText,
+      suggestedScripture: undefined as unknown as { reference: string; text: string },
+    };
+    onChallengeReflection(newEntry);
+    setReflectionSubmitted(true);
+    setChallengeStage("reflected");
+  };
 
   return (
     <div
@@ -73,19 +105,69 @@ export default function HomeTab() {
           {SERMON.weeklyChallenge}
         </p>
 
-        <div className="mt-4">
-          {!challengeAccepted ? (
+        <div className="mt-4 space-y-3">
+          {challengeStage === "idle" && (
             <button
-              onClick={() => setChallengeAccepted(true)}
+              onClick={() => setChallengeStage("accepted")}
               className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
             >
               <CheckCircle2 size={16} />
               Accept Challenge
             </button>
-          ) : (
-            <div className="w-full flex items-center justify-center gap-2 bg-amber-bg text-amber font-semibold text-sm py-3 rounded-2xl">
-              <CheckCircle2 size={16} className="fill-amber text-primary-foreground" />
-              Challenge Accepted!
+          )}
+
+          {challengeStage === "accepted" && (
+            <>
+              <div className="w-full flex items-center justify-center gap-2 bg-amber-bg text-amber font-semibold text-sm py-3 rounded-2xl">
+                <CheckCircle2 size={16} className="fill-amber text-primary-foreground" />
+                Challenge Accepted!
+              </div>
+              <button
+                onClick={() => setChallengeStage("completed")}
+                className="w-full flex items-center justify-center gap-2 bg-foreground text-background font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+              >
+                <CheckCircle2 size={16} />
+                Mark as Complete
+              </button>
+            </>
+          )}
+
+          {challengeStage === "completed" && !reflectionSubmitted && (
+            <>
+              <div className="w-full flex items-center justify-center gap-2 bg-amber-bg text-amber font-semibold text-sm py-2.5 rounded-2xl">
+                <CheckCircle2 size={16} className="fill-amber text-primary-foreground" />
+                Challenge Completed! 🎉
+              </div>
+              <div className="bg-muted rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <PenLine size={14} className="text-muted-foreground" />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                    Add a Reflection
+                  </p>
+                </div>
+                <textarea
+                  value={reflectionText}
+                  onChange={(e) => setReflectionText(e.target.value)}
+                  placeholder="How did this challenge go? What did God show you?"
+                  rows={4}
+                  className="w-full bg-card rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber/40"
+                />
+                <button
+                  onClick={handleSubmitReflection}
+                  disabled={!reflectionText.trim()}
+                  className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-2.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  <Send size={14} />
+                  Save to Journal
+                </button>
+              </div>
+            </>
+          )}
+
+          {challengeStage === "reflected" && (
+            <div className="bg-amber-bg rounded-2xl p-4 text-center space-y-1">
+              <p className="text-sm font-semibold text-amber">Reflection saved to your Journal!</p>
+              <p className="text-xs text-muted-foreground">Head to the Journal tab to read it.</p>
             </div>
           )}
         </div>

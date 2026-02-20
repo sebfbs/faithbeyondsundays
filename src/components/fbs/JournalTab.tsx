@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Bookmark, ChevronRight } from "lucide-react";
-import { JOURNAL_ENTRIES } from "./data";
+import type { JournalEntry } from "@/pages/Index";
 
-export default function JournalTab() {
+interface JournalTabProps {
+  entries: JournalEntry[];
+}
+
+export default function JournalTab({ entries }: JournalTabProps) {
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
-    Object.fromEntries(JOURNAL_ENTRIES.map((e) => [e.id, e.bookmarked]))
+    Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -13,7 +17,7 @@ export default function JournalTab() {
     setBookmarks((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const selectedEntry = JOURNAL_ENTRIES.find((e) => e.id === selected);
+  const selectedEntry = entries.find((e) => e.id === selected);
 
   if (selectedEntry) {
     return (
@@ -93,7 +97,7 @@ export default function JournalTab() {
 
       {/* Entries */}
       <div className="space-y-3">
-        {JOURNAL_ENTRIES.map((entry) => (
+        {entries.map((entry) => (
           <button
             key={entry.id}
             onClick={() => setSelected(entry.id)}

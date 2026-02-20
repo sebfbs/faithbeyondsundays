@@ -6,13 +6,21 @@ import JournalTab from "@/components/fbs/JournalTab";
 import GuidedReflectionScreen from "@/components/fbs/GuidedReflectionScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
+import { JOURNAL_ENTRIES } from "@/components/fbs/data";
 
 type OverlayScreen = "guided-reflection" | "profile" | null;
+
+export type JournalEntry = typeof JOURNAL_ENTRIES[number];
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
   const [overlay, setOverlay] = useState<OverlayScreen>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
+
+  const addJournalEntry = (entry: JournalEntry) => {
+    setJournalEntries((prev) => [entry, ...prev]);
+  };
 
   const handleTabChange = (tab: TabId) => {
     if (tab === "more") {
@@ -39,15 +47,15 @@ export default function Index() {
 
     switch (activeTab) {
       case "home":
-        return <HomeTab />;
+        return <HomeTab onChallengeReflection={addJournalEntry} />;
       case "sermon":
         return (
           <SermonTab onGuidedReflection={() => setOverlay("guided-reflection")} />
         );
       case "journal":
-        return <JournalTab />;
+        return <JournalTab entries={journalEntries} />;
       default:
-        return <HomeTab />;
+        return <HomeTab onChallengeReflection={addJournalEntry} />;
     }
   };
 
