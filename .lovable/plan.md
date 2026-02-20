@@ -1,18 +1,14 @@
 
 
-# Replace Church Icon with FBS Logo on Welcome Screen
+# Styled Church Code Input
 
 ## What This Does
-Replaces the Church icon on the Welcome screen (Step 1) with the uploaded FBS logo image.
+Makes the church code input field feel more like entering a special access code by forcing uppercase text and using a monospace (code-style) font.
 
 ## Changes
 
-### Copy Asset
-- Copy `user-uploads://FBS_Logo_white.png` to `src/assets/FBS_Logo_white.png`
-
 ### Modified: `src/components/fbs/WelcomeScreen.tsx`
-- Import the logo: `import fbsLogo from "@/assets/FBS_Logo_white.png"`
-- Replace the icon container (the rounded box with the Church icon) with the logo image
-- Remove the `Church` import from lucide-react (if no longer used elsewhere in the file -- it's still used in Step 2, so keep it)
-- Display the logo at a larger size since it's a proper brand logo (e.g., `w-24 h-24` or similar)
+- Add `uppercase` and `font-mono tracking-widest` classes to the church code input field
+- This will automatically display typed text in uppercase with a cool code-style monospace font and wider letter spacing
+- The actual value processing (lowercasing for lookup) stays unchanged since `lookupChurch` already normalizes to lowercase
 
