@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Church, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, UserPlus } from "lucide-react";
 
 export interface UserData {
   firstName: string;
@@ -112,7 +112,10 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
         style={{ background: "hsl(var(--background))" }}
       >
-        <div className="pt-16 pb-8">
+        <div className="pt-8 pb-8">
+          <button onClick={() => setStep(1)} className="mb-4 tap-active">
+            <ArrowLeft size={24} className="text-foreground" />
+          </button>
           <h1 className="text-2xl font-bold text-foreground mb-2">Find Your Church</h1>
           <p className="text-sm text-muted-foreground">Enter the code your church provided</p>
         </div>
@@ -172,7 +175,10 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
       style={{ background: "hsl(var(--background))" }}
     >
-      <div className="pt-16 pb-6">
+      <div className="pt-8 pb-6">
+        <button onClick={() => setStep(2)} className="mb-4 tap-active">
+          <ArrowLeft size={24} className="text-foreground" />
+        </button>
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
             <UserPlus size={18} className="text-amber" />
