@@ -111,7 +111,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
         style={{ background: "hsl(var(--background))" }}
       >
-        <div className="pt-8 pb-8">
+        <div className="pt-14 pb-8">
           <button onClick={() => setStep(1)} className="mb-4 tap-active">
             <ArrowLeft size={24} className="text-foreground" />
           </button>
@@ -174,7 +174,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
       style={{ background: "hsl(var(--background))" }}
     >
-      <div className="pt-8 pb-6">
+      <div className="pt-14 pb-6">
         <button onClick={() => setStep(2)} className="mb-4 tap-active">
           <ArrowLeft size={24} className="text-foreground" />
         </button>
