@@ -6,9 +6,17 @@ import JournalTab from "@/components/fbs/JournalTab";
 import GuidedReflectionScreen from "@/components/fbs/GuidedReflectionScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
+import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
+import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScreen";
 import { JOURNAL_ENTRIES } from "@/components/fbs/data";
+import type { SermonData } from "@/components/fbs/data";
 
-type OverlayScreen = "guided-reflection" | "profile" | null;
+type OverlayScreen =
+  | "guided-reflection"
+  | "profile"
+  | "previous-sermons-list"
+  | "previous-sermon-detail"
+  | null;
 
 export type JournalEntry = typeof JOURNAL_ENTRIES[number];
 
@@ -17,6 +25,7 @@ export default function Index() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [overlay, setOverlay] = useState<OverlayScreen>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
+  const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
 
   const addJournalEntry = (entry: JournalEntry) => {
     setJournalEntries((prev) => [entry, ...prev]);
@@ -33,15 +42,29 @@ export default function Index() {
   };
 
   const renderMain = () => {
-    // Overlay screens take priority
     if (overlay === "guided-reflection") {
-      return (
-        <GuidedReflectionScreen onBack={() => setOverlay(null)} />
-      );
+      return <GuidedReflectionScreen onBack={() => setOverlay(null)} />;
     }
     if (overlay === "profile") {
+      return <ProfileScreen onBack={() => setOverlay(null)} />;
+    }
+    if (overlay === "previous-sermons-list") {
       return (
-        <ProfileScreen onBack={() => setOverlay(null)} />
+        <PreviousSermonsListScreen
+          onBack={() => setOverlay(null)}
+          onSelectSermon={(sermon) => {
+            setSelectedSermon(sermon);
+            setOverlay("previous-sermon-detail");
+          }}
+        />
+      );
+    }
+    if (overlay === "previous-sermon-detail" && selectedSermon) {
+      return (
+        <PreviousSermonDetailScreen
+          sermon={selectedSermon}
+          onBack={() => setOverlay("previous-sermons-list")}
+        />
       );
     }
 
@@ -50,7 +73,10 @@ export default function Index() {
         return <HomeTab onChallengeReflection={addJournalEntry} />;
       case "sermon":
         return (
-          <SermonTab onGuidedReflection={() => setOverlay("guided-reflection")} />
+          <SermonTab
+            onGuidedReflection={() => setOverlay("guided-reflection")}
+            onPreviousSermons={() => setOverlay("previous-sermons-list")}
+          />
         );
       case "journal":
         return <JournalTab entries={journalEntries} />;
@@ -61,8 +87,6 @@ export default function Index() {
 
   return (
     <div className="app-container relative mx-auto" style={{ background: "hsl(var(--background))" }}>
-
-      {/* Scrollable main content */}
       <main
         className="relative z-10 scrollable-content pb-[84px] pt-[0px]"
         style={{ minHeight: "100dvh" }}
@@ -70,10 +94,8 @@ export default function Index() {
         {renderMain()}
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {/* More sheet */}
       {moreOpen && (
         <MoreSheet
           onClose={() => setMoreOpen(false)}
@@ -86,3 +108,4 @@ export default function Index() {
     </div>
   );
 }
+

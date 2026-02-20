@@ -95,3 +95,165 @@ export const JOURNAL_ENTRIES = [
 ];
 
 export const PREVIOUS_SERMONS_COUNT = 12;
+
+export type SermonData = typeof SERMON;
+
+export const PREVIOUS_SERMONS: SermonData[] = [
+  {
+    title: "You Are Already Enough",
+    date: "January 31, 2026",
+    subtitle: "Resting in your God-given identity",
+    speaker: "Pastor James Whitfield",
+    church: "Cornerstone Community Church",
+    duration: "42:15",
+    chapters: [
+      { title: "Introduction", timestamp: "00:00" },
+      { title: "The Lie of Performance", timestamp: "06:30" },
+      { title: "What God Says About You", timestamp: "13:20" },
+      { title: "Replacing the Lies", timestamp: "24:00" },
+      { title: "Closing Prayer", timestamp: "38:45" },
+    ],
+    scriptures: [
+      {
+        reference: "Psalm 139:14",
+        text: "I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.",
+      },
+      {
+        reference: "Ephesians 1:4–5",
+        text: "For he chose us in him before the creation of the world to be holy and blameless in his sight. In love he predestined us for adoption.",
+      },
+    ],
+    takeaways: [
+      "Your identity is not determined by what you do, but by Whose you are.",
+      "Performance-based faith exhausts us — grace invites us to rest.",
+      "Replacing lies with scripture is a daily, intentional practice.",
+      "God's love is not conditional on your productivity or success.",
+    ],
+    reflectionQuestions: [
+      "Where are you striving to earn something God has already freely given?",
+      "What lie about your identity have you been believing? What does scripture say instead?",
+      "How would your week look different if you truly believed you were enough?",
+    ],
+    spark: "You don't have to earn what God has already freely given.",
+    weeklyChallenge:
+      "Write down one lie you've believed about yourself, then find a verse that speaks the truth. Read it aloud every morning this week.",
+  },
+  {
+    title: "The Power of Small Steps",
+    date: "January 24, 2026",
+    subtitle: "Faithfulness in the everyday moments",
+    speaker: "Pastor James Whitfield",
+    church: "Cornerstone Community Church",
+    duration: "39:50",
+    chapters: [
+      { title: "Introduction", timestamp: "00:00" },
+      { title: "David & Goliath Revisited", timestamp: "05:00" },
+      { title: "Small Obediences", timestamp: "12:40" },
+      { title: "Building Momentum", timestamp: "22:15" },
+      { title: "Closing Prayer", timestamp: "36:00" },
+    ],
+    scriptures: [
+      {
+        reference: "Zechariah 4:10",
+        text: "Do not despise these small beginnings, for the LORD rejoices to see the work begin.",
+      },
+      {
+        reference: "Luke 16:10",
+        text: "Whoever can be trusted with very little can also be trusted with much.",
+      },
+    ],
+    takeaways: [
+      "God is not looking for grand gestures — He is looking for faithful small steps.",
+      "Every small act of obedience builds trust between you and God.",
+      "Don't wait for the perfect moment. Start where you are.",
+      "Momentum is built one faithful decision at a time.",
+    ],
+    reflectionQuestions: [
+      "What small step of obedience have you been putting off?",
+      "Where in your life are you waiting for a 'big moment' instead of being faithful now?",
+      "How can you celebrate small wins with God this week?",
+    ],
+    spark: "Don't despise small beginnings — God starts big things in small places.",
+    weeklyChallenge:
+      "Identify one small spiritual habit — 5 minutes of prayer, one verse a day — and do it every day this week without skipping.",
+  },
+  {
+    title: "When God Feels Distant",
+    date: "January 17, 2026",
+    subtitle: "Navigating seasons of spiritual dryness",
+    speaker: "Pastor James Whitfield",
+    church: "Cornerstone Community Church",
+    duration: "45:00",
+    chapters: [
+      { title: "Introduction", timestamp: "00:00" },
+      { title: "The Psalms of Lament", timestamp: "08:00" },
+      { title: "Spiritual Dryness is Normal", timestamp: "17:30" },
+      { title: "Practices That Draw Us Near", timestamp: "28:00" },
+      { title: "Closing Prayer", timestamp: "41:00" },
+    ],
+    scriptures: [
+      {
+        reference: "Psalm 22:1",
+        text: "My God, my God, why have you forsaken me? Why are you so far from saving me, so far from my cries of anguish?",
+      },
+      {
+        reference: "James 4:8",
+        text: "Come near to God and he will come near to you.",
+      },
+    ],
+    takeaways: [
+      "Feeling distant from God is not evidence that He has left — it is an invitation to draw near.",
+      "The Psalms give us permission to be honest with God in every season.",
+      "Spiritual disciplines are not about earning God's presence — they create space to receive it.",
+      "Dry seasons often precede breakthrough seasons.",
+    ],
+    reflectionQuestions: [
+      "Are you in a dry season right now? What does it feel like?",
+      "What practice could you add this week to draw nearer to God?",
+      "How have past dry seasons shaped your faith in ways you didn't expect?",
+    ],
+    spark: "God has not moved. He is closer than you think.",
+    weeklyChallenge:
+      "Spend 10 minutes in silence each morning this week — no music, no phone — just sitting with God and letting Him speak.",
+  },
+  {
+    title: "Forgiveness Is a Practice",
+    date: "January 10, 2026",
+    subtitle: "Learning to release what we were never meant to carry",
+    speaker: "Pastor James Whitfield",
+    church: "Cornerstone Community Church",
+    duration: "51:20",
+    chapters: [
+      { title: "Introduction", timestamp: "00:00" },
+      { title: "The Weight of Unforgiveness", timestamp: "07:00" },
+      { title: "The Parable of the Prodigal Son", timestamp: "15:00" },
+      { title: "Forgiveness is Not Excusing", timestamp: "28:00" },
+      { title: "Steps Toward Freedom", timestamp: "40:00" },
+      { title: "Closing Prayer", timestamp: "48:00" },
+    ],
+    scriptures: [
+      {
+        reference: "Ephesians 4:31–32",
+        text: "Get rid of all bitterness, rage and anger… Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.",
+      },
+      {
+        reference: "Matthew 6:14",
+        text: "For if you forgive other people when they sin against you, your heavenly Father will also forgive you.",
+      },
+    ],
+    takeaways: [
+      "Unforgiveness is a weight we were never designed to carry.",
+      "Forgiveness is not excusing the wrong — it is releasing your right to revenge.",
+      "You may need to choose forgiveness daily before it becomes a feeling.",
+      "Forgiving others is an act of trusting God with justice.",
+    ],
+    reflectionQuestions: [
+      "Is there someone in your life you haven't fully forgiven?",
+      "What would it feel like to release that person to God today?",
+      "How has God's forgiveness of you changed the way you see others?",
+    ],
+    spark: "Forgiveness is not a feeling — it's a decision to stop carrying what God never asked you to hold.",
+    weeklyChallenge:
+      "Write a letter to someone you need to forgive — you don't have to send it. Just write what you felt and then write: 'I release this to God.'",
+  },
+];
