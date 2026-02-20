@@ -56,19 +56,15 @@ export default function HomeTab() {
 
       {/* Weekly Challenge */}
       <div className="bg-card rounded-3xl p-5 shadow-card -mt-3">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-amber-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Target size={17} className="text-amber" />
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-full bg-amber-bg flex items-center justify-center">
+            <Target size={14} className="text-amber" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-amber uppercase tracking-wider mb-1">
-              Weekly Challenge
-            </p>
-            <p className="text-sm text-foreground leading-relaxed">
-              {SERMON.weeklyChallenge}
-            </p>
-          </div>
+          <span className="amber-pill">Weekly Challenge</span>
         </div>
+        <p className="text-foreground font-medium text-base leading-relaxed">
+          {SERMON.weeklyChallenge}
+        </p>
 
         <div className="mt-4">
           {!challengeAccepted ? (
