@@ -87,7 +87,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           <h1 className="text-3xl font-bold leading-tight mb-3" style={{ color: "hsl(0 0% 100%)" }}>
             Faith Beyond<br />Sundays
           </h1>
-          <p className="text-sm font-medium max-w-[260px] leading-relaxed" style={{ color: "hsl(207 60% 92%)" }}>
+          <p className="text-sm font-medium max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
             Stay connected to Sunday's message all week long
           </p>
         </div>
