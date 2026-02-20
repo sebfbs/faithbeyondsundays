@@ -88,7 +88,7 @@ export default function HomeTab({ onChallengeReflection }: HomeTabProps) {
 
       {/* This Week header */}
       <div>
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+        <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(0 0% 100%)" }}>
           This Week
         </h2>
       </div>
