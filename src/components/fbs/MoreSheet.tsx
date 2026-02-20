@@ -28,7 +28,7 @@ export default function MoreSheet({ onProfile, onClose }: MoreSheetProps) {
       />
       {/* Sheet */}
       <div
-        className="relative w-full max-w-[430px] bg-card rounded-t-3xl px-5 pt-5 pb-10 animate-slide-up shadow-nav"
+        className="relative w-full max-w-[430px] bg-card rounded-t-3xl px-5 pt-5 pb-28 animate-slide-up shadow-nav"
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-foreground">More</h2>
