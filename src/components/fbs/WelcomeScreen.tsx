@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Church, UserPlus } from "lucide-react";
+import fbsLogo from "@/assets/FBS_Logo_white.png";
 
 export interface UserData {
   firstName: string;
@@ -82,9 +83,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         }}
       >
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="w-20 h-20 rounded-3xl bg-card/90 backdrop-blur-sm shadow-card flex items-center justify-center mb-6">
-            <Church size={36} className="text-amber" />
-          </div>
+          <img src={fbsLogo} alt="Faith Beyond Sundays" className="w-24 h-24 object-contain mb-6" />
           <h1 className="text-3xl font-bold leading-tight mb-3" style={{ color: "hsl(0 0% 100%)" }}>
             Faith Beyond<br />Sundays
           </h1>
