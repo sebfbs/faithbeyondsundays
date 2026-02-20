@@ -104,6 +104,9 @@ export default function HomeTab({ onChallengeReflection }: HomeTabProps) {
         <p className="text-foreground font-medium text-base leading-relaxed">
           {SERMON.weeklyChallenge}
         </p>
+        <p className="text-muted-foreground text-xs mt-2 font-medium">
+          Challenge drawn from Sunday's sermon · {SERMON.title}
+        </p>
 
         <div className="mt-4 space-y-3">
           {challengeStage === "idle" && (
