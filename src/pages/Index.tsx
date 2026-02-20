@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
@@ -8,6 +8,7 @@ import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
 import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
 import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScreen";
+import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
 import { JOURNAL_ENTRIES } from "@/components/fbs/data";
 import type { SermonData } from "@/components/fbs/data";
 
@@ -20,12 +21,39 @@ type OverlayScreen =
 
 export type JournalEntry = typeof JOURNAL_ENTRIES[number];
 
+function loadUser(): UserData | null {
+  try {
+    const raw = localStorage.getItem("fbs_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Index() {
+  const [user, setUser] = useState<UserData | null>(loadUser);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
   const [overlay, setOverlay] = useState<OverlayScreen>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
+
+  const handleOnboardingComplete = (data: UserData) => {
+    localStorage.setItem("fbs_user", JSON.stringify(data));
+    setUser(data);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("fbs_user");
+    setUser(null);
+    setActiveTab("home");
+    setOverlay(null);
+    setMoreOpen(false);
+  };
+
+  if (!user) {
+    return <WelcomeScreen onComplete={handleOnboardingComplete} />;
+  }
 
   const addJournalEntry = (entry: JournalEntry) => {
     setJournalEntries((prev) => [entry, ...prev]);
@@ -46,7 +74,7 @@ export default function Index() {
       return <GuidedReflectionScreen onBack={() => setOverlay(null)} />;
     }
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => setOverlay(null)} />;
+      return <ProfileScreen onBack={() => setOverlay(null)} user={user} onSignOut={handleSignOut} />;
     }
     if (overlay === "previous-sermons-list") {
       return (
@@ -70,7 +98,7 @@ export default function Index() {
 
     switch (activeTab) {
       case "home":
-        return <HomeTab onChallengeReflection={addJournalEntry} />;
+        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} />;
       case "sermon":
         return (
           <SermonTab
@@ -81,7 +109,7 @@ export default function Index() {
       case "journal":
         return <JournalTab entries={journalEntries} />;
       default:
-        return <HomeTab onChallengeReflection={addJournalEntry} />;
+        return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} />;
     }
   };
 
@@ -109,4 +137,3 @@ export default function Index() {
     </div>
   );
 }
-

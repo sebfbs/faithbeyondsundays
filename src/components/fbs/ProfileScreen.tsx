@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
 } from "./NotificationModals";
+import type { UserData } from "./WelcomeScreen";
 
 interface ProfileScreenProps {
   onBack: () => void;
+  user: UserData;
+  onSignOut: () => void;
 }
 
 const BADGES = [
@@ -18,7 +21,7 @@ const BADGES = [
 
 type Appearance = "light" | "dark" | "horizon";
 
-export default function ProfileScreen({ onBack }: ProfileScreenProps) {
+export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreenProps) {
   const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState(false);
   const [timeModal, setTimeModal] = useState(false);
@@ -48,9 +51,9 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
         <div className="w-20 h-20 rounded-full bg-amber flex items-center justify-center shadow-amber mb-3">
           <User size={34} className="text-primary-foreground" />
         </div>
-        <h2 className="text-lg font-bold text-foreground">Jordan Michaels</h2>
+        <h2 className="text-lg font-bold text-foreground">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Cornerstone Community Church
+          {user.churchName}
         </p>
       </div>
 
@@ -131,6 +134,15 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
           </div>
         </button>
       </section>
+
+      {/* Sign Out */}
+      <button
+        onClick={onSignOut}
+        className="w-full flex items-center justify-center gap-2 bg-destructive/10 text-destructive font-semibold text-sm py-3.5 rounded-2xl tap-active transition-colors hover:bg-destructive/15"
+      >
+        <LogOut size={16} />
+        Sign Out
+      </button>
 
       <div className="h-2" />
 
