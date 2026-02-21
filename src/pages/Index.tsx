@@ -175,6 +175,16 @@ export default function Index() {
 
   return (
     <div className="app-container relative mx-auto" style={{ background: "hsl(var(--background))" }}>
+      {/* Frosted status bar backdrop for iPhone notch/Dynamic Island */}
+      <div
+        className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
+        style={{
+          height: "env(safe-area-inset-top, 0px)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          background: "hsl(var(--background) / 0.8)",
+        }}
+      />
       <main
         className="relative z-10 scrollable-content pb-[84px] pt-[0px]"
         style={{ minHeight: "100dvh" }}
