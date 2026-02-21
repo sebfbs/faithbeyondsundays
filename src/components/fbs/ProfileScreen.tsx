@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -17,7 +17,7 @@ const getProfileBadges = (user: UserData) => {
   const badges = [
     { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
     { icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" },
-    { icon: Award, label: "Challenge Accepted", detail: "First Challenge", color: "hsl(340 70% 55%)" },
+    { icon: BookOpen, label: "First Reflection", detail: "Daily Journaler", color: "hsl(340 70% 55%)" },
     { icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" },
   ];
   if (hasInvited()) {
