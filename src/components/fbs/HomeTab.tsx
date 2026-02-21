@@ -144,8 +144,8 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
             <Sparkles size={14} style={{ color: colors.accent }} />
           </div>
           <span
-            className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.pillBg, color: colors.pillText }}
+            className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{ background: colors.accentBg, color: colors.accent }}
           >
             Today's Spark
           </span>
@@ -165,8 +165,8 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
             <BookText size={14} style={{ color: colors.accent }} />
           </div>
           <span
-            className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.pillBg, color: colors.pillText }}
+            className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{ background: colors.accentBg, color: colors.accent }}
           >
             Today's Reflection
           </span>
