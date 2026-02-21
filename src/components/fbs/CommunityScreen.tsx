@@ -204,13 +204,6 @@ export default function CommunityScreen({
                 )}
               </p>
             </div>
-            {/* Badge count */}
-            <div className="flex items-center gap-1 shrink-0">
-              <Award size={13} className="text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground">
-                {member.challengesCompleted}
-              </span>
-            </div>
             {/* Following indicator */}
             {follows.includes(member.username) && (
               <div
