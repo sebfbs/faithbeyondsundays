@@ -1,40 +1,28 @@
 
 
-## Fix: Sticky Status Bar Backdrop
+## Semi-Transparent Home Screen Cards
 
-### The Problem
-When you scroll down, your app content slides up behind the iPhone's clock, battery, and signal icons in the status bar area, making everything overlap and become unreadable.
-
-### The Solution
-Add a fixed, frosted-glass bar at the very top of the screen that covers the iPhone status bar zone. As you scroll, content will disappear behind this semi-transparent bar instead of mixing with the system icons. This is the same approach Apple's own apps use.
-
----
+Make the three main cards on the Home tab (Today's Spark, Weekly Challenge, and Guided Reflection) semi-transparent with a frosted-glass effect, so the sky gradient background subtly shows through.
 
 ### What Changes
 
-**`src/pages/Index.tsx`**
-- Add a fixed overlay `div` at the top of the app container that covers the safe area inset
-- It will use a backdrop blur effect (frosted glass) with the app's background color at ~80% opacity
-- Sits at `z-index: 40` so it's above scrollable content but below modals
-- Height is exactly `env(safe-area-inset-top)` so it only appears on devices with a notch/Dynamic Island
+**`src/components/fbs/HomeTab.tsx`**
+- Replace the solid `bg-card` background on the three card containers with a semi-transparent white background and backdrop blur
+- Apply to:
+  1. Today's Spark card
+  2. Weekly Challenge card
+  3. Guided Reflection button
+- Style: `background: hsl(0 0% 100% / 0.8)` with `backdrop-filter: blur(20px)` — matching the frosted-glass intensity used for the status bar backdrop
+- The Streak banner already has a custom gradient background so it stays as-is
 
-This is a single small element added once in the main layout — it automatically protects every screen (Home, Bible, Sermon, Journal, all overlays) without needing to change each individual screen.
+### Technical Detail
 
-### Technical Details
-
-The backdrop element:
+Each card currently uses the Tailwind class `bg-card`. This will be replaced with inline styles:
 ```
-position: fixed
-top: 0
-left/right: 0
-height: env(safe-area-inset-top, 0px)
+background: hsl(0 0% 100% / 0.8)
 backdrop-filter: blur(20px)
-background: hsl(var(--background) / 0.8)
-z-index: 40
+-webkit-backdrop-filter: blur(20px)
 ```
 
-This ensures:
-- On iPhones with a notch: a frosted bar covers the status bar area
-- On devices without a notch: the element has zero height and is invisible
-- Works across all screens automatically
+The `shadow-card` class remains for depth. The result is cards that feel like frosted glass floating over the sky gradient.
 
