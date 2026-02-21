@@ -1,5 +1,6 @@
 import { Users, Heart, User, X } from "lucide-react";
 import { FEATURE_FLAGS } from "./featureFlags";
+import { getAccentColors } from "./themeColors";
 
 interface MoreSheetProps {
   onProfile: () => void;
@@ -17,6 +18,7 @@ const options = allOptions.filter(
 );
 
 export default function MoreSheet({ onProfile, onClose }: MoreSheetProps) {
+  const colors = getAccentColors();
   const handleOption = (key: string) => {
     if (key === "profile") {
       onProfile();
@@ -51,8 +53,8 @@ export default function MoreSheet({ onProfile, onClose }: MoreSheetProps) {
               onClick={() => handleOption(key)}
               className="w-full flex items-center gap-4 p-4 rounded-2xl bg-muted/50 tap-active hover:bg-muted transition-colors text-left"
             >
-              <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
-                <Icon size={18} className="text-amber" />
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: colors.accentBg }}>
+                <Icon size={18} style={{ color: colors.accent }} />
               </div>
               <span className="text-sm font-semibold text-foreground">{label}</span>
             </button>
