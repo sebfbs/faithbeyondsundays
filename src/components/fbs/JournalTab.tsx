@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2 } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
 import { getAccentColors } from "./themeColors";
@@ -12,7 +12,7 @@ interface JournalTabProps {
   onDeleteEntry?: (id: string) => void;
 }
 
-export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }: JournalTabProps) {
+const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }, ref) {
   const colors = getAccentColors();
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
@@ -311,10 +311,12 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
       {/* Entries */}
       <div className="space-y-3">
         {filteredEntries.map((entry) => (
-          <button
+          <div
             key={entry.id}
             onClick={() => setSelected(entry.id)}
-            className="w-full bg-card rounded-3xl p-5 shadow-card text-left tap-active"
+            role="button"
+            tabIndex={0}
+            className="w-full bg-card rounded-3xl p-5 shadow-card text-left tap-active cursor-pointer"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
@@ -355,7 +357,7 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
                 <ChevronRight size={14} className="text-muted-foreground mt-2" />
               </div>
             </div>
-          </button>
+          </div>
         ))}
       </div>
 
@@ -363,12 +365,14 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
 
       {/* Floating Add Button */}
       <button
-        onClick={() => setComposing(true)}
+        onClick={(e) => { e.stopPropagation(); setComposing(true); }}
         className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
-        style={{ background: colors.buttonBg }}
+        style={{ background: colors.buttonBg, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
       >
         <Plus size={24} />
       </button>
     </div>
   );
-}
+});
+
+export default JournalTab;
