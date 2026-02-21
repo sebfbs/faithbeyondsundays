@@ -115,13 +115,13 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   if (step === 1) {
     return (
       <div
-        className="app-container mx-auto flex flex-col items-center justify-center min-h-screen px-8 text-center animate-fade-in !max-w-[430px]"
+        className="w-full min-h-screen flex flex-col items-center justify-center animate-fade-in"
         style={{
           background:
             "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 25%, hsl(22, 55%, 88%) 60%, hsl(40, 30%, 97%) 100%)",
         }}
       >
-        <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
           <img src={fbsLogo} alt="Faith Beyond Sundays" className="w-24 h-24 object-contain mb-6" />
           <h1 className="text-3xl font-bold leading-tight mb-3" style={{ color: "hsl(0 0% 100%)" }}>
             Faith Beyond<br />Sundays
@@ -130,10 +130,10 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             Stay connected to Sunday's message all week long
           </p>
         </div>
-        <div className="w-full pb-12 flex justify-center">
+        <div className="w-full max-w-[430px] px-8 pb-12">
           <button
             onClick={() => setStep(2)}
-            className="w-full max-w-[430px] flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
           >
             Get Started
             <ArrowRight size={18} />
