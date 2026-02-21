@@ -1,18 +1,30 @@
 
 
-## Fix Clouds Positioning and Clipping
+## Fill the Empty Space on Home Screen
 
-### Problems
-1. Clouds overlap the greeting text in the upper-left, making it hard to read
-2. When the sidebar is collapsed, clouds appear to spawn/cut off at a visible edge because the cloud container uses `left-0` relative to the inner content area, not the full viewport
+### What's Changing
+Adding two new sections below the existing Reflection card to fill the empty space on mobile:
 
-### Changes
+1. **Scripture of the Day** -- A card showing one of the sermon's key scripture passages, rotating daily. Styled to match the existing cards with a clean, elegant look. Tapping "Read in Bible" could navigate to the Bible tab in the future.
 
-**File: `src/components/fbs/HomeTab.tsx` -- Clouds component**
-- Move clouds to the **right side** of the screen so they don't overlap the greeting text (shift from upper-left to upper-right area)
-- Increase the cloud container height slightly and push clouds further right with higher `top` values so they sit above the cards but below/beside the greeting
-- Make clouds more subtle (reduce opacity slightly) so even if they drift near text they don't obscure it
-- Change the drift animation direction to drift **right-to-left** so clouds originate off-screen right and exit off-screen left -- this avoids any visible "spawn line" at the container edge
+2. **Quick Links** -- A row of 3 shortcut buttons (Bible, Prayer, Community) styled as small rounded cards with icons. These give users fast access to other parts of the app without scrolling through the bottom nav.
 
-**File: `src/index.css` -- cloud-drift keyframes**
-- Update `cloud-drift` keyframes to go from `translateX(110%)` to `translateX(-30%)` (right-to-left) so clouds always enter smoothly from the right edge and never show a hard cutoff line on the left where the sidebar meets the content
+### Technical Details
+
+**File: `src/components/fbs/HomeTab.tsx`**
+- Import additional icons: `BookOpen`, `Heart`, `Users`, `ChevronRight`
+- Add a **"Scripture of the Day"** card after the Reflection card:
+  - Picks a scripture from `SERMON.scriptures` based on the day of the week (rotating)
+  - Shows the reference as a header and the verse text in a slightly larger, italic style
+  - Same frosted glass card styling as existing cards (rounded-3xl, blur backdrop)
+  - Small label "From Sunday's sermon" at the bottom
+- Add a **"Quick Links"** row after the scripture card:
+  - Three tappable cards in a horizontal grid (grid-cols-3, gap-3)
+  - Each card: icon + label, frosted glass background, rounded-2xl
+  - Links: Bible, Prayer, Community
+  - These will call `onTabChange` or a new `onNavigate` callback prop to switch to the correct screen
+
+**File: `src/components/fbs/HomeTab.tsx` -- Props update**
+- Add an optional `onNavigate?: (screen: string) => void` prop to HomeTabProps so the quick links can trigger navigation to Bible, Prayer, or Community screens
+
+No new files needed. No CSS changes needed -- existing Tailwind classes cover everything.
