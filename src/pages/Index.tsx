@@ -264,7 +264,7 @@ export default function Index() {
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
-          ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 240 } : {}),
+          ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 180 } : {}),
         }}
       >
         <div className={!isMobile ? "tablet-content-inner" : ""}>
