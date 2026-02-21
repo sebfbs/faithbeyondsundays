@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Church, UserPlus, AtSign, Check, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, UserPlus, AtSign, Check, X, Search, MapPin, CheckCircle } from "lucide-react";
 import fbsLogo from "@/assets/FBS_Logo_white.png";
 import { validateUsername } from "./communityData";
 
@@ -19,33 +19,67 @@ interface WelcomeScreenProps {
   onComplete: (data: UserData) => void;
 }
 
-// Demo church code lookup
-const CHURCH_CODES: Record<string, string> = {
-  cornerstone: "Cornerstone Community Church",
-  grace: "Grace Fellowship",
-  faith: "Faith Chapel",
-};
-
-function lookupChurch(code: string): string {
-  const normalized = code.trim().toLowerCase();
-  return CHURCH_CODES[normalized] || "Cornerstone Community Church";
+interface ChurchEntry {
+  code: string;
+  name: string;
+  pastor: string;
+  city: string;
+  state: string;
 }
+
+const CHURCHES: ChurchEntry[] = [
+  { code: "cornerstone", name: "Cornerstone Community Church", pastor: "Pastor James Wilson", city: "Dallas", state: "TX" },
+  { code: "grace", name: "Grace Fellowship", pastor: "Pastor Maria Santos", city: "Austin", state: "TX" },
+  { code: "faith", name: "Faith Chapel", pastor: "Pastor David Kim", city: "Houston", state: "TX" },
+];
 
 type Step = 1 | 2 | 3 | 4;
 
 export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const [step, setStep] = useState<Step>(1);
-  const [churchCode, setChurchCode] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedChurch, setSelectedChurch] = useState<ChurchEntry | null>(null);
   const [churchName, setChurchName] = useState("");
+  const [churchCode, setChurchCode] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "" });
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChurchSubmit = () => {
-    if (!churchCode.trim()) return;
-    const name = lookupChurch(churchCode);
-    setChurchName(name);
+  // Request form state
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [requestForm, setRequestForm] = useState({ name: "", city: "", state: "" });
+  const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
+
+  const filteredChurches = searchQuery.trim().length >= 2
+    ? CHURCHES.filter((c) =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.pastor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.city.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  const handleSelectChurch = (church: ChurchEntry) => {
+    setSelectedChurch(church);
+    setChurchName(church.name);
+    setChurchCode(church.code);
+  };
+
+  const handleRequestSubmit = () => {
+    const errs: Record<string, string> = {};
+    if (!requestForm.name.trim()) errs.name = "Church name is required";
+    if (!requestForm.city.trim()) errs.city = "City is required";
+    if (!requestForm.state.trim()) errs.state = "State is required";
+    if (Object.keys(errs).length > 0) {
+      setRequestErrors(errs);
+      return;
+    }
+    // Save to localStorage for future Supabase migration
+    const requests = JSON.parse(localStorage.getItem("churchRequests") || "[]");
+    requests.push({ ...requestForm, requestedAt: new Date().toISOString() });
+    localStorage.setItem("churchRequests", JSON.stringify(requests));
+    setRequestSubmitted(true);
   };
 
   const handleCreateAccount = () => {
@@ -108,66 +142,146 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
     );
   }
 
-  // Step 2: Church Code
+  // Step 2: Find Your Church
   if (step === 2) {
     return (
       <div
         className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
         style={{ background: "hsl(var(--background))" }}
       >
-        <div className="pt-14 pb-8">
-          <button onClick={() => setStep(1)} className="mb-4 tap-active">
+        <div className="pt-14 pb-6">
+          <button onClick={() => { setStep(1); setShowRequestForm(false); setRequestSubmitted(false); setSelectedChurch(null); setSearchQuery(""); }} className="mb-4 tap-active">
             <ArrowLeft size={24} className="text-foreground" />
           </button>
           <h1 className="text-2xl font-bold text-foreground mb-2">Find Your Church</h1>
-          <p className="text-sm text-muted-foreground">Enter the code your church provided</p>
+          <p className="text-sm text-muted-foreground">Search for your church by name</p>
         </div>
 
-        <div className="space-y-4 flex-1">
-          <div>
-            <input
-              type="text"
-              value={churchCode}
-              onChange={(e) => {
-                setChurchCode(e.target.value);
-                setChurchName("");
-              }}
-              placeholder="Church code"
-              className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 uppercase font-mono tracking-widest"
-            />
-          </div>
-
-          {!churchName && (
+        {/* Request submitted — dead end */}
+        {requestSubmitted ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-amber-bg flex items-center justify-center mb-5">
+              <CheckCircle size={32} className="text-amber" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">We're on it!</h2>
+            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-8">
+              We'll reach out to <span className="font-semibold text-foreground">{requestForm.name}</span> and let you know when they're ready.
+            </p>
             <button
-              onClick={handleChurchSubmit}
-              disabled={!churchCode.trim()}
-              className="w-full bg-foreground text-background font-semibold text-sm py-3.5 rounded-2xl tap-active transition-opacity hover:opacity-90 disabled:opacity-30"
+              onClick={() => { setRequestSubmitted(false); setShowRequestForm(false); setSearchQuery(""); setRequestForm({ name: "", city: "", state: "" }); }}
+              className="text-sm font-medium text-amber tap-active"
             >
-              Look Up Church
+              ← Back to Search
             </button>
-          )}
-
-          {churchName && (
-            <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-bg flex items-center justify-center">
-                  <Church size={22} className="text-amber" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">{churchName}</p>
-                  <p className="text-xs text-muted-foreground">Church found!</p>
-                </div>
+          </div>
+        ) : showRequestForm ? (
+          /* Request Your Church form */
+          <div className="space-y-3 flex-1 animate-fade-in">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
+                <Church size={18} className="text-amber" />
               </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Request Your Church</h2>
+                <p className="text-xs text-muted-foreground">We'll get them set up</p>
+              </div>
+            </div>
+            {[
+              { key: "name", placeholder: "Church name" },
+              { key: "city", placeholder: "City" },
+              { key: "state", placeholder: "State" },
+            ].map(({ key, placeholder }) => (
+              <div key={key}>
+                <input
+                  type="text"
+                  value={requestForm[key as keyof typeof requestForm]}
+                  onChange={(e) => {
+                    setRequestForm((prev) => ({ ...prev, [key]: e.target.value }));
+                    if (requestErrors[key]) setRequestErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+                  }}
+                  placeholder={placeholder}
+                  className={`w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 ${requestErrors[key] ? "ring-2 ring-destructive/50" : ""}`}
+                />
+                {requestErrors[key] && <p className="text-xs text-destructive mt-1 ml-1">{requestErrors[key]}</p>}
+              </div>
+            ))}
+            <div className="pt-4 space-y-3">
               <button
-                onClick={() => setStep(3)}
+                onClick={handleRequestSubmit}
                 className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
               >
-                Continue
-                <ArrowRight size={16} />
+                Submit Request
+              </button>
+              <button
+                onClick={() => setShowRequestForm(false)}
+                className="w-full text-sm font-medium text-muted-foreground tap-active"
+              >
+                ← Back to Search
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          /* Search + results */
+          <div className="space-y-4 flex-1">
+            <div className="relative">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSelectedChurch(null); }}
+                placeholder="Search churches..."
+                className="w-full bg-card rounded-2xl pl-11 pr-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+              />
+            </div>
+
+            {/* Results */}
+            {searchQuery.trim().length >= 2 && (
+              <div className="space-y-2 animate-fade-in">
+                {filteredChurches.length > 0 ? (
+                  filteredChurches.map((church) => (
+                    <button
+                      key={church.code}
+                      onClick={() => handleSelectChurch(church)}
+                      className={`w-full text-left bg-card rounded-2xl p-4 shadow-card tap-active transition-all ${
+                        selectedChurch?.code === church.code ? "ring-2 ring-amber" : ""
+                      }`}
+                    >
+                      <p className="text-sm font-bold text-foreground">{church.name}</p>
+                      <p className="text-xs text-foreground/70 mt-0.5">{church.pastor}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <MapPin size={12} className="text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">{church.city}, {church.state}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground mb-3">Don't see your church?</p>
+                    <button
+                      onClick={() => { setShowRequestForm(true); setRequestForm((prev) => ({ ...prev, name: searchQuery })); }}
+                      className="text-sm font-semibold text-amber tap-active"
+                    >
+                      Request Your Church →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Continue button when church selected */}
+            {selectedChurch && (
+              <div className="animate-fade-in">
+                <button
+                  onClick={() => setStep(3)}
+                  className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+                >
+                  Continue
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
