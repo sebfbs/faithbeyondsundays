@@ -58,10 +58,12 @@ export default function Index() {
   const [overlay, setOverlayRaw] = useState<OverlayScreen>(null);
   const setOverlay = (screen: OverlayScreen) => {
     setOverlayRaw(screen);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       mainRef.current?.scrollTo(0, 0);
       window.scrollTo(0, 0);
-    }, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
   };
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
