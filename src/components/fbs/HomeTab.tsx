@@ -54,7 +54,7 @@ function getGreeting() {
   return "Good evening";
 }
 
-function getSkyGradient() {
+export function getSkyGradient() {
   const hour = new Date().getHours();
   if (hour < 12) {
     return "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 20%, hsl(22, 55%, 88%) 55%, hsl(40, 30%, 97%) 100%)";
@@ -121,7 +121,6 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
   return (
     <div
       className="animate-fade-in min-h-screen relative"
-      style={{ background: getSkyGradient() }}
     >
       {new Date().getHours() >= 17 && <Stars />}
       {/* Greeting */}
