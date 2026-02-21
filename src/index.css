@@ -248,8 +248,8 @@
   }
 
   @keyframes cloud-drift {
-    0% { transform: translateX(-20%); }
-    100% { transform: translateX(120%); }
+    0% { transform: translateX(110%); }
+    100% { transform: translateX(-30%); }
   }
 
   .animate-cloud-drift {
