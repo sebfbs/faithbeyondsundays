@@ -238,6 +238,32 @@
     animation: twinkle 3s ease-in-out infinite;
   }
 
+  @keyframes sun-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-sun-pulse {
+    animation: sun-pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes cloud-drift {
+    0% { transform: translateX(-20%); }
+    100% { transform: translateX(120%); }
+  }
+
+  .animate-cloud-drift {
+    animation: cloud-drift 50s linear infinite;
+  }
+
+  .animate-cloud-drift-slow {
+    animation: cloud-drift 65s linear infinite;
+  }
+
+  .animate-cloud-drift-fast {
+    animation: cloud-drift 40s linear infinite;
+  }
+
   .tap-active {
     transition: transform 0.12s ease, opacity 0.12s ease;
   }

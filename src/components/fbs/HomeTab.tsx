@@ -47,6 +47,124 @@ function Stars() {
   );
 }
 
+function SunRays() {
+  return (
+    <div className="absolute top-0 right-0 w-full h-72 pointer-events-none overflow-hidden z-0">
+      {/* Main sun glow */}
+      <div
+        className="absolute animate-sun-pulse"
+        style={{
+          top: '-10%',
+          right: '-5%',
+          width: '50%',
+          height: '60%',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, hsl(42 90% 70% / 0.35) 0%, hsl(38 100% 60% / 0.1) 50%, transparent 70%)',
+        }}
+      />
+      {/* Ray 1 */}
+      <div
+        className="absolute animate-sun-pulse"
+        style={{
+          top: '2%',
+          right: '10%',
+          width: '4px',
+          height: '90px',
+          borderRadius: '4px',
+          background: 'linear-gradient(180deg, hsl(42 90% 75% / 0.5) 0%, transparent 100%)',
+          transform: 'rotate(-25deg)',
+          transformOrigin: 'top center',
+          animationDelay: '0.5s',
+        }}
+      />
+      {/* Ray 2 */}
+      <div
+        className="absolute animate-sun-pulse"
+        style={{
+          top: '0%',
+          right: '22%',
+          width: '3px',
+          height: '70px',
+          borderRadius: '4px',
+          background: 'linear-gradient(180deg, hsl(42 90% 75% / 0.4) 0%, transparent 100%)',
+          transform: 'rotate(-40deg)',
+          transformOrigin: 'top center',
+          animationDelay: '1.2s',
+        }}
+      />
+      {/* Ray 3 */}
+      <div
+        className="absolute animate-sun-pulse"
+        style={{
+          top: '5%',
+          right: '2%',
+          width: '3px',
+          height: '80px',
+          borderRadius: '4px',
+          background: 'linear-gradient(180deg, hsl(42 90% 75% / 0.45) 0%, transparent 100%)',
+          transform: 'rotate(-10deg)',
+          transformOrigin: 'top center',
+          animationDelay: '2s',
+        }}
+      />
+      {/* Ray 4 - wider soft beam */}
+      <div
+        className="absolute animate-sun-pulse"
+        style={{
+          top: '-2%',
+          right: '15%',
+          width: '30px',
+          height: '120px',
+          borderRadius: '50%',
+          background: 'linear-gradient(180deg, hsl(42 85% 72% / 0.25) 0%, transparent 100%)',
+          transform: 'rotate(-20deg)',
+          transformOrigin: 'top center',
+          animationDelay: '1.5s',
+        }}
+      />
+    </div>
+  );
+}
+
+function Clouds() {
+  return (
+    <div className="absolute top-0 left-0 w-full h-48 pointer-events-none overflow-hidden z-0">
+      {/* Cloud 1 */}
+      <div
+        className="absolute animate-cloud-drift"
+        style={{ top: '8%', animationDelay: '-10s' }}
+      >
+        <div className="relative">
+          <div className="w-16 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.4)' }} />
+          <div className="absolute -top-2 left-3 w-8 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.35)' }} />
+          <div className="absolute -top-1 left-8 w-6 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.3)' }} />
+        </div>
+      </div>
+      {/* Cloud 2 */}
+      <div
+        className="absolute animate-cloud-drift-slow"
+        style={{ top: '18%', animationDelay: '-30s' }}
+      >
+        <div className="relative">
+          <div className="w-20 h-6 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.35)' }} />
+          <div className="absolute -top-3 left-4 w-10 h-6 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.3)' }} />
+          <div className="absolute -top-1 left-10 w-7 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.25)' }} />
+        </div>
+      </div>
+      {/* Cloud 3 */}
+      <div
+        className="absolute animate-cloud-drift-fast"
+        style={{ top: '5%', animationDelay: '-20s' }}
+      >
+        <div className="relative">
+          <div className="w-12 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.3)' }} />
+          <div className="absolute -top-2 left-2 w-6 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.25)' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -122,7 +240,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
     <div
       className="animate-fade-in min-h-screen relative"
     >
-      {new Date().getHours() >= 17 && <Stars />}
+      {new Date().getHours() < 12 ? <SunRays /> : new Date().getHours() < 17 ? <Clouds /> : <Stars />}
       {/* Greeting */}
       <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
