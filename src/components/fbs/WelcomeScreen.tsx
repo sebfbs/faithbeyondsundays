@@ -130,10 +130,10 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             Stay connected to Sunday's message all week long
           </p>
         </div>
-        <div className="w-full pb-12">
+        <div className="w-full pb-12 flex justify-center">
           <button
             onClick={() => setStep(2)}
-            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+            className="w-full max-w-[430px] flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
           >
             Get Started
             <ArrowRight size={18} />
@@ -209,7 +209,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
             <div className="pt-4 space-y-3">
               <button
                 onClick={handleRequestSubmit}
-                className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+                className="w-full max-w-[430px] mx-auto flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
               >
                 Submit Request
               </button>
@@ -274,7 +274,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
               <div className="animate-fade-in">
                 <button
                   onClick={() => setStep(3)}
-                  className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+                  className="w-full max-w-[430px] mx-auto flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
                 >
                   Continue
                   <ArrowRight size={16} />
@@ -336,7 +336,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         <div className="pb-12 pt-6">
           <button
             onClick={handleCreateAccount}
-            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+            className="w-full max-w-[430px] mx-auto flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
           >
             Continue
             <ArrowRight size={18} />
@@ -429,7 +429,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         <button
           onClick={handleUsernameSubmit}
           disabled={!username || !!usernameError}
-          className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-30"
+          className="w-full max-w-[430px] mx-auto flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-30"
         >
           <UserPlus size={18} />
           Create Account
