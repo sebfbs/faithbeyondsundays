@@ -89,8 +89,22 @@ export default function TabletSidebar({ activeItem, onNavigate, collapsed, onTog
       className="hidden md:flex flex-col h-dvh border-r border-border bg-card fixed left-0 top-0 z-30 overflow-y-auto transition-all duration-200"
       style={{ width: sidebarWidth }}
     >
-      {/* Logo + Toggle */}
-      <div className={`py-6 flex items-center ${collapsed ? "justify-center px-2" : "justify-between px-5"}`}>
+      {/* Floating edge toggle button */}
+      <button
+        onClick={onToggle}
+        className="absolute top-1/2 -translate-y-1/2 bg-card border border-border rounded-full p-1.5 shadow-md hover:bg-muted transition-colors z-40"
+        style={{ right: -14 }}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed ? (
+          <ChevronRight size={14} className="text-muted-foreground" />
+        ) : (
+          <ChevronLeft size={14} className="text-muted-foreground" />
+        )}
+      </button>
+
+      {/* Logo */}
+      <div className={`py-6 flex items-center ${collapsed ? "justify-center px-2" : "px-5"}`}>
         <div className={`flex items-center ${collapsed ? "" : "gap-3"}`}>
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -104,29 +118,7 @@ export default function TabletSidebar({ activeItem, onNavigate, collapsed, onTog
             </span>
           )}
         </div>
-        {!collapsed && (
-          <button
-            onClick={onToggle}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-            title="Collapse sidebar"
-          >
-            <ChevronLeft size={16} className="text-muted-foreground" />
-          </button>
-        )}
       </div>
-
-      {/* Collapse toggle when collapsed */}
-      {collapsed && (
-        <div className="flex justify-center mb-2">
-          <button
-            onClick={onToggle}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-            title="Expand sidebar"
-          >
-            <ChevronRight size={16} className="text-muted-foreground" />
-          </button>
-        </div>
-      )}
 
       {/* Main nav */}
       <nav className={`flex-1 space-y-1 ${collapsed ? "px-2" : "px-3"}`}>
