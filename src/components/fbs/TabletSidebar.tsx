@@ -82,7 +82,7 @@ export default function TabletSidebar({ activeItem, onNavigate, collapsed, onTog
     );
   };
 
-  const sidebarWidth = collapsed ? 64 : 240;
+  const sidebarWidth = collapsed ? 64 : 180;
 
   return (
     <aside
