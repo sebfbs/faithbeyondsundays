@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Sparkles, Target, CheckCircle2, Flame, BookText, ChevronRight } from "lucide-react";
 import { SERMON } from "./data";
 import confetti from "canvas-confetti";
@@ -26,49 +26,9 @@ const STARS = [
   { top: '18%', left: '72%', size: 2, opacity: 0.3 },
 ];
 
-function ShootingStar() {
-  const [visible, setVisible] = useState(false);
-  const [style, setStyle] = useState<React.CSSProperties>({});
-
-  useEffect(() => {
-    const fire = () => {
-      const top = Math.random() * 15 + 2;          // 2-17%
-      const angle = Math.random() * 20 - 10;       // slight angle variation
-      setStyle({
-        top: `${top}%`,
-        transform: `rotate(${angle}deg)`,
-      });
-      setVisible(true);
-      setTimeout(() => setVisible(false), 1200);
-    };
-    fire();
-    const id = setInterval(fire, 15000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!visible) return null;
-  return (
-    <div
-      className="absolute pointer-events-none z-10 animate-[shooting-star_1.2s_linear_forwards]"
-      style={{ ...style, left: '-4%' }}
-    >
-      <div
-        style={{
-          width: 28,
-          height: 1.5,
-          borderRadius: 1,
-          background: 'linear-gradient(90deg, transparent 0%, hsla(0,0%,100%,0.9) 40%, white 100%)',
-          boxShadow: '0 0 4px 1px hsla(0,0%,100%,0.5)',
-        }}
-      />
-    </div>
-  );
-}
-
 function Stars() {
   return (
     <div className="absolute top-0 left-0 w-full h-60 pointer-events-none overflow-hidden z-0">
-      <ShootingStar />
       {STARS.map((s, i) => (
         <div
           key={i}
