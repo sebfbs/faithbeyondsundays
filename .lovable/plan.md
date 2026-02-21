@@ -1,44 +1,34 @@
 
 
-## Medium-Tone Fill for Pill Badges
+## Remove Pill Background — Text-Only Labels
 
 ### What Changes
 
-The pill badges will get a warmer, more visible tinted background that sits between the original bold style and the current too-faint style. Readable but not attention-grabbing.
+The "Today's Spark" and "Today's Reflection" labels will lose their rounded pill background entirely. They become quiet, muted uppercase text that gently labels each card without drawing attention.
 
-### New Style
+### Visual Result
 
-| Time of Day | Background | Text |
-|-------------|-----------|------|
-| Morning/Afternoon | Warm peachy-amber: `hsl(38, 80%, 90%)` | Deep amber: `hsl(38, 80%, 35%)` |
-| Evening | Soft steel-blue: `hsl(215, 50%, 88%)` | Deep blue: `hsl(215, 55%, 40%)` |
-
-This gives enough contrast to be easily readable while still feeling calm and integrated with the frosted-glass cards.
+- No background fill or border
+- Small uppercase text in a soft, muted color (blends with the card without competing for attention)
+- The icon circle next to the label stays as-is for visual anchoring
 
 ### Technical Details
 
-**File: `src/components/fbs/themeColors.ts`**
-
-Add two new color tokens to each time-of-day branch:
-
-- Morning/Afternoon:
-  - `pillBgSoft: "hsl(38, 80%, 90%)"`
-  - `pillTextSoft: "hsl(38, 80%, 35%)"`
-
-- Evening:
-  - `pillBgSoft: "hsl(215, 50%, 88%)"`
-  - `pillTextSoft: "hsl(215, 55%, 40%)"`
-
 **File: `src/components/fbs/HomeTab.tsx`**
 
-Update both pill `<span>` elements from:
+Update both pill `<span>` elements. Remove the `rounded-full` class and inline background style, and use a muted text color instead.
+
+From:
 ```tsx
-style={{ background: colors.accentBg, color: colors.accent }}
-```
-to:
-```tsx
-style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
+<span
+  className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+  style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
+>
 ```
 
-No other files affected. Font weight stays at `font-medium`.
+To:
+```tsx
+<span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+```
 
+This applies to both the "Today's Spark" and "Today's Reflection" labels. No other files affected.
