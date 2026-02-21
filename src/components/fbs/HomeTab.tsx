@@ -145,7 +145,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </div>
           <span
             className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.accentBg, color: colors.accent }}
+            style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
           >
             Today's Spark
           </span>
@@ -166,7 +166,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </div>
           <span
             className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.accentBg, color: colors.accent }}
+            style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
           >
             Today's Reflection
           </span>
