@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, PanelLeft, PanelLeftClose } from "lucide-react";
 import { FEATURE_FLAGS } from "./featureFlags";
 import { getAccentColors } from "./themeColors";
 import { GIVING_URL } from "./data";
@@ -57,11 +57,11 @@ export default function TabletSidebar({ activeItem, onNavigate, collapsed, onTog
         key={id}
         onClick={() => handleClick(id)}
         title={collapsed ? label : undefined}
-        className={`w-full flex items-center gap-3 rounded-xl transition-all text-left ${
+        className={`w-full flex items-center gap-3 rounded-lg transition-colors text-left hover:bg-muted ${
           collapsed ? "justify-center px-2 py-3" : "px-4 py-3"
         }`}
         style={{
-          background: isActive ? colors.accentBg : "transparent",
+          background: isActive ? colors.accentBg : undefined,
         }}
       >
         <Icon
@@ -89,35 +89,21 @@ export default function TabletSidebar({ activeItem, onNavigate, collapsed, onTog
       className="hidden md:flex flex-col h-dvh border-r border-border bg-card fixed left-0 top-0 z-30 overflow-y-auto transition-all duration-200"
       style={{ width: sidebarWidth }}
     >
-      {/* Floating edge toggle button */}
-      <button
-        onClick={onToggle}
-        className="absolute top-1/2 -translate-y-1/2 bg-card border border-border rounded-full p-1.5 shadow-md hover:bg-muted transition-colors z-40"
-        style={{ right: -14 }}
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <ChevronRight size={14} className="text-muted-foreground" />
-        ) : (
-          <ChevronLeft size={14} className="text-muted-foreground" />
-        )}
-      </button>
-
-      {/* Logo */}
-      <div className={`py-6 flex items-center ${collapsed ? "justify-center px-2" : "px-5"}`}>
-        <div className={`flex items-center ${collapsed ? "" : "gap-3"}`}>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: colors.accent }}
-          >
-            <img src={FBSLogo} alt="FBS" className="w-6 h-6 object-contain" />
-          </div>
-          {!collapsed && (
-            <span className="text-base font-bold text-foreground tracking-tight whitespace-nowrap">
-              Faith Beyond Sundays
-            </span>
-          )}
+      {/* Header: Logo + Toggle */}
+      <div className={`py-4 flex items-center ${collapsed ? "justify-center px-2 flex-col gap-2" : "justify-between px-4"}`}>
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: colors.accent }}
+        >
+          <img src={FBSLogo} alt="FBS" className="w-6 h-6 object-contain" />
         </div>
+        <button
+          onClick={onToggle}
+          className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
       {/* Main nav */}
