@@ -4,6 +4,7 @@ import HomeTab from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
 import JournalTab from "@/components/fbs/JournalTab";
 import GuidedReflectionScreen from "@/components/fbs/GuidedReflectionScreen";
+import BibleScreen from "@/components/fbs/BibleScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
 import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
@@ -23,6 +24,7 @@ type OverlayScreen =
   | "previous-sermon-detail"
   | "community"
   | "public-profile"
+  | "bible"
   | null;
 
 export type JournalEntry = {
@@ -108,6 +110,9 @@ export default function Index() {
     if (overlay === "guided-reflection") {
       return <GuidedReflectionScreen onBack={() => setOverlay(null)} />;
     }
+    if (overlay === "bible") {
+      return <BibleScreen onBack={() => setOverlay(null)} />;
+    }
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => setOverlay(null)} user={user} onSignOut={handleSignOut} />;
     }
@@ -190,6 +195,11 @@ export default function Index() {
           onCommunity={() => {
             setActiveTab("more");
             setOverlay("community");
+            setMoreOpen(false);
+          }}
+          onBible={() => {
+            setActiveTab("more");
+            setOverlay("bible");
             setMoreOpen(false);
           }}
         />

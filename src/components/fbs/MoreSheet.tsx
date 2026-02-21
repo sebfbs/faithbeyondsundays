@@ -1,14 +1,16 @@
-import { Users, Heart, User, X } from "lucide-react";
+import { Users, Heart, User, BookOpen, X } from "lucide-react";
 import { FEATURE_FLAGS } from "./featureFlags";
 import { getAccentColors } from "./themeColors";
 
 interface MoreSheetProps {
   onProfile: () => void;
   onCommunity: () => void;
+  onBible: () => void;
   onClose: () => void;
 }
 
 const allOptions = [
+  { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
   { icon: Users, label: "Community", key: "community", featureKey: "community" as string | null },
   { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as string | null },
   { icon: User, label: "Profile", key: "profile", featureKey: null },
@@ -18,13 +20,15 @@ const options = allOptions.filter(
   (opt) => !opt.featureKey || FEATURE_FLAGS[opt.featureKey]
 );
 
-export default function MoreSheet({ onProfile, onCommunity, onClose }: MoreSheetProps) {
+export default function MoreSheet({ onProfile, onCommunity, onBible, onClose }: MoreSheetProps) {
   const colors = getAccentColors();
   const handleOption = (key: string) => {
     if (key === "profile") {
       onProfile();
     } else if (key === "community") {
       onCommunity();
+    } else if (key === "bible") {
+      onBible();
     }
     onClose();
   };
