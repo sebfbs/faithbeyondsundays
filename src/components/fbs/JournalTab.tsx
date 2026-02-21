@@ -373,6 +373,6 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
       </button>
     </div>
   );
-});
+}); // forwardRef
 
 export default JournalTab;
