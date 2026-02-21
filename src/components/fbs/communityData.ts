@@ -13,6 +13,7 @@ export interface CommunityMember {
   memberSince: string;
   challengesCompleted: number;
   isGroupMember: boolean;
+  hasInvited?: boolean;
 }
 
 export const DEMO_MEMBERS: CommunityMember[] = [
@@ -25,6 +26,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     memberSince: "Sep 2024",
     challengesCompleted: 24,
     isGroupMember: true,
+    hasInvited: true,
   },
   {
     username: "sarah_m",
@@ -55,6 +57,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     memberSince: "Dec 2024",
     challengesCompleted: 15,
     isGroupMember: true,
+    hasInvited: true,
   },
   {
     username: "marcus_j",
@@ -95,6 +98,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     memberSince: "Nov 2024",
     challengesCompleted: 21,
     isGroupMember: true,
+    hasInvited: true,
   },
   {
     username: "ben_k",
@@ -150,4 +154,16 @@ export function toggleFollow(username: string): string[] {
 
 export function isFollowing(username: string): boolean {
   return getFollows().includes(username);
+}
+
+// --- Invite system (localStorage-backed) ---
+
+const INVITED_KEY = "fbs_has_invited";
+
+export function markInviteSent() {
+  localStorage.setItem(INVITED_KEY, "true");
+}
+
+export function hasInvited(): boolean {
+  return localStorage.getItem(INVITED_KEY) === "true";
 }

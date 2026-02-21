@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Search, Church, Users, Award } from "lucide-react";
-import { DEMO_MEMBERS, getFollows, type CommunityMember } from "./communityData";
+import { ArrowLeft, Search, Church, Users, Award, Share2 } from "lucide-react";
+import { DEMO_MEMBERS, getFollows, markInviteSent, type CommunityMember } from "./communityData";
 import { getAccentColors } from "./themeColors";
+import { toast } from "@/hooks/use-toast";
 
 interface CommunityScreenProps {
   onBack: () => void;
@@ -38,6 +39,26 @@ export default function CommunityScreen({
 
   const displayList = searchResults ?? churchMembers;
   const isSearching = searchResults !== null;
+
+  const handleInvite = async () => {
+    const shareData = {
+      title: "Join Faith Beyond Sundays",
+      text: `Join me on Faith Beyond Sundays! Use church code '${userChurchCode}' to connect with ${userChurchName}.`,
+      url: "https://faithbeyondsundays.lovable.app",
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        markInviteSent();
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+        markInviteSent();
+        toast({ title: "Invite link copied!", description: "Share it with a friend." });
+      }
+    } catch (e) {
+      // User cancelled share sheet — no action needed
+    }
+  };
 
   return (
     <div
@@ -85,11 +106,32 @@ export default function CommunityScreen({
                 {userChurchName}
               </p>
               <p className="text-xs text-muted-foreground">
-                {churchMembers.length} member{churchMembers.length !== 1 ? "s" : ""}
+                {churchMembers.length >= 15
+                  ? `${churchMembers.length} member${churchMembers.length !== 1 ? "s" : ""}`
+                  : "Your church family"}
               </p>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Invite a Friend */}
+      {!isSearching && (
+        <button
+          onClick={handleInvite}
+          className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow"
+        >
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "hsl(170 55% 45% / 0.12)" }}
+          >
+            <Share2 size={19} style={{ color: "hsl(170, 55%, 45%)" }} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-foreground">Invite a friend</p>
+            <p className="text-xs text-muted-foreground">Share your church code & earn a badge</p>
+          </div>
+        </button>
       )}
 
       {/* Section label */}

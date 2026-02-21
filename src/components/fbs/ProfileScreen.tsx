@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut, HeartHandshake } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
 } from "./NotificationModals";
 import type { UserData } from "./WelcomeScreen";
+import { hasInvited } from "./communityData";
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -12,12 +13,18 @@ interface ProfileScreenProps {
   onSignOut: () => void;
 }
 
-const BADGES = [
-  { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
-  { icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" },
-  { icon: Award, label: "Challenge Accepted", detail: "First Challenge", color: "hsl(340 70% 55%)" },
-  { icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" },
-];
+const getProfileBadges = () => {
+  const badges = [
+    { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
+    { icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" },
+    { icon: Award, label: "Challenge Accepted", detail: "First Challenge", color: "hsl(340 70% 55%)" },
+    { icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" },
+  ];
+  if (hasInvited()) {
+    badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170 55% 45%)" });
+  }
+  return badges;
+};
 
 type Appearance = "light" | "dark" | "horizon";
 
@@ -27,6 +34,7 @@ export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreen
   const [timeModal, setTimeModal] = useState(false);
   const [notifDays, setNotifDays] = useState(["Mon", "Wed", "Fri"]);
   const [notifTime, setNotifTime] = useState("Morning (8 AM)");
+  const badges = getProfileBadges();
 
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
@@ -68,7 +76,7 @@ export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreen
           Badges
         </p>
         <div className="grid grid-cols-2 gap-3">
-          {BADGES.map(({ icon: Icon, label, detail, color }) => (
+          {badges.map(({ icon: Icon, label, detail, color }) => (
             <div
               key={label}
               className="rounded-2xl p-3.5"

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
 
 interface PublicProfileScreenProps {
-  member: CommunityMember;
+  member: CommunityMember & { hasInvited?: boolean };
   onBack: () => void;
 }
 
@@ -57,6 +57,16 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
             label: "Champion",
             detail: "20+ challenges",
             color: "hsl(270, 60%, 55%)",
+          },
+        ]
+      : []),
+    ...(member.hasInvited
+      ? [
+          {
+            icon: HeartHandshake,
+            label: "Community Builder",
+            detail: "Invited a friend",
+            color: "hsl(170, 55%, 45%)",
           },
         ]
       : []),
