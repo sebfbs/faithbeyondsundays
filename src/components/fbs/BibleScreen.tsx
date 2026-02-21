@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, BookOpen, ChevronRight, Loader2, RefreshCw, ChevronDown, Check } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { ArrowLeft, BookOpen, ChevronRight, Loader2, RefreshCw, ChevronDown, Check, Search, X } from "lucide-react";
 import { BIBLE_BOOKS, BIBLE_TRANSLATIONS, type BibleBook, type BibleTranslation } from "./bibleData";
 import { getAccentColors } from "./themeColors";
 
@@ -30,9 +30,17 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
   const [showTranslationPicker, setShowTranslationPicker] = useState(false);
   const cache = useRef<Record<string, Verse[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [bookSearch, setBookSearch] = useState("");
 
   const otBooks = BIBLE_BOOKS.filter((b) => b.testament === "OT");
   const ntBooks = BIBLE_BOOKS.filter((b) => b.testament === "NT");
+
+  const filteredOtBooks = useMemo(() => 
+    otBooks.filter((b) => b.name.toLowerCase().includes(bookSearch.toLowerCase())), [bookSearch]
+  );
+  const filteredNtBooks = useMemo(() => 
+    ntBooks.filter((b) => b.name.toLowerCase().includes(bookSearch.toLowerCase())), [bookSearch]
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
@@ -136,6 +144,25 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
 
   const renderBookList = () => (
     <div className="px-4 pb-6 space-y-6">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search books…"
+          value={bookSearch}
+          onChange={(e) => setBookSearch(e.target.value)}
+          className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+        />
+        {bookSearch && (
+          <button
+            onClick={() => setBookSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 tap-active"
+          >
+            <X size={16} className="text-muted-foreground" />
+          </button>
+        )}
+      </div>
       {/* Translation Picker */}
       <div className="relative">
         <button
@@ -186,12 +213,13 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
       </div>
 
       {/* Old Testament */}
+      {filteredOtBooks.length > 0 && (
       <div>
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-1">
           Old Testament
         </h3>
         <div className="space-y-1">
-          {otBooks.map((book) => (
+          {filteredOtBooks.map((book) => (
             <button
               key={book.name}
               onClick={() => handleBookSelect(book)}
@@ -206,14 +234,16 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
           ))}
         </div>
       </div>
+      )}
 
       {/* New Testament */}
+      {filteredNtBooks.length > 0 && (
       <div>
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-1">
           New Testament
         </h3>
         <div className="space-y-1">
-          {ntBooks.map((book) => (
+          {filteredNtBooks.map((book) => (
             <button
               key={book.name}
               onClick={() => handleBookSelect(book)}
@@ -228,6 +258,11 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
           ))}
         </div>
       </div>
+      )}
+
+      {filteredOtBooks.length === 0 && filteredNtBooks.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">No books found for "{bookSearch}"</p>
+      )}
     </div>
   );
 
