@@ -55,7 +55,14 @@ export default function Index() {
   const [user, setUser] = useState<UserData | null>(loadUser);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [overlay, setOverlay] = useState<OverlayScreen>(null);
+  const [overlay, setOverlayRaw] = useState<OverlayScreen>(null);
+  const setOverlay = (screen: OverlayScreen) => {
+    setOverlayRaw(screen);
+    setTimeout(() => {
+      mainRef.current?.scrollTo(0, 0);
+      window.scrollTo(0, 0);
+    }, 0);
+  };
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
@@ -115,13 +122,13 @@ export default function Index() {
 
   const renderMain = () => {
     if (overlay === "guided-reflection") {
-      return <GuidedReflectionScreen onBack={() => { setOverlay(null); scrollToTop(); }} />;
+      return <GuidedReflectionScreen onBack={() => { setOverlay(null); }} />;
     }
     if (overlay === "bible") {
-      return <BibleScreen onBack={() => { setOverlay(null); scrollToTop(); }} />;
+      return <BibleScreen onBack={() => { setOverlay(null); }} />;
     }
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => { setOverlay(null); scrollToTop(); }} user={user} onSignOut={handleSignOut} />;
+      return <ProfileScreen onBack={() => { setOverlay(null); }} user={user} onSignOut={handleSignOut} />;
     }
     if (overlay === "community") {
       return (
