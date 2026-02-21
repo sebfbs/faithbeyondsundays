@@ -1,42 +1,105 @@
 
 
-## Extend Time-Adaptive Accent Colors to All Components
+## Community Connection Feature
 
-Currently, only the Home tab shifts its accent color based on time of day. This plan extends that same logic to the bottom navigation bar, the Journal tab, and the More sheet -- so every gold/amber element in the app adapts together.
+This plan adds a meaningful way for congregation members to connect with each other -- not as another social media feed, but as a directory of fellow believers they can discover, follow, and encourage.
 
-### What Changes
+### Core Philosophy
 
-**Bottom Nav** -- The active tab icon and label currently use `text-amber`. They'll shift to the soft sky blue in the evening.
+The social layer is about **deepening bonds within and across congregations**, not creating another content feed. There are no posts, no likes, no comments. Instead, users can:
 
-**More Sheet** -- The icon circles (Groups, Prayer, Profile) use `bg-amber-bg` and `text-amber`. They'll shift to cool blue tones in the evening.
+- Discover fellow members through their church's directory
+- Follow people they want to stay connected with
+- View each other's faith journey (badges, church, member since)
+- Share profile photos so faces match names on Sunday morning
 
-**Journal Tab** -- Several amber elements will adapt:
-- The floating "+" button (`bg-amber`)
-- The "Save" button on compose/edit screens
-- The "Cancel" text links
-- The active filter badge
-- Bookmark icons when filled
-- The checkmark on the active filter option
+### What Gets Built
 
-### Technical Approach
+**1. Usernames (added to onboarding + profile)**
+- A new "Choose a username" step during account creation (Step 3, after church code)
+- 3-20 characters, lowercase alphanumeric + underscores only
+- Displayed as `@username` on profiles
+- Editable from Profile screen
 
-1. **Extract `getAccentColors()` to a shared utility** -- Move the function from `HomeTab.tsx` into a new file `src/components/fbs/themeColors.ts` so all components can import it.
+**2. Profile Photos**
+- Tap the avatar circle on your profile to pick a photo (stored as base64 in localStorage for now, Supabase storage later)
+- Photos appear on your profile, in search results, and in follower lists
 
-2. **Update `BottomNav.tsx`** -- Accept no new props; import `getAccentColors()` directly. Replace `text-amber` on the active icon and label with inline `style={{ color: colors.accent }}`.
+**3. Church Directory / Community Screen**
+- New "Community" tab accessible from the More sheet (replaces the placeholder "Groups" option)
+- When a user joins with a church code, they auto-follow their church account
+- The Community screen shows:
+  - **Your Church** section at the top with the church name and follower count
+  - **Church Members** list -- all users who signed up with the same church code
+  - **Search bar** to find any user by name or @username (across all churches)
+  - Each user card shows: photo, name, @username, church name, badge count
 
-3. **Update `MoreSheet.tsx`** -- Import `getAccentColors()`. Replace `bg-amber-bg` and `text-amber` on the icon containers with inline styles using `colors.accentBg` and `colors.accent`.
+**4. Follow System**
+- One-way follow model (like Instagram, not mutual friend requests)
+- Keeps it simple -- no pending requests, no awkward rejections
+- Tap "Follow" on any profile to add them; tap "Following" to unfollow
+- Your profile shows follower/following counts
 
-4. **Update `JournalTab.tsx`** -- Import `getAccentColors()`. Replace all `text-amber`, `bg-amber`, `fill-amber`, and `bg-amber-bg` references with inline styles from the colors object. This covers the FAB, save buttons, cancel links, filter badge, and bookmark fills.
+**5. Viewing Other Profiles**
+- Tap any user in the directory or search results to see their public profile
+- Public profile shows: photo, name, @username, church, member since date, badges earned (challenges completed count, group member, etc.)
+- You can follow/unfollow from their profile
+- No private data is exposed (no email, no phone, no journal entries)
 
-5. **Clean up `HomeTab.tsx`** -- Import `getAccentColors` from the new shared file instead of defining it locally.
+### What This Does NOT Include (intentionally)
 
-### Files Changed
+- **No direct messages** -- too much moderation overhead, and the app's purpose is reflection not chatting
+- **No sharing journal entries** -- journals are private and sacred
+- **No activity feed / timeline** -- this isn't social media
+- **No friend requests** -- the follow model is simpler and less pressure
 
+### Smart Use Cases for This App
+
+| Use Case | How It Works |
+|---|---|
+| **New member discovery** | A new member joins with their church code, browses the directory, and puts faces to names before next Sunday |
+| **Cross-church connection** | Someone visits a friend's church, searches their @username, and follows them to stay connected |
+| **Badge inspiration** | Seeing a fellow member's "7 Challenges Completed" badge motivates you to keep going |
+| **Small group formation** | Browse the church directory to find people to invite to a study group |
+| **Accountability** | Follow a few people from your congregation so you feel part of a community doing the same challenges |
+
+### Technical Details
+
+**New files:**
+| File | Purpose |
+|---|---|
+| `src/components/fbs/CommunityScreen.tsx` | Main community/directory screen with search and member list |
+| `src/components/fbs/PublicProfileScreen.tsx` | View another user's public profile with badges and follow button |
+| `src/components/fbs/AvatarPicker.tsx` | Small component for tapping avatar to select a photo |
+
+**Modified files:**
 | File | Change |
 |---|---|
-| `src/components/fbs/themeColors.ts` | New file -- exports `getAccentColors()` |
-| `src/components/fbs/HomeTab.tsx` | Import from `themeColors.ts` instead of local definition |
-| `src/components/fbs/BottomNav.tsx` | Use dynamic accent color for active tab |
-| `src/components/fbs/MoreSheet.tsx` | Use dynamic accent color for icon circles |
-| `src/components/fbs/JournalTab.tsx` | Use dynamic accent color for FAB, buttons, bookmarks, filters |
+| `WelcomeScreen.tsx` | Add username field to Step 3 (Create Account) with validation |
+| `WelcomeScreen.tsx` (UserData type) | Add `username` and `avatarUrl` fields |
+| `ProfileScreen.tsx` | Show @username under name, add tappable avatar for photo, show follower/following counts, add edit username option |
+| `MoreSheet.tsx` | Change "Groups" to "Community" with a Users icon |
+| `Index.tsx` | Add "community" and "public-profile" overlay screens, wire up navigation |
+| `featureFlags.ts` | Add `community` feature flag (replace or augment `groups`) |
+
+**Data model (localStorage for now, Supabase-ready):**
+
+```text
+UserData {
+  firstName, lastName, phone, email,
+  churchName, churchCode,
+  username,          // new
+  avatarUrl,         // new (base64 or URL)
+}
+
+follows[]  -- stored as array of usernames in localStorage
+```
+
+Since there's no backend yet, the "other users" will be simulated with demo data (a list of fake church members). When Supabase is added later, this swaps to real queries against a `profiles` table and a `follows` table.
+
+**Username validation rules:**
+- 3-20 characters
+- Lowercase letters, numbers, underscores only
+- Must be unique (checked against demo data for now)
+- Shown as `@username` throughout the app
 
