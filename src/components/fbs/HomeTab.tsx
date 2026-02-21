@@ -4,6 +4,50 @@ import { SERMON } from "./data";
 import confetti from "canvas-confetti";
 
 
+const STARS = [
+  { top: '3%', left: '8%', size: 2, opacity: 0.7, twinkle: true },
+  { top: '5%', left: '25%', size: 1.5, opacity: 0.5 },
+  { top: '2%', left: '42%', size: 2.5, opacity: 0.8, twinkle: true },
+  { top: '7%', left: '55%', size: 1.5, opacity: 0.4 },
+  { top: '4%', left: '70%', size: 2, opacity: 0.6 },
+  { top: '1%', left: '85%', size: 1.5, opacity: 0.9, twinkle: true },
+  { top: '9%', left: '15%', size: 1.5, opacity: 0.5 },
+  { top: '11%', left: '35%', size: 2, opacity: 0.3 },
+  { top: '8%', left: '62%', size: 2.5, opacity: 0.7, twinkle: true },
+  { top: '12%', left: '78%', size: 1.5, opacity: 0.4 },
+  { top: '6%', left: '92%', size: 2, opacity: 0.6 },
+  { top: '14%', left: '5%', size: 1.5, opacity: 0.5, twinkle: true },
+  { top: '10%', left: '48%', size: 2, opacity: 0.3 },
+  { top: '15%', left: '88%', size: 1.5, opacity: 0.6 },
+  { top: '13%', left: '22%', size: 2, opacity: 0.4 },
+  { top: '16%', left: '58%', size: 1.5, opacity: 0.7, twinkle: true },
+  { top: '3%', left: '38%', size: 1.5, opacity: 0.5 },
+  { top: '18%', left: '72%', size: 2, opacity: 0.3 },
+];
+
+function Stars() {
+  return (
+    <div className="absolute top-0 left-0 w-full h-60 pointer-events-none overflow-hidden z-0">
+      {STARS.map((s, i) => (
+        <div
+          key={i}
+          className={s.twinkle ? 'animate-twinkle' : ''}
+          style={{
+            position: 'absolute',
+            top: s.top,
+            left: s.left,
+            width: s.size,
+            height: s.size,
+            borderRadius: '50%',
+            background: 'white',
+            opacity: s.opacity,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -47,11 +91,12 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
 
   return (
     <div
-      className="animate-fade-in min-h-screen"
+      className="animate-fade-in min-h-screen relative"
       style={{
         background: getSkyGradient(),
       }}
     >
+      {new Date().getHours() >= 17 && <Stars />}
       {/* Greeting */}
       <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>

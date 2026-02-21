@@ -208,6 +208,15 @@
     text-transform: uppercase;
   }
 
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--tw-opacity, 0.7); }
+    50% { opacity: 0.15; }
+  }
+
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
   .tap-active {
     transition: transform 0.12s ease, opacity 0.12s ease;
   }
