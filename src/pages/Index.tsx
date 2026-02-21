@@ -10,6 +10,7 @@ import MoreSheet from "@/components/fbs/MoreSheet";
 import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
 import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScreen";
 import CommunityScreen from "@/components/fbs/CommunityScreen";
+import PrayerScreen from "@/components/fbs/PrayerScreen";
 import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
 import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
 import { JOURNAL_ENTRIES, GIVING_URL } from "@/components/fbs/data";
@@ -24,6 +25,7 @@ type OverlayScreen =
   | "community"
   | "public-profile"
   | "bible"
+  | "prayer"
   | null;
 
 export type JournalEntry = {
@@ -124,6 +126,9 @@ export default function Index() {
   const renderMain = () => {
     if (overlay === "bible") {
       return <BibleScreen onBack={() => { setOverlay(null); }} />;
+    }
+    if (overlay === "prayer") {
+      return <PrayerScreen onBack={() => { setOverlay(null); }} />;
     }
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => { setOverlay(null); }} user={user} onSignOut={handleSignOut} />;
@@ -226,6 +231,11 @@ export default function Index() {
           onBible={() => {
             setActiveTab("more");
             setOverlay("bible");
+            setMoreOpen(false);
+          }}
+          onPrayer={() => {
+            setActiveTab("more");
+            setOverlay("prayer");
             setMoreOpen(false);
           }}
         />

@@ -6,6 +6,7 @@ interface MoreSheetProps {
   onProfile: () => void;
   onCommunity: () => void;
   onBible: () => void;
+  onPrayer: () => void;
   onClose: () => void;
   givingUrl?: string;
 }
@@ -22,7 +23,7 @@ const options = allOptions.filter(
   (opt) => !opt.featureKey || FEATURE_FLAGS[opt.featureKey]
 );
 
-export default function MoreSheet({ onProfile, onCommunity, onBible, onClose, givingUrl }: MoreSheetProps) {
+export default function MoreSheet({ onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl }: MoreSheetProps) {
   const colors = getAccentColors();
   const handleOption = (key: string) => {
     if (key === "profile") {
@@ -31,6 +32,8 @@ export default function MoreSheet({ onProfile, onCommunity, onBible, onClose, gi
       onCommunity();
     } else if (key === "bible") {
       onBible();
+    } else if (key === "prayer") {
+      onPrayer();
     } else if (key === "give" && givingUrl) {
       window.open(givingUrl, "_blank");
     }
