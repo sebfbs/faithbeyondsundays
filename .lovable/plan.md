@@ -1,105 +1,66 @@
 
 
-## Community Connection Feature
+## Social Proof + Invite & Badge
 
-This plan adds a meaningful way for congregation members to connect with each other -- not as another social media feed, but as a directory of fellow believers they can discover, follow, and encourage.
+Two changes: (1) hide raw member counts when the church has fewer than 15 members, showing a warm message instead, and (2) add an "Invite a Friend" button with a shareable link and a "Community Builder" badge for users who send invites.
 
-### Core Philosophy
+---
 
-The social layer is about **deepening bonds within and across congregations**, not creating another content feed. There are no posts, no likes, no comments. Instead, users can:
+### 1. Member Count Threshold (15)
 
-- Discover fellow members through their church's directory
-- Follow people they want to stay connected with
-- View each other's faith journey (badges, church, member since)
-- Share profile photos so faces match names on Sunday morning
+**`CommunityScreen.tsx`** -- Church header card:
+- If `churchMembers.length >= 15`: show "{count} members" as it does now
+- If `churchMembers.length < 15`: show "Your church family" instead of a number -- feels warm and intimate, not empty
 
-### What Gets Built
+The section label ("Church Members") stays the same regardless.
 
-**1. Usernames (added to onboarding + profile)**
-- A new "Choose a username" step during account creation (Step 3, after church code)
-- 3-20 characters, lowercase alphanumeric + underscores only
-- Displayed as `@username` on profiles
-- Editable from Profile screen
+---
 
-**2. Profile Photos**
-- Tap the avatar circle on your profile to pick a photo (stored as base64 in localStorage for now, Supabase storage later)
-- Photos appear on your profile, in search results, and in follower lists
+### 2. Invite a Friend Button
 
-**3. Church Directory / Community Screen**
-- New "Community" tab accessible from the More sheet (replaces the placeholder "Groups" option)
-- When a user joins with a church code, they auto-follow their church account
-- The Community screen shows:
-  - **Your Church** section at the top with the church name and follower count
-  - **Church Members** list -- all users who signed up with the same church code
-  - **Search bar** to find any user by name or @username (across all churches)
-  - Each user card shows: photo, name, @username, church name, badge count
+**`CommunityScreen.tsx`** -- Add an "Invite a Friend" card below the church header:
+- A styled button with a Share/Send icon and text like "Invite a friend to join"
+- Tapping it uses the Web Share API (`navigator.share`) if available, otherwise copies a link to clipboard
+- The share message will be something like: "Join me on Faith Beyond Sundays! Download the app and use church code [CODE] to connect with our community."
+- After the first successful invite/share, save a flag in localStorage (`fbs_has_invited`)
 
-**4. Follow System**
-- One-way follow model (like Instagram, not mutual friend requests)
-- Keeps it simple -- no pending requests, no awkward rejections
-- Tap "Follow" on any profile to add them; tap "Following" to unfollow
-- Your profile shows follower/following counts
+---
 
-**5. Viewing Other Profiles**
-- Tap any user in the directory or search results to see their public profile
-- Public profile shows: photo, name, @username, church, member since date, badges earned (challenges completed count, group member, etc.)
-- You can follow/unfollow from their profile
-- No private data is exposed (no email, no phone, no journal entries)
+### 3. Community Builder Badge
 
-### What This Does NOT Include (intentionally)
+**`PublicProfileScreen.tsx`** and **`ProfileScreen.tsx`**:
+- Add a new badge: "Community Builder" with a heart-handshake icon (using `HeartHandshake` from lucide)
+- Badge appears when the user has sent at least one invite (checked via `localStorage` flag `fbs_has_invited`)
+- Color: a friendly teal/green (`hsl(170, 55%, 45%)`)
 
-- **No direct messages** -- too much moderation overhead, and the app's purpose is reflection not chatting
-- **No sharing journal entries** -- journals are private and sacred
-- **No activity feed / timeline** -- this isn't social media
-- **No friend requests** -- the follow model is simpler and less pressure
+**`communityData.ts`**:
+- Add helper functions: `markInviteSent()` and `hasInvited()` that read/write the `fbs_has_invited` localStorage key
+- Add `hasInvited` field to demo members so some of them show the badge too
 
-### Smart Use Cases for This App
+---
 
-| Use Case | How It Works |
-|---|---|
-| **New member discovery** | A new member joins with their church code, browses the directory, and puts faces to names before next Sunday |
-| **Cross-church connection** | Someone visits a friend's church, searches their @username, and follows them to stay connected |
-| **Badge inspiration** | Seeing a fellow member's "7 Challenges Completed" badge motivates you to keep going |
-| **Small group formation** | Browse the church directory to find people to invite to a study group |
-| **Accountability** | Follow a few people from your congregation so you feel part of a community doing the same challenges |
+### Files Changed
 
-### Technical Details
-
-**New files:**
-| File | Purpose |
-|---|---|
-| `src/components/fbs/CommunityScreen.tsx` | Main community/directory screen with search and member list |
-| `src/components/fbs/PublicProfileScreen.tsx` | View another user's public profile with badges and follow button |
-| `src/components/fbs/AvatarPicker.tsx` | Small component for tapping avatar to select a photo |
-
-**Modified files:**
 | File | Change |
 |---|---|
-| `WelcomeScreen.tsx` | Add username field to Step 3 (Create Account) with validation |
-| `WelcomeScreen.tsx` (UserData type) | Add `username` and `avatarUrl` fields |
-| `ProfileScreen.tsx` | Show @username under name, add tappable avatar for photo, show follower/following counts, add edit username option |
-| `MoreSheet.tsx` | Change "Groups" to "Community" with a Users icon |
-| `Index.tsx` | Add "community" and "public-profile" overlay screens, wire up navigation |
-| `featureFlags.ts` | Add `community` feature flag (replace or augment `groups`) |
+| `CommunityScreen.tsx` | Threshold logic on member count; add Invite card with Web Share API |
+| `PublicProfileScreen.tsx` | Add Community Builder badge to badge grid |
+| `ProfileScreen.tsx` | Show Community Builder badge on own profile if earned |
+| `communityData.ts` | Add `markInviteSent()`, `hasInvited()` helpers; add `hasInvited` to demo data |
 
-**Data model (localStorage for now, Supabase-ready):**
+---
 
+### Technical Notes
+
+**Invite share content:**
 ```text
-UserData {
-  firstName, lastName, phone, email,
-  churchName, churchCode,
-  username,          // new
-  avatarUrl,         // new (base64 or URL)
-}
-
-follows[]  -- stored as array of usernames in localStorage
+Subject: "Join Faith Beyond Sundays"
+Text: "Join me on Faith Beyond Sundays! Use church code '{churchCode}' to connect with {churchName}."
+URL: "https://faithbeyondsundays.lovable.app"
 ```
 
-Since there's no backend yet, the "other users" will be simulated with demo data (a list of fake church members). When Supabase is added later, this swaps to real queries against a `profiles` table and a `follows` table.
+**Web Share API fallback:** If `navigator.share` is not supported (desktop browsers), fall back to copying the invite text to clipboard and showing a toast "Invite link copied!"
 
-**Username validation rules:**
-- 3-20 characters
-- Lowercase letters, numbers, underscores only
-- Must be unique (checked against demo data for now)
-- Shown as `@username` throughout the app
+**localStorage keys:**
+- `fbs_has_invited` -- boolean flag, set to `"true"` after first share
 
