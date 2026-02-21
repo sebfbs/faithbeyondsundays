@@ -143,10 +143,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={14} style={{ color: colors.accent }} />
           </div>
-          <span
-            className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
-          >
+          <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
             Today's Spark
           </span>
         </div>
@@ -164,10 +161,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <BookText size={14} style={{ color: colors.accent }} />
           </div>
-          <span
-            className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
-          >
+          <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
             Today's Reflection
           </span>
         </div>
