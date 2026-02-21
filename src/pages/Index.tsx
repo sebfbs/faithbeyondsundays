@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
-import HomeTab from "@/components/fbs/HomeTab";
+import HomeTab, { getSkyGradient } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
 import JournalTab from "@/components/fbs/JournalTab";
 
@@ -264,7 +264,7 @@ export default function Index() {
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
-          background: "hsl(var(--background))",
+          background: (overlay === null && (activeTab === "home")) ? getSkyGradient() : "hsl(var(--background))",
           ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 180 } : {}),
         }}
       >
