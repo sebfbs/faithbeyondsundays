@@ -172,8 +172,7 @@
     }
 
     .app-container.tablet-layout {
-      display: flex;
-      flex-direction: row;
+      display: block;
     }
 
     .tablet-content {
