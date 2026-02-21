@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sparkles, Target, CheckCircle2, Flame, BookText, ChevronRight } from "lucide-react";
 import { SERMON } from "./data";
+import confetti from "canvas-confetti";
 
 
 function getGreeting() {
@@ -106,7 +107,10 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
                 Challenge Accepted!
               </div>
               <button
-                onClick={() => setChallengeStage("completed")}
+                onClick={() => {
+                  setChallengeStage("completed");
+                  confetti({ particleCount: 120, spread: 80, origin: { x: 0.5, y: 0 }, gravity: 0.8, startVelocity: 45 });
+                }}
                 className="w-full flex items-center justify-center gap-2 bg-foreground text-background font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
               >
                 <CheckCircle2 size={16} />
