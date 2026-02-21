@@ -19,7 +19,20 @@ type OverlayScreen =
   | "previous-sermon-detail"
   | null;
 
-export type JournalEntry = typeof JOURNAL_ENTRIES[number];
+export type JournalEntry = {
+  id: string;
+  date: string;
+  type: "sermon" | "challenge";
+  tag: string;
+  preview: string;
+  sermonTitle: string;
+  bookmarked: boolean;
+  fullText: string;
+  suggestedScripture?: {
+    reference: string;
+    text: string;
+  };
+};
 
 function loadUser(): UserData | null {
   try {
@@ -107,7 +120,7 @@ export default function Index() {
           />
         );
       case "journal":
-        return <JournalTab entries={journalEntries} />;
+        return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} />;
       default:
         return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} churchName={user.churchName} />;
     }

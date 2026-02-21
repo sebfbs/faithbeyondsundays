@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { Bookmark, ChevronRight, SlidersHorizontal, Check } from "lucide-react";
+import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
 
 type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
 
 interface JournalTabProps {
   entries: JournalEntry[];
+  onAddEntry?: (entry: JournalEntry) => void;
 }
 
-export default function JournalTab({ entries }: JournalTabProps) {
+export default function JournalTab({ entries, onAddEntry }: JournalTabProps) {
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );
   const [selected, setSelected] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newBody, setNewBody] = useState("");
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
@@ -33,6 +37,63 @@ export default function JournalTab({ entries }: JournalTabProps) {
     e.stopPropagation();
     setBookmarks((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handleSaveEntry = () => {
+    if (!newBody.trim()) return;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const entry: JournalEntry = {
+      id: `personal-${Date.now()}`,
+      type: "sermon" as const,
+      tag: "Personal",
+      date: dateStr,
+      sermonTitle: newTitle.trim() || "Personal Reflection",
+      preview: newBody.trim().slice(0, 120),
+      fullText: newBody.trim(),
+      bookmarked: false,
+    };
+    onAddEntry?.(entry);
+    setNewTitle("");
+    setNewBody("");
+    setComposing(false);
+  };
+
+  if (composing) {
+    return (
+      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setComposing(false); setNewTitle(""); setNewBody(""); }}
+            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+          >
+            <X size={16} /> Cancel
+          </button>
+          <button
+            onClick={handleSaveEntry}
+            disabled={!newBody.trim()}
+            className="text-sm font-bold px-4 py-1.5 rounded-full bg-amber text-white disabled:opacity-40 tap-active transition-opacity"
+          >
+            Save
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder="Title (optional)"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          className="w-full bg-card rounded-2xl px-5 py-4 text-base font-semibold text-foreground placeholder:text-muted-foreground shadow-card outline-none"
+        />
+        <textarea
+          placeholder="Write your thoughts..."
+          value={newBody}
+          onChange={(e) => setNewBody(e.target.value)}
+          rows={8}
+          className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
+          autoFocus
+        />
+      </div>
+    );
+  }
 
   const selectedEntry = entries.find((e) => e.id === selected);
 
@@ -193,6 +254,14 @@ export default function JournalTab({ entries }: JournalTabProps) {
       </div>
 
       <div className="h-2" />
+
+      {/* Floating Add Button */}
+      <button
+        onClick={() => setComposing(true)}
+        className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full bg-amber text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   );
 }
