@@ -1,19 +1,28 @@
 
 
-## Fix Content Background to Fill Full Width
+## Three Time-of-Day Sky Themes
 
-### Problem
-When the sidebar is collapsed, the main content area's background doesn't stretch to both edges of the screen. There's a visible gap/cutoff on the right side because the content is constrained by `tablet-content-inner` with `max-width: 640px` and `margin: 0 auto`.
+### Concept
 
-### Fix
+Each time period gets its own subtle ambient element in the sky, similar to how the evening has twinkling stars:
 
-**File: `src/pages/Index.tsx`**
-- Move the background styling from the inner content wrapper to the `<main>` element so the background fills the full width behind the sidebar margin
-- Ensure the `<main>` tag stretches to the right edge of the viewport
+- **Morning (before 12pm)**: Soft, warm sun rays radiating from the upper-right corner. A gentle golden glow with subtle animated light beams that slowly pulse, giving a peaceful sunrise/early-day feel.
+- **Afternoon (12pm-5pm)**: Small, wispy white clouds that slowly drift across the top of the screen. Two or three soft cloud shapes with a gentle horizontal float animation, evoking a calm midday sky.
+- **Evening (after 5pm)**: Twinkling stars (already implemented, no changes needed).
+
+### Technical Details
+
+**File: `src/components/fbs/HomeTab.tsx`**
+- Add a `SunRays` component: renders 3-4 semi-transparent white/golden gradient beams positioned in the upper-right area, with a slow pulsing opacity animation. Uses absolute positioning similar to the `Stars` component.
+- Add a `Clouds` component: renders 2-3 cloud shapes using layered `div` elements with rounded corners and white/semi-transparent backgrounds. Each cloud gets a slow horizontal CSS animation (drifting left to right, staggered).
+- Update the conditional rendering:
+  - `hour < 12` renders `<SunRays />`
+  - `hour >= 12 && hour < 17` renders `<Clouds />`
+  - `hour >= 17` renders `<Stars />` (unchanged)
 
 **File: `src/index.css`**
-- On the `tablet-content` class (the `<main>` element), add `width: 100%` or ensure it naturally fills remaining space
-- Keep `tablet-content-inner` with its max-width for readable content width, but the background behind it should go edge-to-edge
+- Add `@keyframes sun-pulse` for a gentle opacity pulse (0.4 to 0.7 over ~4 seconds)
+- Add `@keyframes cloud-drift` for horizontal movement (translate from -20% to 120% over ~40-60 seconds, staggered per cloud)
+- Add corresponding utility classes `.animate-sun-pulse` and `.animate-cloud-drift`
 
-The key insight: the content cards can stay centered at 640px max-width, but the page background (gradient) needs to fill the entire area from the sidebar edge to the right side of the screen.
-
+No changes to gradients, colors, or other files needed. The sky gradients already shift per time of day -- this just adds the ambient overlay elements to complete the feel.
