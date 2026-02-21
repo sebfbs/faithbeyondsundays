@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X } from "lucide-react";
+import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2 } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
 
 type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
@@ -7,9 +7,11 @@ type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
 interface JournalTabProps {
   entries: JournalEntry[];
   onAddEntry?: (entry: JournalEntry) => void;
+  onUpdateEntry?: (entry: JournalEntry) => void;
+  onDeleteEntry?: (id: string) => void;
 }
 
-export default function JournalTab({ entries, onAddEntry }: JournalTabProps) {
+export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }: JournalTabProps) {
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );
@@ -19,6 +21,10 @@ export default function JournalTab({ entries, onAddEntry }: JournalTabProps) {
   const [composing, setComposing] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
@@ -97,15 +103,106 @@ export default function JournalTab({ entries, onAddEntry }: JournalTabProps) {
 
   const selectedEntry = entries.find((e) => e.id === selected);
 
+  if (selectedEntry && editing) {
+    return (
+      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setEditing(false)}
+            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+          >
+            <X size={16} /> Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (!editBody.trim()) return;
+              onUpdateEntry?.({
+                ...selectedEntry,
+                sermonTitle: editTitle.trim() || selectedEntry.sermonTitle,
+                fullText: editBody.trim(),
+                preview: editBody.trim().slice(0, 120),
+              });
+              setEditing(false);
+            }}
+            disabled={!editBody.trim()}
+            className="text-sm font-bold px-4 py-1.5 rounded-full bg-amber text-white disabled:opacity-40 tap-active transition-opacity"
+          >
+            Save
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder="Title"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          className="w-full bg-card rounded-2xl px-5 py-4 text-base font-semibold text-foreground placeholder:text-muted-foreground shadow-card outline-none"
+        />
+        <textarea
+          placeholder="Write your thoughts..."
+          value={editBody}
+          onChange={(e) => setEditBody(e.target.value)}
+          rows={8}
+          className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
+          autoFocus
+        />
+      </div>
+    );
+  }
+
   if (selectedEntry) {
     return (
       <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
-        <button
-          onClick={() => setSelected(null)}
-          className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
-        >
-          ← Back to Journal
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setSelected(null); setShowDeleteConfirm(false); }}
+            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+          >
+            ← Back to Journal
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setEditTitle(selectedEntry.sermonTitle);
+                setEditBody(selectedEntry.fullText);
+                setEditing(true);
+              }}
+              className="tap-active p-1.5"
+            >
+              <Pencil size={16} className="text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="tap-active p-1.5"
+            >
+              <Trash2 size={16} className="text-destructive" />
+            </button>
+          </div>
+        </div>
+
+        {showDeleteConfirm && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-foreground font-medium">Delete this entry?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-muted text-foreground tap-active"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteEntry?.(selectedEntry.id);
+                  setSelected(null);
+                  setShowDeleteConfirm(false);
+                }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground tap-active"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card rounded-3xl p-5 shadow-card">
           <div className="flex items-center gap-2 mb-1">
             <span
