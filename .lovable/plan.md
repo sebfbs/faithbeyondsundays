@@ -1,26 +1,22 @@
 
 
-## Scroll to Top on Tab Change
+## Disable Pinch-to-Zoom on iOS
+
+A single, small change to `index.html` will lock the viewport and prevent pinch-to-zoom, making the app feel more like a native mobile app.
 
 ### What Changes
 
-**`src/pages/Index.tsx`**
-- Add a `ref` to the `<main>` scrollable container
-- In the `handleTabChange` function, call `scrollTo(0, 0)` on the main element whenever the user switches tabs
-- Also reset scroll when navigating to/from overlay screens (Bible, Profile, Community, etc.)
+**`index.html`** — Update the existing viewport meta tag from:
 
-### Technical Detail
-
-```tsx
-const mainRef = useRef<HTMLDivElement>(null);
-
-const handleTabChange = (tab: TabId) => {
-  // Reset scroll position
-  mainRef.current?.scrollTo(0, 0);
-  window.scrollTo(0, 0);
-  // ...existing tab logic
-};
+```
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 ```
 
-Both `mainRef.scrollTo` and `window.scrollTo` are called to cover whichever element is actually scrolling (the main container or the window itself). The same reset is added when overlay screens open/close.
+to:
+
+```
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+```
+
+That's it — one line change, no new files or dependencies.
 
