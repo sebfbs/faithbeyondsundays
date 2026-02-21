@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
+import fbsLogo from "@/assets/FBS_Logo_white.png";
 
 interface PublicProfileScreenProps {
   member: CommunityMember & { hasInvited?: boolean };
@@ -116,29 +117,28 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
         <h2 className="text-lg font-bold text-foreground">
           {member.firstName} {member.lastName}
         </h2>
-        <p className="text-sm text-muted-foreground">@{member.username}</p>
-        {member.role === "pastor" ? (
-          <p className="text-xs mt-0.5" style={{ color: "hsl(38, 100%, 47%)" }}>
-            Pastor at {member.churchName}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground mt-0.5">{member.churchName}</p>
-        )}
+        <div className="flex items-center flex-wrap gap-2 mt-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
+            <span className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center">
+              <img src={fbsLogo} alt="FBS" className="w-3.5 h-3.5" />
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">@{member.username}</span>
+          </div>
 
-        {/* Instagram handle */}
-        {member.instagramHandle && (
-          <button
-            onClick={() => window.open(`https://instagram.com/${member.instagramHandle}`, "_blank")}
-            className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 tap-active transition-colors hover:bg-muted"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-muted-foreground">
-              <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" />
-              <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
-              <circle cx="18" cy="6" r="1.5" fill="currentColor" />
-            </svg>
-            <span className="text-xs font-medium text-muted-foreground">@{member.instagramHandle}</span>
-          </button>
-        )}
+          {member.instagramHandle && (
+            <button
+              onClick={() => window.open(`https://instagram.com/${member.instagramHandle}`, "_blank")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 tap-active transition-colors hover:bg-muted"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-muted-foreground">
+                <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" />
+                <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+                <circle cx="18" cy="6" r="1.5" fill="currentColor" />
+              </svg>
+              <span className="text-xs font-medium text-muted-foreground">@{member.instagramHandle}</span>
+            </button>
+          )}
+        </div>
 
         {/* Follow button */}
         <button
