@@ -121,7 +121,7 @@ export default function Index() {
 
     switch (activeTab) {
       case "home":
-        return <HomeTab onChallengeReflection={addJournalEntry} onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
+        return <HomeTab onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
       case "sermon":
         return (
           <SermonTab
@@ -131,7 +131,7 @@ export default function Index() {
       case "journal":
         return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} onUpdateEntry={updateJournalEntry} onDeleteEntry={deleteJournalEntry} />;
       default:
-        return <HomeTab onChallengeReflection={addJournalEntry} onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
+        return <HomeTab onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
     }
   };
 
