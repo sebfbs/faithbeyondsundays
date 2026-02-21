@@ -144,25 +144,6 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
 
   const renderBookList = () => (
     <div className="px-4 pb-6 space-y-6">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search books…"
-          value={bookSearch}
-          onChange={(e) => setBookSearch(e.target.value)}
-          className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-        />
-        {bookSearch && (
-          <button
-            onClick={() => setBookSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 tap-active"
-          >
-            <X size={16} className="text-muted-foreground" />
-          </button>
-        )}
-      </div>
       {/* Translation Picker */}
       <div className="relative">
         <button
@@ -209,6 +190,26 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
               </button>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search books…"
+          value={bookSearch}
+          onChange={(e) => setBookSearch(e.target.value)}
+          className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-muted/50 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+        />
+        {bookSearch && (
+          <button
+            onClick={() => setBookSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 tap-active"
+          >
+            <X size={16} className="text-muted-foreground" />
+          </button>
         )}
       </div>
 
