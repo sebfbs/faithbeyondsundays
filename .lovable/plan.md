@@ -1,30 +1,34 @@
 
 
-## Fill the Empty Space on Home Screen
+## Add Instagram Handle to Profiles
 
 ### What's Changing
-Adding two new sections below the existing Reflection card to fill the empty space on mobile:
+Users can optionally add their Instagram handle to their profile, and it will show on their public profile so congregation members can connect on Instagram.
 
-1. **Scripture of the Day** -- A card showing one of the sermon's key scripture passages, rotating daily. Styled to match the existing cards with a clean, elegant look. Tapping "Read in Bible" could navigate to the Bible tab in the future.
+### User-Facing Changes
 
-2. **Quick Links** -- A row of 3 shortcut buttons (Bible, Prayer, Community) styled as small rounded cards with icons. These give users fast access to other parts of the app without scrolling through the bottom nav.
+1. **Profile Screen** -- A new "Instagram" field in a "Social" section where you can add/edit your handle (e.g. `@yourname`). Automatically strips the `@` if typed, stores just the username.
+
+2. **Public Profile Screen** -- If the member has an Instagram handle, a tappable Instagram badge/link appears below their name. Tapping it opens their Instagram profile in a new tab.
+
+3. **Completely optional** -- No handle? Nothing shows. No pressure.
 
 ### Technical Details
 
-**File: `src/components/fbs/HomeTab.tsx`**
-- Import additional icons: `BookOpen`, `Heart`, `Users`, `ChevronRight`
-- Add a **"Scripture of the Day"** card after the Reflection card:
-  - Picks a scripture from `SERMON.scriptures` based on the day of the week (rotating)
-  - Shows the reference as a header and the verse text in a slightly larger, italic style
-  - Same frosted glass card styling as existing cards (rounded-3xl, blur backdrop)
-  - Small label "From Sunday's sermon" at the bottom
-- Add a **"Quick Links"** row after the scripture card:
-  - Three tappable cards in a horizontal grid (grid-cols-3, gap-3)
-  - Each card: icon + label, frosted glass background, rounded-2xl
-  - Links: Bible, Prayer, Community
-  - These will call `onTabChange` or a new `onNavigate` callback prop to switch to the correct screen
+**File: `src/components/fbs/WelcomeScreen.tsx`**
+- Add `instagramHandle?: string` to the `UserData` interface
 
-**File: `src/components/fbs/HomeTab.tsx` -- Props update**
-- Add an optional `onNavigate?: (screen: string) => void` prop to HomeTabProps so the quick links can trigger navigation to Bible, Prayer, or Community screens
+**File: `src/components/fbs/communityData.ts`**
+- Add `instagramHandle?: string` to the `CommunityMember` interface
+- Add sample Instagram handles to a couple of demo members (e.g. `pastor_james` and `sarah_m`)
 
-No new files needed. No CSS changes needed -- existing Tailwind classes cover everything.
+**File: `src/components/fbs/ProfileScreen.tsx`**
+- Add a new "Social" section (styled like the existing Appearance/Notification sections) with an editable Instagram handle field
+- Input auto-strips `@` prefix and validates (alphanumeric, periods, underscores only -- matching Instagram's rules)
+- Save updates the user object in local state
+
+**File: `src/components/fbs/PublicProfileScreen.tsx`**
+- If `member.instagramHandle` exists, show a small tappable row below the username with the Instagram icon and handle
+- Tapping opens `https://instagram.com/{handle}` in a new tab via `window.open`
+
+No new files or dependencies needed. The Instagram icon will use a simple SVG inline since Lucide doesn't include brand icons.
