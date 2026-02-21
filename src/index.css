@@ -165,6 +165,28 @@
     background: hsl(var(--background));
   }
 
+  /* Tablet layout: remove phone constraint */
+  @media (min-width: 768px) {
+    .app-container {
+      max-width: 100%;
+    }
+
+    .app-container.tablet-layout {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .tablet-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tablet-content-inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+  }
+
   .scrollable-content {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;

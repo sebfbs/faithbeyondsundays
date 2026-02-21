@@ -13,10 +13,12 @@ import CommunityScreen from "@/components/fbs/CommunityScreen";
 import PrayerScreen from "@/components/fbs/PrayerScreen";
 import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
 import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
+import TabletSidebar, { SidebarNavTarget } from "@/components/fbs/TabletSidebar";
 import { JOURNAL_ENTRIES, GIVING_URL } from "@/components/fbs/data";
 import type { SermonData } from "@/components/fbs/data";
 import type { CommunityMember } from "@/components/fbs/communityData";
 import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type OverlayScreen =
   | "profile"
@@ -53,6 +55,7 @@ function loadUser(): UserData | null {
 }
 
 export default function Index() {
+  const isMobile = useIsMobile();
   const [user, setUser] = useState<UserData | null>(loadUser);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
@@ -122,6 +125,30 @@ export default function Index() {
     setOverlay(null);
     setActiveTab(tab);
   };
+
+  const handleSidebarNavigate = (target: SidebarNavTarget) => {
+    scrollToTop();
+    setMoreOpen(false);
+    if (target === "home" || target === "sermon" || target === "journal") {
+      setOverlay(null);
+      setActiveTab(target as TabId);
+    } else if (target === "community") {
+      setActiveTab("more");
+      setOverlay("community");
+    } else if (target === "bible") {
+      setActiveTab("more");
+      setOverlay("bible");
+    } else if (target === "prayer") {
+      setActiveTab("more");
+      setOverlay("prayer");
+    } else if (target === "profile") {
+      setActiveTab("more");
+      setOverlay("profile");
+    }
+  };
+
+  // Determine which sidebar item is active
+  const activeSidebarItem: string = overlay || activeTab;
 
   const renderMain = () => {
     if (overlay === "bible") {
@@ -193,28 +220,41 @@ export default function Index() {
   };
 
   return (
-    <div className="app-container relative mx-auto" style={{ background: "hsl(var(--background))" }}>
+    <div className={`app-container relative mx-auto ${!isMobile ? "tablet-layout" : ""}`} style={{ background: "hsl(var(--background))" }}>
+      {/* Tablet sidebar */}
+      {!isMobile && (
+        <TabletSidebar
+          activeItem={activeSidebarItem}
+          onNavigate={handleSidebarNavigate}
+        />
+      )}
+
       {/* Frosted status bar backdrop for iPhone notch/Dynamic Island */}
-      <div
-        className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
-        style={{
-          height: "env(safe-area-inset-top, 0px)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          background: "hsl(var(--background) / 0.8)",
-        }}
-      />
+      {isMobile && (
+        <div
+          className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
+          style={{
+            height: "env(safe-area-inset-top, 0px)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            background: "hsl(var(--background) / 0.8)",
+          }}
+        />
+      )}
+
       <main
         ref={mainRef}
-        className="relative z-10 scrollable-content pb-[84px] pt-[0px]"
+        className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{ minHeight: "100dvh" }}
       >
-        {renderMain()}
+        <div className={!isMobile ? "tablet-content-inner" : ""}>
+          {renderMain()}
+        </div>
       </main>
 
-      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
 
-      {moreOpen && (
+      {isMobile && moreOpen && (
         <MoreSheet
           onClose={() => setMoreOpen(false)}
           givingUrl={GIVING_URL}
