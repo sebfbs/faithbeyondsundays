@@ -11,6 +11,20 @@ function getGreeting() {
   return "Good evening";
 }
 
+function getSkyGradient() {
+  const hour = new Date().getHours();
+  if (hour < 12) {
+    // Morning: soft sunrise — light blue to warm peach to golden amber
+    return "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 20%, hsl(22, 55%, 88%) 55%, hsl(40, 30%, 97%) 100%)";
+  }
+  if (hour < 17) {
+    // Afternoon: bright midday — vivid blue to lighter blue to soft warm cream
+    return "linear-gradient(180deg, hsl(210, 70%, 55%) 0%, hsl(210, 60%, 72%) 25%, hsl(205, 40%, 85%) 55%, hsl(40, 25%, 96%) 100%)";
+  }
+  // Evening: deep navy to medium blue to warm amber/orange horizon
+  return "linear-gradient(180deg, hsl(225, 55%, 22%) 0%, hsl(220, 50%, 38%) 25%, hsl(215, 40%, 55%) 50%, hsl(30, 70%, 60%) 80%, hsl(35, 80%, 65%) 100%)";
+}
+
 function formatDate() {
   return new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -35,7 +49,7 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
     <div
       className="animate-fade-in min-h-screen"
       style={{
-        background: "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 20%, hsl(22, 55%, 88%) 55%, hsl(40, 30%, 97%) 100%)",
+        background: getSkyGradient(),
       }}
     >
       {/* Greeting */}
