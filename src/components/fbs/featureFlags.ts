@@ -5,6 +5,6 @@
  * (set by the church admin in their dashboard).
  */
 export const FEATURE_FLAGS: Record<string, boolean> = {
-  groups: true,
+  community: true,
   prayer: true,
 };

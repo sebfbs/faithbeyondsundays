@@ -48,11 +48,16 @@ export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreen
 
       {/* Avatar & Name */}
       <div className="flex flex-col items-center pt-2 pb-2">
-        <div className="w-20 h-20 rounded-full bg-amber flex items-center justify-center shadow-amber mb-3">
-          <User size={34} className="text-primary-foreground" />
+        <div className="w-20 h-20 rounded-full bg-amber flex items-center justify-center shadow-amber mb-3 overflow-hidden">
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <User size={34} className="text-primary-foreground" />
+          )}
         </div>
         <h2 className="text-lg font-bold text-foreground">{user.firstName} {user.lastName}</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p className="text-sm text-muted-foreground">@{user.username}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
           {user.churchName}
         </p>
       </div>

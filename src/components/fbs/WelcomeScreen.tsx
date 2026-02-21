@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Church, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, UserPlus, AtSign, Check, X } from "lucide-react";
 import fbsLogo from "@/assets/FBS_Logo_white.png";
+import { validateUsername } from "./communityData";
 
 export interface UserData {
   firstName: string;
@@ -8,6 +9,9 @@ export interface UserData {
   phone: string;
   email: string;
   churchName: string;
+  churchCode: string;
+  username: string;
+  avatarUrl?: string;
 }
 
 interface WelcomeScreenProps {
@@ -26,13 +30,15 @@ function lookupChurch(code: string): string {
   return CHURCH_CODES[normalized] || "Cornerstone Community Church";
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const [step, setStep] = useState<Step>(1);
   const [churchCode, setChurchCode] = useState("");
   const [churchName, setChurchName] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "" });
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChurchSubmit = () => {
@@ -57,10 +63,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       return;
     }
 
-    onComplete({
-      ...form,
-      churchName,
-    });
+    setStep(4);
   };
 
   const updateField = (field: string, value: string) => {
@@ -169,54 +172,148 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   }
 
   // Step 3: Create Account
+  if (step === 3) {
+    return (
+      <div
+        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+        style={{ background: "hsl(var(--background))" }}
+      >
+        <div className="pt-14 pb-6">
+          <button onClick={() => setStep(2)} className="mb-4 tap-active">
+            <ArrowLeft size={24} className="text-foreground" />
+          </button>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
+              <UserPlus size={18} className="text-amber" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Create Account</h1>
+              <p className="text-xs text-muted-foreground">{churchName}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 flex-1">
+          {[
+            { key: "firstName", label: "First Name", type: "text", placeholder: "First name" },
+            { key: "lastName", label: "Last Name", type: "text", placeholder: "Last name" },
+            { key: "phone", label: "Phone", type: "tel", placeholder: "(555) 123-4567" },
+            { key: "email", label: "Email", type: "email", placeholder: "you@email.com" },
+          ].map(({ key, type, placeholder }) => (
+            <div key={key}>
+              <input
+                type={type}
+                value={form[key as keyof typeof form]}
+                onChange={(e) => updateField(key, e.target.value)}
+                placeholder={placeholder}
+                className={`w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 ${
+                  errors[key] ? "ring-2 ring-destructive/50" : ""
+                }`}
+              />
+              {errors[key] && (
+                <p className="text-xs text-destructive mt-1 ml-1">{errors[key]}</p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="pb-12 pt-6">
+          <button
+            onClick={handleCreateAccount}
+            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+          >
+            Continue
+            <ArrowRight size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 4: Choose Username
+  const handleUsernameChange = (value: string) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(clean);
+    if (clean.length >= 3) {
+      setUsernameError(validateUsername(clean));
+    } else {
+      setUsernameError(clean.length > 0 ? "Username must be at least 3 characters" : null);
+    }
+  };
+
+  const handleUsernameSubmit = () => {
+    const err = validateUsername(username);
+    if (err) {
+      setUsernameError(err);
+      return;
+    }
+    onComplete({
+      ...form,
+      churchName,
+      churchCode: churchCode.trim().toLowerCase(),
+      username,
+    });
+  };
+
   return (
     <div
       className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
       style={{ background: "hsl(var(--background))" }}
     >
       <div className="pt-14 pb-6">
-        <button onClick={() => setStep(2)} className="mb-4 tap-active">
+        <button onClick={() => setStep(3)} className="mb-4 tap-active">
           <ArrowLeft size={24} className="text-foreground" />
         </button>
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
-            <UserPlus size={18} className="text-amber" />
+            <AtSign size={18} className="text-amber" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Create Account</h1>
-            <p className="text-xs text-muted-foreground">{churchName}</p>
+            <h1 className="text-xl font-bold text-foreground">Choose a Username</h1>
+            <p className="text-xs text-muted-foreground">This is how others will find you</p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3 flex-1">
-        {[
-          { key: "firstName", label: "First Name", type: "text", placeholder: "First name" },
-          { key: "lastName", label: "Last Name", type: "text", placeholder: "Last name" },
-          { key: "phone", label: "Phone", type: "tel", placeholder: "(555) 123-4567" },
-          { key: "email", label: "Email", type: "email", placeholder: "you@email.com" },
-        ].map(({ key, type, placeholder }) => (
-          <div key={key}>
-            <input
-              type={type}
-              value={form[key as keyof typeof form]}
-              onChange={(e) => updateField(key, e.target.value)}
-              placeholder={placeholder}
-              className={`w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 ${
-                errors[key] ? "ring-2 ring-destructive/50" : ""
-              }`}
-            />
-            {errors[key] && (
-              <p className="text-xs text-destructive mt-1 ml-1">{errors[key]}</p>
-            )}
-          </div>
-        ))}
+      <div className="space-y-4 flex-1">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-base">@</span>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => handleUsernameChange(e.target.value)}
+            placeholder="your_username"
+            maxLength={20}
+            className={`w-full bg-card rounded-2xl pl-9 pr-12 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 ${
+              usernameError && username.length >= 3 ? "ring-2 ring-destructive/50" : ""
+            } ${!usernameError && username.length >= 3 ? "ring-2 ring-emerald-400/50" : ""}`}
+          />
+          {username.length >= 3 && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2">
+              {usernameError ? (
+                <X size={16} className="text-destructive" />
+              ) : (
+                <Check size={16} className="text-emerald-500" />
+              )}
+            </span>
+          )}
+        </div>
+        {usernameError && username.length >= 3 && (
+          <p className="text-xs text-destructive ml-1">{usernameError}</p>
+        )}
+        {!usernameError && username.length >= 3 && (
+          <p className="text-xs text-emerald-600 ml-1">Username is available!</p>
+        )}
+        <p className="text-xs text-muted-foreground ml-1">
+          3–20 characters · lowercase letters, numbers, underscores
+        </p>
       </div>
 
       <div className="pb-12 pt-6">
         <button
-          onClick={handleCreateAccount}
-          className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+          onClick={handleUsernameSubmit}
+          disabled={!username || !!usernameError}
+          className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-30"
         >
           <UserPlus size={18} />
           Create Account
