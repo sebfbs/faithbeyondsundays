@@ -56,6 +56,21 @@ function loadUser(): UserData | null {
 
 export default function Index() {
   const isMobile = useIsMobile();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("fbs_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("fbs_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
   const [user, setUser] = useState<UserData | null>(loadUser);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
@@ -226,6 +241,8 @@ export default function Index() {
         <TabletSidebar
           activeItem={activeSidebarItem}
           onNavigate={handleSidebarNavigate}
+          collapsed={sidebarCollapsed}
+          onToggle={handleSidebarToggle}
         />
       )}
 
@@ -245,7 +262,10 @@ export default function Index() {
       <main
         ref={mainRef}
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
-        style={{ minHeight: "100dvh" }}
+        style={{
+          minHeight: "100dvh",
+          ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 240 } : {}),
+        }}
       >
         <div className={!isMobile ? "tablet-content-inner" : ""}>
           {renderMain()}
