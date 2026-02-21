@@ -114,7 +114,7 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       <div className="px-5 pt-6 pb-6 space-y-6">
 
       {/* Today's Spark */}
-      <div className="bg-card rounded-3xl p-5 shadow-card">
+      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={14} style={{ color: colors.accent }} />
@@ -142,7 +142,7 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       </div>
 
       {/* Weekly Challenge */}
-      <div className="bg-card rounded-3xl p-5 shadow-card -mt-3">
+      <div className="rounded-3xl p-5 shadow-card -mt-3" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Target size={14} style={{ color: colors.accent }} />
@@ -233,7 +233,8 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       {/* Guided Reflection */}
       <button
         onClick={onGuidedReflection}
-        className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
+        className="w-full rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
+        style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: colors.accentBg }}>
