@@ -12,6 +12,7 @@ export interface UserData {
   churchCode: string;
   username: string;
   avatarUrl?: string;
+  role?: "pastor";
 }
 
 interface WelcomeScreenProps {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake } from "lucide-react";
+import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
 
@@ -18,6 +18,16 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
   };
 
   const badges = [
+    ...(member.role === "pastor"
+      ? [
+          {
+            icon: ShieldCheck,
+            label: "Pastor",
+            detail: member.churchName,
+            color: "hsl(38, 100%, 47%)",
+          },
+        ]
+      : []),
     {
       icon: Calendar,
       label: "Member Since",
@@ -92,7 +102,12 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
       <div className="flex flex-col items-center pt-2 pb-2">
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-card mb-3 overflow-hidden"
-          style={{ background: colors.accentBg }}
+          style={{
+            background: colors.accentBg,
+            ...(member.role === "pastor"
+              ? { boxShadow: "0 0 0 3px hsl(38, 100%, 47%)" }
+              : {}),
+          }}
         >
           {member.avatarUrl ? (
             <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -107,7 +122,13 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
           {member.firstName} {member.lastName}
         </h2>
         <p className="text-sm text-muted-foreground">@{member.username}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{member.churchName}</p>
+        {member.role === "pastor" ? (
+          <p className="text-xs mt-0.5" style={{ color: "hsl(38, 100%, 47%)" }}>
+            Pastor at {member.churchName}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-0.5">{member.churchName}</p>
+        )}
 
         {/* Follow button */}
         <button
