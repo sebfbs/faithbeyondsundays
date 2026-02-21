@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play } from "lucide-react";
+import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share } from "lucide-react";
 import type { SermonData } from "./data";
+import { toast } from "sonner";
 
 function AccordionSection({
   title,
@@ -40,6 +41,24 @@ export default function PreviousSermonDetailScreen({
   sermon,
   onBack,
 }: PreviousSermonDetailScreenProps) {
+  const handleShare = async () => {
+    const shareData = {
+      title: sermon.title,
+      text: `Check out this sermon: "${sermon.title}" by ${sermon.speaker}`,
+      url: "https://faithbeyondsundays.lovable.app",
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast("Link copied to clipboard!");
+      }
+    } catch (e) {
+      // User cancelled share
+    }
+  };
+
   return (
     <div className="animate-fade-in min-h-screen" style={{ background: "hsl(var(--background))" }}>
       {/* Back button */}
@@ -79,7 +98,12 @@ export default function PreviousSermonDetailScreen({
 
         {/* Main Sermon Card */}
         <div className="bg-card rounded-3xl p-5 shadow-card">
-          <h2 className="text-xl font-bold text-foreground leading-tight">{sermon.title}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-bold text-foreground leading-tight flex-1">{sermon.title}</h2>
+            <button onClick={handleShare} className="mt-1 tap-active p-1 -mr-1">
+              <Share size={18} className="text-muted-foreground" />
+            </button>
+          </div>
           <div className="flex items-center gap-1.5 mt-2 mb-1">
             <Calendar size={13} className="text-muted-foreground" />
             <span className="text-xs text-muted-foreground font-medium">{sermon.date}</span>

@@ -5,8 +5,10 @@ import {
   Clock,
   Calendar,
   Play,
+  Share,
 } from "lucide-react";
 import { SERMON, PREVIOUS_SERMONS_COUNT } from "./data";
+import { toast } from "sonner";
 
 interface SermonTabProps {
   onPreviousSermons: () => void;
@@ -44,6 +46,24 @@ function AccordionSection({
 }
 
 export default function SermonTab({ onPreviousSermons }: SermonTabProps) {
+  const handleShare = async () => {
+    const shareData = {
+      title: SERMON.title,
+      text: `Check out this sermon: "${SERMON.title}" by ${SERMON.speaker}`,
+      url: "https://faithbeyondsundays.lovable.app",
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast("Link copied to clipboard!");
+      }
+    } catch (e) {
+      // User cancelled share
+    }
+  };
+
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
@@ -95,9 +115,14 @@ export default function SermonTab({ onPreviousSermons }: SermonTabProps) {
 
       {/* Main Sermon Card */}
       <div className="bg-card rounded-3xl p-5 shadow-card">
-        <h2 className="text-xl font-bold text-foreground leading-tight">
-          {SERMON.title}
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-xl font-bold text-foreground leading-tight flex-1">
+            {SERMON.title}
+          </h2>
+          <button onClick={handleShare} className="mt-1 tap-active p-1 -mr-1">
+            <Share size={18} className="text-muted-foreground" />
+          </button>
+        </div>
         <div className="flex items-center gap-1.5 mt-2 mb-1">
           <Calendar size={13} className="text-muted-foreground" />
           <span className="text-xs text-muted-foreground font-medium">
