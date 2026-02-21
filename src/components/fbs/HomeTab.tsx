@@ -48,6 +48,44 @@ function Stars() {
   );
 }
 
+function getAccentColors() {
+  const hour = new Date().getHours();
+  if (hour >= 17) {
+    // Evening: soft sky blue / lavender
+    return {
+      accent: "hsl(215, 65%, 65%)",
+      accentBg: "hsl(215, 60%, 94%)",
+      accentFg: "hsl(0, 0%, 100%)",
+      pillBg: "hsl(215, 65%, 65%)",
+      pillText: "hsl(0, 0%, 100%)",
+      buttonBg: "hsl(215, 65%, 65%)",
+      buttonShadow: "0 4px 16px -2px hsl(215 65% 65% / 0.35)",
+      statusBg: "hsl(215, 60%, 94%)",
+      statusText: "hsl(215, 65%, 65%)",
+      streakGradient: "linear-gradient(135deg, hsl(215 60% 95%) 0%, hsl(220 50% 90%) 100%)",
+      streakBorder: "1.5px solid hsl(215 60% 85%)",
+      streakIconBg: "hsl(215, 65%, 65%)",
+      fillClass: "fill-[hsl(215,65%,65%)]",
+    };
+  }
+  // Morning / Afternoon: golden amber (current)
+  return {
+    accent: "hsl(38, 100%, 47%)",
+    accentBg: "hsl(38, 80%, 96%)",
+    accentFg: "hsl(0, 0%, 100%)",
+    pillBg: "hsl(38, 100%, 47%)",
+    pillText: "hsl(0, 0%, 100%)",
+    buttonBg: "hsl(38, 100%, 47%)",
+    buttonShadow: "0 4px 16px -2px hsl(38 100% 47% / 0.35)",
+    statusBg: "hsl(38, 80%, 96%)",
+    statusText: "hsl(38, 100%, 47%)",
+    streakGradient: "linear-gradient(135deg, hsl(38 100% 95%) 0%, hsl(38 80% 90%) 100%)",
+    streakBorder: "1.5px solid hsl(38 100% 85%)",
+    streakIconBg: "hsl(38, 100%, 47%)",
+    fillClass: "fill-[hsl(38,100%,47%)]",
+  };
+}
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -88,6 +126,7 @@ interface HomeTabProps {
 
 export default function HomeTab({ onGuidedReflection, userName = "there", churchName }: HomeTabProps) {
   const [challengeStage, setChallengeStage] = useState<ChallengeStage>("idle");
+  const colors = getAccentColors();
 
   return (
     <div
@@ -113,10 +152,15 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       {/* Today's Spark */}
       <div className="bg-card rounded-3xl p-5 shadow-card">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-full bg-amber-bg flex items-center justify-center">
-            <Sparkles size={14} className="text-amber" />
+          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <Sparkles size={14} style={{ color: colors.accent }} />
           </div>
-          <span className="amber-pill">Today's Spark</span>
+          <span
+            className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{ background: colors.pillBg, color: colors.pillText }}
+          >
+            Today's Spark
+          </span>
         </div>
         <p className="text-foreground font-medium text-base leading-relaxed italic">
           "{SERMON.spark}"
@@ -136,10 +180,15 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       {/* Weekly Challenge */}
       <div className="bg-card rounded-3xl p-5 shadow-card -mt-3">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-full bg-amber-bg flex items-center justify-center">
-            <Target size={14} className="text-amber" />
+          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <Target size={14} style={{ color: colors.accent }} />
           </div>
-          <span className="amber-pill">Weekly Challenge</span>
+          <span
+            className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{ background: colors.pillBg, color: colors.pillText }}
+          >
+            Weekly Challenge
+          </span>
         </div>
         <p className="text-foreground font-medium text-base leading-relaxed">
           {SERMON.weeklyChallenge}
@@ -152,7 +201,8 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
           {challengeStage === "idle" && (
             <button
               onClick={() => setChallengeStage("accepted")}
-              className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+              style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
             >
               <CheckCircle2 size={16} />
               Accept Challenge
@@ -161,8 +211,11 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
 
           {challengeStage === "accepted" && (
             <>
-              <div className="w-full flex items-center justify-center gap-2 bg-amber-bg text-amber font-semibold text-sm py-3 rounded-2xl">
-                <CheckCircle2 size={16} className="fill-amber text-primary-foreground" />
+              <div
+                className="w-full flex items-center justify-center gap-2 font-semibold text-sm py-3 rounded-2xl"
+                style={{ background: colors.statusBg, color: colors.statusText }}
+              >
+                <CheckCircle2 size={16} style={{ fill: colors.accent, color: colors.accentFg }} />
                 Challenge Accepted!
               </div>
               <button
@@ -179,8 +232,11 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
           )}
 
           {challengeStage === "completed" && (
-            <div className="w-full flex items-center justify-center gap-2 bg-amber-bg text-amber font-semibold text-sm py-2.5 rounded-2xl">
-              <CheckCircle2 size={16} className="fill-amber text-primary-foreground" />
+            <div
+              className="w-full flex items-center justify-center gap-2 font-semibold text-sm py-2.5 rounded-2xl"
+              style={{ background: colors.statusBg, color: colors.statusText }}
+            >
+              <CheckCircle2 size={16} style={{ fill: colors.accent, color: colors.accentFg }} />
               Challenge Completed! 🎉
             </div>
           )}
@@ -191,13 +247,12 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
       <div
         className="rounded-3xl p-5"
         style={{
-          background:
-            "linear-gradient(135deg, hsl(38 100% 95%) 0%, hsl(38 80% 90%) 100%)",
-          border: "1.5px solid hsl(38 100% 85%)",
+          background: colors.streakGradient,
+          border: colors.streakBorder,
         }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: colors.streakIconBg }}>
             <Flame size={18} className="text-primary-foreground" />
           </div>
           <div>
@@ -217,8 +272,8 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
         className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-amber-bg flex items-center justify-center">
-            <BookText size={17} className="text-amber" />
+          <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <BookText size={17} style={{ color: colors.accent }} />
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground">
