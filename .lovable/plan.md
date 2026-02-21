@@ -1,18 +1,19 @@
 
 
-## Narrow the Expanded Sidebar
+## Fix Content Background to Fill Full Width
 
-### Change
+### Problem
+When the sidebar is collapsed, the main content area's background doesn't stretch to both edges of the screen. There's a visible gap/cutoff on the right side because the content is constrained by `tablet-content-inner` with `max-width: 640px` and `margin: 0 auto`.
 
-Reduce the expanded sidebar width from **240px to 180px**. This tightens up the layout and eliminates the excess negative space when the sidebar is open.
-
-### Technical Details
-
-**File: `src/components/fbs/TabletSidebar.tsx`**
-- Change `const sidebarWidth = collapsed ? 64 : 240` to `const sidebarWidth = collapsed ? 64 : 180`
+### Fix
 
 **File: `src/pages/Index.tsx`**
-- Update the content margin offset from `240` to `180` in the inline style: `marginLeft: sidebarCollapsed ? 64 : 180`
+- Move the background styling from the inner content wrapper to the `<main>` element so the background fills the full width behind the sidebar margin
+- Ensure the `<main>` tag stretches to the right edge of the viewport
 
-Two lines changed across two files. Everything else stays the same.
+**File: `src/index.css`**
+- On the `tablet-content` class (the `<main>` element), add `width: 100%` or ensure it naturally fills remaining space
+- Keep `tablet-content-inner` with its max-width for readable content width, but the background behind it should go edge-to-edge
+
+The key insight: the content cards can stay centered at 640px max-width, but the page background (gradient) needs to fill the entire area from the sidebar edge to the right side of the screen.
 
