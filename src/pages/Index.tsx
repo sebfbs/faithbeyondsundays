@@ -12,7 +12,7 @@ import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScr
 import CommunityScreen from "@/components/fbs/CommunityScreen";
 import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
 import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
-import { JOURNAL_ENTRIES } from "@/components/fbs/data";
+import { JOURNAL_ENTRIES, GIVING_URL } from "@/components/fbs/data";
 import type { SermonData } from "@/components/fbs/data";
 import type { CommunityMember } from "@/components/fbs/communityData";
 import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
@@ -212,6 +212,7 @@ export default function Index() {
       {moreOpen && (
         <MoreSheet
           onClose={() => setMoreOpen(false)}
+          givingUrl={GIVING_URL}
           onProfile={() => {
             setActiveTab("more");
             setOverlay("profile");

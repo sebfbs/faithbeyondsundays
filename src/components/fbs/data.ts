@@ -1,3 +1,5 @@
+export const GIVING_URL = "https://pushpay.com/g/cornerstonecommunity";
+
 export const SERMON = {
   title: "Grace in the Storm",
   date: "February 7, 2026",

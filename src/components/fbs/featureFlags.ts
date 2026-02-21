@@ -7,4 +7,5 @@
 export const FEATURE_FLAGS: Record<string, boolean> = {
   community: true,
   prayer: true,
+  giving: true,
 };
