@@ -1,33 +1,37 @@
 
 
-## Replace "Challenge Accepted" Badge with Reflection Badge
+## Soften the "Today's Spark" and "Today's Reflection" Pill Badges
 
 ### What Changes
 
-The "Challenge Accepted / First Challenge" badge on the Profile screen no longer applies since the Weekly Challenge was removed. It will be replaced with a badge that celebrates the daily reflection habit.
+The bold, fully-colored pill badges on the Home tab cards will be replaced with a softer, muted style that feels calm and blends naturally with the frosted-glass cards.
 
-### New Badge
+### Current vs New Style
 
-| Field | Old Value | New Value |
-|-------|-----------|-----------|
-| Icon | Award | BookOpen (or similar) |
-| Label | "Challenge Accepted" | "First Reflection" |
-| Detail | "First Challenge" | "Daily Journaler" |
-| Color | hsl(340 70% 55%) | hsl(340 70% 55%) (keep same) |
+| Property | Current (Loud) | New (Soothing) |
+|----------|---------------|----------------|
+| Background | Full accent color (amber/blue) | Soft tinted background (`colors.accentBg`) |
+| Text color | White | Muted accent (`colors.accent` at reduced opacity) |
+| Font weight | `font-semibold` | `font-medium` |
+| Overall feel | Badge demanding attention | Subtle label that guides the eye |
 
 ### Technical Details
 
-**File: `src/components/fbs/ProfileScreen.tsx`**
+**File: `src/components/fbs/HomeTab.tsx`**
 
-1. Replace the `Award` import with `BookOpen` from lucide-react (or keep `Award` if preferred)
-2. Update line 20 from:
-   ```
-   { icon: Award, label: "Challenge Accepted", detail: "First Challenge", color: "hsl(340 70% 55%)" }
-   ```
-   to:
-   ```
-   { icon: BookOpen, label: "First Reflection", detail: "Daily Journaler", color: "hsl(340 70% 55%)" }
-   ```
+Update both pill `<span>` elements (Today's Spark and Today's Reflection) from:
 
-One line change, no other files affected.
+```tsx
+style={{ background: colors.pillBg, color: colors.pillText }}
+```
+
+to:
+
+```tsx
+style={{ background: colors.accentBg, color: colors.accent }}
+```
+
+And change `font-semibold` to `font-medium` in their className.
+
+Two small inline style changes, no other files affected.
 
