@@ -8,15 +8,21 @@ import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
 import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
 import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScreen";
+import CommunityScreen from "@/components/fbs/CommunityScreen";
+import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
 import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
 import { JOURNAL_ENTRIES } from "@/components/fbs/data";
 import type { SermonData } from "@/components/fbs/data";
+import type { CommunityMember } from "@/components/fbs/communityData";
+import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
 
 type OverlayScreen =
   | "guided-reflection"
   | "profile"
   | "previous-sermons-list"
   | "previous-sermon-detail"
+  | "community"
+  | "public-profile"
   | null;
 
 export type JournalEntry = {
@@ -50,10 +56,16 @@ export default function Index() {
   const [overlay, setOverlay] = useState<OverlayScreen>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
+  const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
 
   const handleOnboardingComplete = (data: UserData) => {
     localStorage.setItem("fbs_user", JSON.stringify(data));
     setUser(data);
+    // Auto-follow church members on signup
+    const churchMembers = DEMO_MEMBERS.filter((m) => m.churchCode === data.churchCode);
+    const currentFollows = getFollows();
+    const newFollows = [...new Set([...currentFollows, ...churchMembers.map((m) => m.username)])];
+    setFollows(newFollows);
   };
 
   const handleSignOut = () => {
@@ -98,6 +110,27 @@ export default function Index() {
     }
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => setOverlay(null)} user={user} onSignOut={handleSignOut} />;
+    }
+    if (overlay === "community") {
+      return (
+        <CommunityScreen
+          onBack={() => setOverlay(null)}
+          onViewProfile={(member) => {
+            setSelectedMember(member);
+            setOverlay("public-profile");
+          }}
+          userChurchCode={user.churchCode || "cornerstone"}
+          userChurchName={user.churchName}
+        />
+      );
+    }
+    if (overlay === "public-profile" && selectedMember) {
+      return (
+        <PublicProfileScreen
+          member={selectedMember}
+          onBack={() => setOverlay("community")}
+        />
+      );
     }
     if (overlay === "previous-sermons-list") {
       return (
@@ -152,6 +185,11 @@ export default function Index() {
           onProfile={() => {
             setActiveTab("more");
             setOverlay("profile");
+            setMoreOpen(false);
+          }}
+          onCommunity={() => {
+            setActiveTab("more");
+            setOverlay("community");
             setMoreOpen(false);
           }}
         />
