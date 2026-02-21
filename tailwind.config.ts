@@ -155,6 +155,22 @@ export default {
   					transform: 'scale(1)',
   					opacity: '1'
   				}
+  			},
+  			'shooting-star': {
+  				'0%': {
+  					transform: 'translateX(0)',
+  					opacity: '0'
+  				},
+  				'10%': {
+  					opacity: '1'
+  				},
+  				'80%': {
+  					opacity: '1'
+  				},
+  				'100%': {
+  					transform: 'translateX(115vw)',
+  					opacity: '0'
+  				}
   			}
   		},
   		animation: {
