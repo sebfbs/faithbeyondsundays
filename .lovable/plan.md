@@ -1,28 +1,26 @@
 
 
-## Semi-Transparent Home Screen Cards
-
-Make the three main cards on the Home tab (Today's Spark, Weekly Challenge, and Guided Reflection) semi-transparent with a frosted-glass effect, so the sky gradient background subtly shows through.
+## Scroll to Top on Tab Change
 
 ### What Changes
 
-**`src/components/fbs/HomeTab.tsx`**
-- Replace the solid `bg-card` background on the three card containers with a semi-transparent white background and backdrop blur
-- Apply to:
-  1. Today's Spark card
-  2. Weekly Challenge card
-  3. Guided Reflection button
-- Style: `background: hsl(0 0% 100% / 0.8)` with `backdrop-filter: blur(20px)` — matching the frosted-glass intensity used for the status bar backdrop
-- The Streak banner already has a custom gradient background so it stays as-is
+**`src/pages/Index.tsx`**
+- Add a `ref` to the `<main>` scrollable container
+- In the `handleTabChange` function, call `scrollTo(0, 0)` on the main element whenever the user switches tabs
+- Also reset scroll when navigating to/from overlay screens (Bible, Profile, Community, etc.)
 
 ### Technical Detail
 
-Each card currently uses the Tailwind class `bg-card`. This will be replaced with inline styles:
-```
-background: hsl(0 0% 100% / 0.8)
-backdrop-filter: blur(20px)
--webkit-backdrop-filter: blur(20px)
+```tsx
+const mainRef = useRef<HTMLDivElement>(null);
+
+const handleTabChange = (tab: TabId) => {
+  // Reset scroll position
+  mainRef.current?.scrollTo(0, 0);
+  window.scrollTo(0, 0);
+  // ...existing tab logic
+};
 ```
 
-The `shadow-card` class remains for depth. The result is cards that feel like frosted glass floating over the sky gradient.
+Both `mainRef.scrollTo` and `window.scrollTo` are called to cover whichever element is actually scrolling (the main container or the window itself). The same reset is added when overlay screens open/close.
 
