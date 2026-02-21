@@ -68,7 +68,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
 
   if (composing) {
     return (
-      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
+      <div className="px-5 pb-32 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setComposing(false); setNewTitle(""); setNewBody(""); }}
@@ -109,7 +109,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
 
   if (selectedEntry && editing) {
     return (
-      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
+      <div className="px-5 pb-32 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
         <div className="flex items-center justify-between">
           <button
             onClick={() => setEditing(false)}
