@@ -115,7 +115,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   if (step === 1) {
     return (
       <div
-        className="app-container mx-auto flex flex-col items-center justify-center min-h-screen px-8 text-center animate-fade-in"
+        className="app-container mx-auto flex flex-col items-center justify-center min-h-screen px-8 text-center animate-fade-in !max-w-[430px]"
         style={{
           background:
             "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 25%, hsl(22, 55%, 88%) 60%, hsl(40, 30%, 97%) 100%)",
@@ -147,7 +147,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   if (step === 2) {
     return (
       <div
-        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
         style={{ background: "hsl(var(--background))" }}
       >
         <div className="pt-14 pb-6">
@@ -291,7 +291,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   if (step === 3) {
     return (
       <div
-        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
         style={{ background: "hsl(var(--background))" }}
       >
         <div className="pt-14 pb-6">
@@ -373,7 +373,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
 
   return (
     <div
-      className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+      className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
       style={{ background: "hsl(var(--background))" }}
     >
       <div className="pt-14 pb-6">
