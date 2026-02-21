@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
-import fbsLogo from "@/assets/FBS_Logo_white.png";
+import fbsLogo from "@/assets/FBS_with_grain_and_blue.png";
 
 interface PublicProfileScreenProps {
   member: CommunityMember & { hasInvited?: boolean };
@@ -119,8 +119,8 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
         </h2>
         <div className="flex items-center flex-wrap gap-2 mt-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
-            <span className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center">
-              <img src={fbsLogo} alt="FBS" className="w-3.5 h-3.5" />
+            <span className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
+              <img src={fbsLogo} alt="FBS" className="w-full h-full object-cover" />
             </span>
             <span className="text-xs font-medium text-muted-foreground">@{member.username}</span>
           </div>
