@@ -299,7 +299,7 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
     <div className="flex flex-col h-full min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl">
-        <div className="flex items-center gap-3 px-4 pt-[env(safe-area-inset-top,16px)] pb-3">
+        <div className="flex items-center gap-3 px-4 pb-3" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
           <button onClick={handleBack} className="tap-active p-1 -ml-1">
             <ArrowLeft size={20} className="text-foreground" />
           </button>
