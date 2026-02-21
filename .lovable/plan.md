@@ -1,23 +1,21 @@
 
 
-## Add Confetti Animation on Challenge Completion
+## Dynamic Sky Background Based on Time of Day
 
-When a user taps "Mark as Complete" on the weekly challenge, a burst of confetti will rain down from the top of the screen, then fade away after a couple of seconds.
+The homepage already uses `getGreeting()` to determine morning/afternoon/evening. We'll create a companion function that returns a different gradient palette for each time period, giving the background a natural sky feel that shifts throughout the day.
 
-### Approach
+### Three Sky Palettes
 
-We'll use the lightweight `canvas-confetti` library -- it's tiny (~6KB), has zero dependencies, and fires confetti from an off-screen canvas that cleans itself up automatically. No extra components or state management needed.
+**Morning (before 12pm)** -- Soft sunrise tones: light blue sky fading into warm peach and golden amber at the bottom (the current gradient, which already feels like morning).
 
-### Steps
+**Afternoon (12pm - 5pm)** -- Bright midday sky: a clear, vivid blue at the top transitioning through a lighter blue into a soft warm white/cream at the bottom.
 
-1. **Install `canvas-confetti`** -- add the npm package to the project.
-
-2. **Update `HomeTab.tsx`** -- when the user clicks "Mark as Complete" and the challenge stage transitions to `"completed"`, fire a confetti burst from the top-center of the screen. The confetti will fall naturally with gravity and disappear on its own after ~2-3 seconds. No cleanup code is needed since `canvas-confetti` handles that internally.
+**Evening (after 5pm)** -- Inspired by the reference image you shared: deep navy/dark blue at the top, transitioning through a medium blue into warm amber/orange tones at the horizon.
 
 ### Technical Details
 
-- Import `confetti` from `canvas-confetti`
-- In the "Mark as Complete" button's `onClick`, call `confetti()` with settings like `origin: { x: 0.5, y: 0 }` (top-center), `particleCount: 120`, `spread: 80`, `startVelocity: 45`, and `gravity: 0.8` so it rains downward naturally
-- The confetti canvas is created and destroyed automatically -- no DOM cleanup required
-- This adds no visible UI elements; it's purely a momentary visual effect
+- Add a `getSkyGradient()` function in `HomeTab.tsx` that checks the hour (same logic as `getGreeting()`) and returns the appropriate CSS gradient string.
+- Replace the current hardcoded `background` style on the root `div` with the result of `getSkyGradient()`.
+- The "This Week" section header and greeting text already use white, which will remain readable across all three palettes.
+- No new dependencies or files needed -- just updating the existing gradient in `HomeTab.tsx`.
 
