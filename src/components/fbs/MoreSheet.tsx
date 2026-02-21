@@ -12,10 +12,10 @@ interface MoreSheetProps {
 }
 
 const allOptions = [
-  { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
   { icon: Users, label: "Community", key: "community", featureKey: "community" as string | null },
-  { icon: HandCoins, label: "Give", key: "give", featureKey: "giving" as string | null },
+  { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
   { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as string | null },
+  { icon: HandCoins, label: "Give", key: "give", featureKey: "giving" as string | null },
   { icon: User, label: "Profile", key: "profile", featureKey: null },
 ];
 
