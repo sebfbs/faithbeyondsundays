@@ -1,34 +1,34 @@
 
 
-## Remove Pill Background — Text-Only Labels
+## Add "Give" Option to More Sheet
 
-### What Changes
-
-The "Today's Spark" and "Today's Reflection" labels will lose their rounded pill background entirely. They become quiet, muted uppercase text that gently labels each card without drawing attention.
+### What It Does
+Adds a "Give" row to the More sheet that opens the church's external giving link (Pushpay, Tithe.ly, etc.) in a new browser tab. Sits alongside Bible, Community, Prayer, and Profile — feels like a natural utility, not a sales pitch.
 
 ### Visual Result
-
-- No background fill or border
-- Small uppercase text in a soft, muted color (blends with the card without competing for attention)
-- The icon circle next to the label stays as-is for visual anchoring
+- A new row in the More sheet with a heart/hand-coins icon and "Give" label
+- Tapping it opens the church's giving URL in a new tab
+- Same styling as all other More sheet options (icon circle + label)
+- Controlled by a feature flag so churches can toggle it on/off
 
 ### Technical Details
 
-**File: `src/components/fbs/HomeTab.tsx`**
+**1. `src/components/fbs/featureFlags.ts`**
+- Add `giving: true` to the feature flags
 
-Update both pill `<span>` elements. Remove the `rounded-full` class and inline background style, and use a muted text color instead.
+**2. `src/components/fbs/data.ts`**
+- Add a `givingUrl` field to the sermon/church data (e.g. `"https://pushpay.com/example"`)
 
-From:
-```tsx
-<span
-  className="text-[0.7rem] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-  style={{ background: colors.pillBgSoft, color: colors.pillTextSoft }}
->
-```
+**3. `src/components/fbs/MoreSheet.tsx`**
+- Add a "Give" option to the `allOptions` array with a `HandCoins` icon (from lucide-react)
+- Feature-flagged under `"giving"`
+- When tapped, open the giving URL via `window.open(url, '_blank')`
+- Pass the giving URL as a prop to MoreSheet
 
-To:
-```tsx
-<span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
-```
+**4. `src/pages/Index.tsx`** (or wherever MoreSheet is rendered)
+- Pass the giving URL from church data to MoreSheet
 
-This applies to both the "Today's Spark" and "Today's Reflection" labels. No other files affected.
+### Not Included (Future)
+- No home screen card (keeps home focused on spiritual content)
+- No native Stripe integration (external link for now)
+- Could add occasional home prompts during giving campaigns later
