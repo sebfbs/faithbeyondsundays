@@ -173,7 +173,7 @@ export default function Index() {
       return <PrayerScreen onBack={() => { setOverlay(null); }} />;
     }
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => { setOverlay(null); }} user={user} onSignOut={handleSignOut} />;
+      return <ProfileScreen onBack={() => { setOverlay(null); }} user={user} onSignOut={handleSignOut} onUpdateUser={(updated) => setUser(updated)} />;
     }
     if (overlay === "community") {
       return (

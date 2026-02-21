@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -11,6 +11,7 @@ interface ProfileScreenProps {
   onBack: () => void;
   user: UserData;
   onSignOut: () => void;
+  onUpdateUser?: (updated: UserData) => void;
 }
 
 const getProfileBadges = (user: UserData) => {
@@ -31,13 +32,30 @@ const getProfileBadges = (user: UserData) => {
 
 type Appearance = "light" | "dark" | "horizon";
 
-export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreenProps) {
+export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState(false);
   const [timeModal, setTimeModal] = useState(false);
   const [notifDays, setNotifDays] = useState(["Mon", "Wed", "Fri"]);
   const [notifTime, setNotifTime] = useState("Morning (8 AM)");
   const badges = getProfileBadges(user);
+
+  // Instagram handle editing
+  const [igInput, setIgInput] = useState(user.instagramHandle || "");
+  const [igSaved, setIgSaved] = useState(false);
+
+  const sanitizeIgHandle = (value: string) => {
+    // Strip @ prefix and only allow valid IG characters
+    return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
+  };
+
+  const handleSaveIg = () => {
+    const clean = sanitizeIgHandle(igInput);
+    const updated = { ...user, instagramHandle: clean || undefined };
+    onUpdateUser?.(updated);
+    setIgSaved(true);
+    setTimeout(() => setIgSaved(false), 2000);
+  };
 
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
@@ -98,6 +116,41 @@ export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreen
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Social */}
+      <section className="bg-card rounded-3xl p-5 shadow-card">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+          Social
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 bg-muted/50 rounded-2xl px-3 py-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-muted-foreground shrink-0">
+              <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="18" cy="6" r="1.5" fill="currentColor" />
+            </svg>
+            <span className="text-muted-foreground text-sm">@</span>
+            <input
+              type="text"
+              value={igInput}
+              onChange={(e) => { setIgInput(sanitizeIgHandle(e.target.value)); setIgSaved(false); }}
+              placeholder="your_handle"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={handleSaveIg}
+            disabled={igSaved || sanitizeIgHandle(igInput) === (user.instagramHandle || "")}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center tap-active transition-colors disabled:opacity-40"
+            style={{ background: igSaved ? "hsl(150, 55%, 45%)" : "hsl(var(--muted))" }}
+          >
+            <Check size={16} className={igSaved ? "text-white" : "text-foreground"} />
+          </button>
+        </div>
+        {igInput && !/^[a-zA-Z0-9._]{1,30}$/.test(igInput) && (
+          <p className="text-xs text-destructive mt-2 ml-1">Only letters, numbers, periods, and underscores</p>
+        )}
       </section>
 
       {/* Appearance */}
