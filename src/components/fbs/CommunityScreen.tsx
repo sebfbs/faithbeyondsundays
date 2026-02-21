@@ -164,12 +164,7 @@ export default function CommunityScreen({
             {/* Avatar */}
             <div
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-              style={{
-                background: "hsl(var(--muted))",
-                ...(member.role === "pastor"
-                  ? { boxShadow: "0 0 0 2px hsl(38, 100%, 47%)" }
-                  : {}),
-              }}
+              style={{ background: "hsl(var(--muted))" }}
             >
               {member.avatarUrl ? (
                 <img
