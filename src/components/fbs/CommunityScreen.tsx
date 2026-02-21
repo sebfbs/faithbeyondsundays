@@ -22,7 +22,14 @@ export default function CommunityScreen({
   const follows = getFollows();
 
   const churchMembers = useMemo(
-    () => DEMO_MEMBERS.filter((m) => m.churchCode === userChurchCode),
+    () =>
+      DEMO_MEMBERS
+        .filter((m) => m.churchCode === userChurchCode)
+        .sort((a, b) => {
+          if (a.role === "pastor") return -1;
+          if (b.role === "pastor") return 1;
+          return 0;
+        }),
     [userChurchCode]
   );
 
@@ -155,7 +162,15 @@ export default function CommunityScreen({
             className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow text-left"
           >
             {/* Avatar */}
-            <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+              style={{
+                background: "hsl(var(--muted))",
+                ...(member.role === "pastor"
+                  ? { boxShadow: "0 0 0 2px hsl(38, 100%, 47%)" }
+                  : {}),
+              }}
+            >
               {member.avatarUrl ? (
                 <img
                   src={member.avatarUrl}
@@ -176,6 +191,17 @@ export default function CommunityScreen({
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 @{member.username}
+                {member.role === "pastor" && (
+                  <span
+                    className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{
+                      background: "hsl(38, 100%, 47%, 0.12)",
+                      color: "hsl(38, 100%, 47%)",
+                    }}
+                  >
+                    Pastor
+                  </span>
+                )}
                 {isSearching && (
                   <span className="ml-1.5 text-muted-foreground/70">
                     · {member.churchName}

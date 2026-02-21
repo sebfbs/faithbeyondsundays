@@ -14,6 +14,7 @@ export interface CommunityMember {
   challengesCompleted: number;
   isGroupMember: boolean;
   hasInvited?: boolean;
+  role?: "pastor";
 }
 
 export const DEMO_MEMBERS: CommunityMember[] = [
@@ -27,6 +28,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     challengesCompleted: 24,
     isGroupMember: true,
     hasInvited: true,
+    role: "pastor",
   },
   {
     username: "sarah_m",

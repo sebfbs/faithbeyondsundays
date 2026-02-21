@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut, HeartHandshake } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, Award, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -13,7 +13,7 @@ interface ProfileScreenProps {
   onSignOut: () => void;
 }
 
-const getProfileBadges = () => {
+const getProfileBadges = (user: UserData) => {
   const badges = [
     { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
     { icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" },
@@ -22,6 +22,9 @@ const getProfileBadges = () => {
   ];
   if (hasInvited()) {
     badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170 55% 45%)" });
+  }
+  if (user.role === "pastor") {
+    badges.unshift({ icon: ShieldCheck, label: "Pastor", detail: user.churchName, color: "hsl(38 100% 47%)" });
   }
   return badges;
 };
@@ -34,7 +37,7 @@ export default function ProfileScreen({ onBack, user, onSignOut }: ProfileScreen
   const [timeModal, setTimeModal] = useState(false);
   const [notifDays, setNotifDays] = useState(["Mon", "Wed", "Fri"]);
   const [notifTime, setNotifTime] = useState("Morning (8 AM)");
-  const badges = getProfileBadges();
+  const badges = getProfileBadges(user);
 
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
