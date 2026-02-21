@@ -4,13 +4,11 @@ import {
   ChevronRight,
   Clock,
   Calendar,
-  BookText,
   Play,
 } from "lucide-react";
 import { SERMON, PREVIOUS_SERMONS_COUNT } from "./data";
 
 interface SermonTabProps {
-  onGuidedReflection: () => void;
   onPreviousSermons: () => void;
 }
 
@@ -45,7 +43,7 @@ function AccordionSection({
   );
 }
 
-export default function SermonTab({ onGuidedReflection, onPreviousSermons }: SermonTabProps) {
+export default function SermonTab({ onPreviousSermons }: SermonTabProps) {
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
@@ -157,27 +155,6 @@ export default function SermonTab({ onGuidedReflection, onPreviousSermons }: Ser
           ))}
         </AccordionSection>
       </div>
-
-      {/* Guided Reflection */}
-      <button
-        onClick={onGuidedReflection}
-        className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-amber-bg flex items-center justify-center">
-            <BookText size={17} className="text-amber" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Guided Reflection
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Journal prompts for this sermon
-            </p>
-          </div>
-        </div>
-        <ChevronRight size={18} className="text-muted-foreground" />
-      </button>
 
       {/* Previous Sermons */}
       <button

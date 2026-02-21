@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Target, CheckCircle2, Flame, PenLine, Send } from "lucide-react";
+import { Sparkles, Target, CheckCircle2, Flame, PenLine, Send, BookText, ChevronRight } from "lucide-react";
 import { SERMON } from "./data";
 import type { JournalEntry } from "@/pages/Index";
 
@@ -23,11 +23,12 @@ type ChallengeStage = "idle" | "accepted" | "completed" | "reflected";
 
 interface HomeTabProps {
   onChallengeReflection: (entry: JournalEntry) => void;
+  onGuidedReflection: () => void;
   userName?: string;
   churchName?: string;
 }
 
-export default function HomeTab({ onChallengeReflection, userName = "there", churchName }: HomeTabProps) {
+export default function HomeTab({ onChallengeReflection, onGuidedReflection, userName = "there", churchName }: HomeTabProps) {
   const [challengeStage, setChallengeStage] = useState<ChallengeStage>("idle");
   const [reflectionText, setReflectionText] = useState("");
   const [reflectionSubmitted, setReflectionSubmitted] = useState(false);
@@ -204,6 +205,27 @@ export default function HomeTab({ onChallengeReflection, userName = "there", chu
           </div>
         </div>
       </div>
+
+      {/* Guided Reflection */}
+      <button
+        onClick={onGuidedReflection}
+        className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-2xl bg-amber-bg flex items-center justify-center">
+            <BookText size={17} className="text-amber" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Guided Reflection
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Journal prompts for this sermon
+            </p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-muted-foreground" />
+      </button>
 
       {/* Bottom spacer for nav */}
       <div className="h-2" />
