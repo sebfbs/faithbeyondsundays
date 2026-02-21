@@ -26,7 +26,7 @@ const STARS = [
 
 function Stars() {
   return (
-    <div className="absolute top-0 left-0 w-full h-60 pointer-events-none overflow-hidden z-0">
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-screen h-60 pointer-events-none overflow-hidden z-0">
       {STARS.map((s, i) => (
         <div
           key={i}
