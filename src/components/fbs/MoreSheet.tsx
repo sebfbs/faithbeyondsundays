@@ -1,4 +1,4 @@
-import { Users, Heart, User, BookOpen, X } from "lucide-react";
+import { Users, Heart, User, BookOpen, HandCoins, X } from "lucide-react";
 import { FEATURE_FLAGS } from "./featureFlags";
 import { getAccentColors } from "./themeColors";
 
@@ -7,11 +7,13 @@ interface MoreSheetProps {
   onCommunity: () => void;
   onBible: () => void;
   onClose: () => void;
+  givingUrl?: string;
 }
 
 const allOptions = [
   { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
   { icon: Users, label: "Community", key: "community", featureKey: "community" as string | null },
+  { icon: HandCoins, label: "Give", key: "give", featureKey: "giving" as string | null },
   { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as string | null },
   { icon: User, label: "Profile", key: "profile", featureKey: null },
 ];
@@ -20,7 +22,7 @@ const options = allOptions.filter(
   (opt) => !opt.featureKey || FEATURE_FLAGS[opt.featureKey]
 );
 
-export default function MoreSheet({ onProfile, onCommunity, onBible, onClose }: MoreSheetProps) {
+export default function MoreSheet({ onProfile, onCommunity, onBible, onClose, givingUrl }: MoreSheetProps) {
   const colors = getAccentColors();
   const handleOption = (key: string) => {
     if (key === "profile") {
@@ -29,6 +31,8 @@ export default function MoreSheet({ onProfile, onCommunity, onBible, onClose }: 
       onCommunity();
     } else if (key === "bible") {
       onBible();
+    } else if (key === "give" && givingUrl) {
+      window.open(givingUrl, "_blank");
     }
     onClose();
   };
