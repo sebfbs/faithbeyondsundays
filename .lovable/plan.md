@@ -1,34 +1,53 @@
 
 
-## Add "Give" Option to More Sheet
+## Add Prayer Request Screen
 
 ### What It Does
-Adds a "Give" row to the More sheet that opens the church's external giving link (Pushpay, Tithe.ly, etc.) in a new browser tab. Sits alongside Bible, Community, Prayer, and Profile — feels like a natural utility, not a sales pitch.
+Turns the non-functional "Prayer" button into a simple prayer request submission screen. Members can write what they'd like prayer for, optionally stay anonymous, and submit it. For now, requests are stored locally as a list. Later, this can connect to a database so the prayer team actually receives them.
 
 ### Visual Result
-- A new row in the More sheet with a heart/hand-coins icon and "Give" label
-- Tapping it opens the church's giving URL in a new tab
-- Same styling as all other More sheet options (icon circle + label)
-- Controlled by a feature flag so churches can toggle it on/off
+- Tapping "Prayer" in the More sheet opens a dedicated Prayer screen (same overlay pattern as Bible, Community, Profile)
+- Clean form with a text area for the prayer request
+- Optional "Submit anonymously" toggle
+- A list of the user's own past submitted requests below the form
+- Same frosted-glass card styling as the rest of the app
+- Back arrow returns to the previous screen
 
 ### Technical Details
 
-**1. `src/components/fbs/featureFlags.ts`**
-- Add `giving: true` to the feature flags
+**1. `src/components/fbs/PrayerScreen.tsx`** (new file)
+- Simple screen component with:
+  - Header with back button ("Prayer Requests")
+  - Text area input for the request
+  - Anonymous toggle (Switch component)
+  - Submit button (styled like the Reflect button)
+  - List of user's previously submitted requests below, showing date and preview text
+  - Requests stored in localStorage for now (`fbs_prayer_requests`)
+  - Toast confirmation on submit ("Prayer request submitted")
 
-**2. `src/components/fbs/data.ts`**
-- Add a `givingUrl` field to the sermon/church data (e.g. `"https://pushpay.com/example"`)
+**2. `src/components/fbs/MoreSheet.tsx`**
+- Add `onPrayer` callback prop
+- Add handler for the "prayer" key that calls `onPrayer()`
 
-**3. `src/components/fbs/MoreSheet.tsx`**
-- Add a "Give" option to the `allOptions` array with a `HandCoins` icon (from lucide-react)
-- Feature-flagged under `"giving"`
-- When tapped, open the giving URL via `window.open(url, '_blank')`
-- Pass the giving URL as a prop to MoreSheet
+**3. `src/pages/Index.tsx`**
+- Add `"prayer"` to the `OverlayScreen` type
+- Add `onPrayer` handler to MoreSheet that sets overlay to `"prayer"`
+- Render `PrayerScreen` when overlay is `"prayer"`
+- Import the new PrayerScreen component
 
-**4. `src/pages/Index.tsx`** (or wherever MoreSheet is rendered)
-- Pass the giving URL from church data to MoreSheet
+### Data Shape (localStorage for now)
+```text
+{
+  id: string
+  text: string
+  date: string
+  anonymous: boolean
+}
+```
 
 ### Not Included (Future)
-- No home screen card (keeps home focused on spiritual content)
-- No native Stripe integration (external link for now)
-- Could add occasional home prompts during giving campaigns later
+- No database storage yet (localStorage only) -- easy to migrate to Supabase later
+- No prayer team notification system
+- No ability to see other people's requests (privacy first)
+- Could add "prayed for you" reactions later
+
