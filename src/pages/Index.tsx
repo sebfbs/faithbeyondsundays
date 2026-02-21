@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
@@ -59,6 +59,12 @@ export default function Index() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = () => {
+    mainRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  };
 
   const handleOnboardingComplete = (data: UserData) => {
     localStorage.setItem("fbs_user", JSON.stringify(data));
@@ -101,6 +107,7 @@ export default function Index() {
       setMoreOpen(true);
       return;
     }
+    scrollToTop();
     setMoreOpen(false);
     setOverlay(null);
     setActiveTab(tab);
@@ -108,13 +115,13 @@ export default function Index() {
 
   const renderMain = () => {
     if (overlay === "guided-reflection") {
-      return <GuidedReflectionScreen onBack={() => setOverlay(null)} />;
+      return <GuidedReflectionScreen onBack={() => { setOverlay(null); scrollToTop(); }} />;
     }
     if (overlay === "bible") {
-      return <BibleScreen onBack={() => setOverlay(null)} />;
+      return <BibleScreen onBack={() => { setOverlay(null); scrollToTop(); }} />;
     }
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => setOverlay(null)} user={user} onSignOut={handleSignOut} />;
+      return <ProfileScreen onBack={() => { setOverlay(null); scrollToTop(); }} user={user} onSignOut={handleSignOut} />;
     }
     if (overlay === "community") {
       return (
@@ -186,6 +193,7 @@ export default function Index() {
         }}
       />
       <main
+        ref={mainRef}
         className="relative z-10 scrollable-content pb-[84px] pt-[0px]"
         style={{ minHeight: "100dvh" }}
       >
