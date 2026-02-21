@@ -1,36 +1,42 @@
 
 
-## Time-Adaptive Accent Colors on the Home Tab
+## Extend Time-Adaptive Accent Colors to All Components
 
-Right now every icon bubble, pill badge, and button uses the same golden amber accent regardless of the time of day. That works beautifully against the warm morning and bright afternoon skies, but clashes with the cool evening palette. We'll make the accent colors shift along with the background.
-
-### Color Palettes
-
-| Time of Day | Accent Color | Icon Background | Streak Banner |
-|---|---|---|---|
-| **Morning** (before 12pm) | Golden amber (current) | Warm amber tint | Current warm gradient |
-| **Afternoon** (12pm-5pm) | Golden amber (current) | Warm amber tint | Current warm gradient |
-| **Evening** (after 5pm) | Soft sky blue / lavender | Cool blue-indigo tint | Cool blue-toned gradient |
-
-The evening accent will be a soft, luminous blue (around hsl 215-220, lightness ~65%) that complements the deep navy-to-amber sky gradient -- still visible and pretty on the white cards, but no longer fighting the cool tones.
+Currently, only the Home tab shifts its accent color based on time of day. This plan extends that same logic to the bottom navigation bar, the Journal tab, and the More sheet -- so every gold/amber element in the app adapts together.
 
 ### What Changes
 
-Inside `HomeTab.tsx`, we'll create a helper (similar to `getSkyGradient()`) that returns a set of accent colors based on the hour. The component will use these colors via inline styles instead of the hardcoded Tailwind `text-amber` / `bg-amber` classes. This keeps the change scoped to the Home tab only -- no global CSS variables need to change.
+**Bottom Nav** -- The active tab icon and label currently use `text-amber`. They'll shift to the soft sky blue in the evening.
 
-**Elements that will adapt:**
-- Icon circle backgrounds (the small round containers behind Sparkles, Target, BookText, Flame icons)
-- Icon colors themselves
-- Pill badges ("Today's Spark", "Weekly Challenge")
-- "Accept Challenge" button
-- "Challenge Accepted" and "Challenge Completed" status badges
-- Streak banner background, border, and icon square
-- Guided Reflection icon
+**More Sheet** -- The icon circles (Groups, Prayer, Profile) use `bg-amber-bg` and `text-amber`. They'll shift to cool blue tones in the evening.
 
-### Technical Details
+**Journal Tab** -- Several amber elements will adapt:
+- The floating "+" button (`bg-amber`)
+- The "Save" button on compose/edit screens
+- The "Cancel" text links
+- The active filter badge
+- Bookmark icons when filled
+- The checkmark on the active filter option
 
-- Add a `getAccentColors()` function that returns an object with keys like `accent`, `accentBg`, `accentBorder`, `pillBg`, `pillText`, etc. Morning/afternoon return the current amber values; evening returns cool blue/lavender equivalents.
-- Replace Tailwind amber utility classes (`text-amber`, `bg-amber`, `bg-amber-bg`, `amber-pill`, `shadow-amber`) with inline `style` attributes that reference the accent object.
-- The streak banner's gradient background and border will also pull from the accent object.
-- No new files, dependencies, or CSS changes needed -- everything is scoped to `HomeTab.tsx`.
+### Technical Approach
+
+1. **Extract `getAccentColors()` to a shared utility** -- Move the function from `HomeTab.tsx` into a new file `src/components/fbs/themeColors.ts` so all components can import it.
+
+2. **Update `BottomNav.tsx`** -- Accept no new props; import `getAccentColors()` directly. Replace `text-amber` on the active icon and label with inline `style={{ color: colors.accent }}`.
+
+3. **Update `MoreSheet.tsx`** -- Import `getAccentColors()`. Replace `bg-amber-bg` and `text-amber` on the icon containers with inline styles using `colors.accentBg` and `colors.accent`.
+
+4. **Update `JournalTab.tsx`** -- Import `getAccentColors()`. Replace all `text-amber`, `bg-amber`, `fill-amber`, and `bg-amber-bg` references with inline styles from the colors object. This covers the FAB, save buttons, cancel links, filter badge, and bookmark fills.
+
+5. **Clean up `HomeTab.tsx`** -- Import `getAccentColors` from the new shared file instead of defining it locally.
+
+### Files Changed
+
+| File | Change |
+|---|---|
+| `src/components/fbs/themeColors.ts` | New file -- exports `getAccentColors()` |
+| `src/components/fbs/HomeTab.tsx` | Import from `themeColors.ts` instead of local definition |
+| `src/components/fbs/BottomNav.tsx` | Use dynamic accent color for active tab |
+| `src/components/fbs/MoreSheet.tsx` | Use dynamic accent color for icon circles |
+| `src/components/fbs/JournalTab.tsx` | Use dynamic accent color for FAB, buttons, bookmarks, filters |
 
