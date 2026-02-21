@@ -126,44 +126,6 @@ function SunRays() {
   );
 }
 
-function Clouds() {
-  return (
-    <div className="absolute top-0 left-0 w-full h-56 pointer-events-none overflow-hidden z-0">
-      {/* Cloud 1 */}
-      <div
-        className="absolute animate-cloud-drift"
-        style={{ top: '12%', right: 0, animationDelay: '-10s' }}
-      >
-        <div className="relative">
-          <div className="w-16 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.3)' }} />
-          <div className="absolute -top-2 left-3 w-8 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.25)' }} />
-          <div className="absolute -top-1 left-8 w-6 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.2)' }} />
-        </div>
-      </div>
-      {/* Cloud 2 */}
-      <div
-        className="absolute animate-cloud-drift-slow"
-        style={{ top: '25%', right: 0, animationDelay: '-30s' }}
-      >
-        <div className="relative">
-          <div className="w-20 h-6 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.25)' }} />
-          <div className="absolute -top-3 left-4 w-10 h-6 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.2)' }} />
-          <div className="absolute -top-1 left-10 w-7 h-5 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.18)' }} />
-        </div>
-      </div>
-      {/* Cloud 3 */}
-      <div
-        className="absolute animate-cloud-drift-fast"
-        style={{ top: '8%', right: 0, animationDelay: '-20s' }}
-      >
-        <div className="relative">
-          <div className="w-12 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.22)' }} />
-          <div className="absolute -top-2 left-2 w-6 h-4 rounded-full" style={{ background: 'hsl(0 0% 100% / 0.18)' }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -240,7 +202,7 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
     <div
       className="animate-fade-in min-h-screen relative"
     >
-      {new Date().getHours() < 12 ? <SunRays /> : new Date().getHours() < 17 ? <Clouds /> : <Stars />}
+      {new Date().getHours() < 12 ? <SunRays /> : new Date().getHours() >= 17 ? <Stars /> : null}
       {/* Greeting */}
       <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
