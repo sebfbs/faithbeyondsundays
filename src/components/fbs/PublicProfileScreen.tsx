@@ -102,12 +102,7 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
       <div className="flex flex-col items-center pt-2 pb-2">
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-card mb-3 overflow-hidden"
-          style={{
-            background: colors.accentBg,
-            ...(member.role === "pastor"
-              ? { boxShadow: "0 0 0 3px hsl(38, 100%, 47%)" }
-              : {}),
-          }}
+          style={{ background: colors.accentBg }}
         >
           {member.avatarUrl ? (
             <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
