@@ -1,34 +1,30 @@
 
 
-## Add Instagram Handle to Profiles
+## Add FBS Username Pill to Public Profile
 
 ### What's Changing
-Users can optionally add their Instagram handle to their profile, and it will show on their public profile so congregation members can connect on Instagram.
+The plain `@username` text below the member's name will be wrapped in a styled pill (matching the Instagram pill style), with the FBS logo on the left. Both pills will sit side by side or stacked, giving a clean, consistent look.
 
-### User-Facing Changes
+### Visual Result
+Instead of:
+- Plain text: `@pastor_james`
+- Instagram pill: `[IG icon] @pastor_james`
 
-1. **Profile Screen** -- A new "Instagram" field in a "Social" section where you can add/edit your handle (e.g. `@yourname`). Automatically strips the `@` if typed, stores just the username.
+It becomes:
+- FBS pill: `[FBS logo] @pastor_james`
+- Instagram pill: `[IG icon] @pastor_james`
 
-2. **Public Profile Screen** -- If the member has an Instagram handle, a tappable Instagram badge/link appears below their name. Tapping it opens their Instagram profile in a new tab.
-
-3. **Completely optional** -- No handle? Nothing shows. No pressure.
+Both pills use the same `bg-muted/50` rounded-full style for visual consistency.
 
 ### Technical Details
 
-**File: `src/components/fbs/WelcomeScreen.tsx`**
-- Add `instagramHandle?: string` to the `UserData` interface
-
-**File: `src/components/fbs/communityData.ts`**
-- Add `instagramHandle?: string` to the `CommunityMember` interface
-- Add sample Instagram handles to a couple of demo members (e.g. `pastor_james` and `sarah_m`)
-
-**File: `src/components/fbs/ProfileScreen.tsx`**
-- Add a new "Social" section (styled like the existing Appearance/Notification sections) with an editable Instagram handle field
-- Input auto-strips `@` prefix and validates (alphanumeric, periods, underscores only -- matching Instagram's rules)
-- Save updates the user object in local state
-
 **File: `src/components/fbs/PublicProfileScreen.tsx`**
-- If `member.instagramHandle` exists, show a small tappable row below the username with the Instagram icon and handle
-- Tapping opens `https://instagram.com/{handle}` in a new tab via `window.open`
 
-No new files or dependencies needed. The Instagram icon will use a simple SVG inline since Lucide doesn't include brand icons.
+1. Import the FBS logo: `import fbsLogo from "@/assets/FBS_Logo_white.png"`
+2. Replace the plain `<p className="text-sm text-muted-foreground">@{member.username}</p>` with a pill-styled container matching the Instagram pill:
+   - Rounded-full, `bg-muted/50` background
+   - FBS logo (14x14, rendered on a small dark circle so the white logo is visible) on the left
+   - `@{member.username}` text on the right
+3. If both FBS username and Instagram handle exist, wrap them in a flex row with a small gap so they sit side by side (or wrap on narrow screens using `flex-wrap`)
+
+No new files or dependencies needed.
