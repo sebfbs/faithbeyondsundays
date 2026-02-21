@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, BookText, CheckCircle2, Save } from "lucide-react";
+import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users } from "lucide-react";
 import { SERMON } from "./data";
 import { getAccentColors } from "./themeColors";
 
@@ -171,9 +171,10 @@ interface HomeTabProps {
   reflectedToday: boolean;
   userName?: string;
   churchName?: string;
+  onNavigate?: (screen: string) => void;
 }
 
-export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = "there", churchName }: HomeTabProps) {
+export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = "there", churchName, onNavigate }: HomeTabProps) {
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -291,6 +292,48 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
             <span className="text-xs text-muted-foreground ml-auto">View in Journal →</span>
           </div>
         )}
+      </div>
+
+      {/* Scripture of the Day */}
+      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <BookOpen size={14} style={{ color: colors.accent }} />
+          </div>
+          <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+            Scripture of the Day
+          </span>
+        </div>
+        <p className="text-foreground font-semibold text-sm mb-1">
+          {SERMON.scriptures[new Date().getDay() % SERMON.scriptures.length].reference}
+        </p>
+        <p className="text-foreground text-base leading-relaxed italic">
+          "{SERMON.scriptures[new Date().getDay() % SERMON.scriptures.length].text}"
+        </p>
+        <p className="text-muted-foreground text-xs mt-3 font-medium">
+          From Sunday's sermon · {SERMON.title}
+        </p>
+      </div>
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { icon: BookOpen, label: "Bible", screen: "bible" },
+          { icon: Heart, label: "Prayer", screen: "prayer" },
+          { icon: Users, label: "Community", screen: "community" },
+        ].map(({ icon: Icon, label, screen }) => (
+          <button
+            key={screen}
+            onClick={() => onNavigate?.(screen)}
+            className="rounded-2xl p-4 flex flex-col items-center gap-2 tap-active transition-opacity hover:opacity-90 shadow-card"
+            style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+          >
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+              <Icon size={18} style={{ color: colors.accent }} />
+            </div>
+            <span className="text-xs font-semibold text-foreground">{label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Bottom spacer for nav */}
