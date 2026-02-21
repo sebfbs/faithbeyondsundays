@@ -128,7 +128,7 @@ function SunRays() {
 
 function Clouds() {
   return (
-    <div className="absolute top-0 right-0 w-full h-56 pointer-events-none overflow-hidden z-0">
+    <div className="absolute top-0 left-0 w-full h-56 pointer-events-none overflow-hidden z-0">
       {/* Cloud 1 */}
       <div
         className="absolute animate-cloud-drift"
