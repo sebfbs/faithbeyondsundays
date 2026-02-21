@@ -44,6 +44,8 @@ export const SERMON = {
   spark: "Grace meets you in the storm, not on the other side of it.",
   weeklyChallenge:
     "This week, write down one fear that's been keeping you from trusting God fully. Then write a verse of scripture next to it — a promise that speaks directly to that fear.",
+  weekendReflection:
+    "Look back on this week — what has God been teaching you through this sermon?",
 };
 
 export const JOURNAL_ENTRIES = [
@@ -137,6 +139,8 @@ export const PREVIOUS_SERMONS: SermonData[] = [
     spark: "You don't have to earn what God has already freely given.",
     weeklyChallenge:
       "Write down one lie you've believed about yourself, then find a verse that speaks the truth. Read it aloud every morning this week.",
+    weekendReflection:
+      "Look back on this week — what has God been teaching you through this sermon?",
   },
   {
     title: "The Power of Small Steps",
@@ -176,6 +180,8 @@ export const PREVIOUS_SERMONS: SermonData[] = [
     spark: "Don't despise small beginnings — God starts big things in small places.",
     weeklyChallenge:
       "Identify one small spiritual habit — 5 minutes of prayer, one verse a day — and do it every day this week without skipping.",
+    weekendReflection:
+      "Look back on this week — what has God been teaching you through this sermon?",
   },
   {
     title: "When God Feels Distant",
@@ -215,6 +221,8 @@ export const PREVIOUS_SERMONS: SermonData[] = [
     spark: "God has not moved. He is closer than you think.",
     weeklyChallenge:
       "Spend 10 minutes in silence each morning this week — no music, no phone — just sitting with God and letting Him speak.",
+    weekendReflection:
+      "Look back on this week — what has God been teaching you through this sermon?",
   },
   {
     title: "Forgiveness Is a Practice",
@@ -255,5 +263,7 @@ export const PREVIOUS_SERMONS: SermonData[] = [
     spark: "Forgiveness is not a feeling — it's a decision to stop carrying what God never asked you to hold.",
     weeklyChallenge:
       "Write a letter to someone you need to forgive — you don't have to send it. Just write what you felt and then write: 'I release this to God.'",
+    weekendReflection:
+      "Look back on this week — what has God been teaching you through this sermon?",
   },
 ];

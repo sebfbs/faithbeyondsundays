@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Sparkles, Target, CheckCircle2, Flame, BookText, ChevronRight } from "lucide-react";
+import { Sparkles, BookText, CheckCircle2, Save } from "lucide-react";
 import { SERMON } from "./data";
-import confetti from "canvas-confetti";
 import { getAccentColors } from "./themeColors";
-
 
 const STARS = [
   { top: '3%', left: '8%', size: 2, opacity: 0.7, twinkle: true },
@@ -49,7 +47,6 @@ function Stars() {
   );
 }
 
-
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -60,14 +57,11 @@ function getGreeting() {
 function getSkyGradient() {
   const hour = new Date().getHours();
   if (hour < 12) {
-    // Morning: soft sunrise — light blue to warm peach to golden amber
     return "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 20%, hsl(22, 55%, 88%) 55%, hsl(40, 30%, 97%) 100%)";
   }
   if (hour < 17) {
-    // Afternoon: bright midday — vivid blue to lighter blue to soft warm cream
     return "linear-gradient(180deg, hsl(210, 70%, 55%) 0%, hsl(210, 60%, 72%) 25%, hsl(205, 40%, 85%) 55%, hsl(40, 25%, 96%) 100%)";
   }
-  // Evening: deep navy to medium blue to warm amber/orange horizon
   return "linear-gradient(180deg, hsl(225, 55%, 22%) 0%, hsl(220, 50%, 38%) 25%, hsl(215, 40%, 55%) 50%, hsl(30, 70%, 60%) 80%, hsl(35, 80%, 65%) 100%)";
 }
 
@@ -80,24 +74,54 @@ function formatDate() {
   });
 }
 
-type ChallengeStage = "idle" | "accepted" | "completed";
+function getDailyPromptIndex(): number {
+  const day = new Date().getDay();
+  if (day === 0 || day === 6) return -1; // weekend
+  return day - 1; // Mon=0, Tue=1, Wed=2, Thu=3, Fri=4
+}
+
+function getDailyPrompt(): string {
+  const idx = getDailyPromptIndex();
+  if (idx === -1) return SERMON.weekendReflection;
+  return SERMON.reflectionQuestions[idx] || SERMON.reflectionQuestions[0];
+}
 
 interface HomeTabProps {
-  onGuidedReflection: () => void;
+  onAddJournalEntry: (entry: any) => void;
+  reflectedToday: boolean;
   userName?: string;
   churchName?: string;
 }
 
-export default function HomeTab({ onGuidedReflection, userName = "there", churchName }: HomeTabProps) {
-  const [challengeStage, setChallengeStage] = useState<ChallengeStage>("idle");
+export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = "there", churchName }: HomeTabProps) {
+  const [reflectionOpen, setReflectionOpen] = useState(false);
+  const [reflectionText, setReflectionText] = useState("");
+  const [justSaved, setJustSaved] = useState(false);
   const colors = getAccentColors();
+
+  const completed = reflectedToday || justSaved;
+
+  const handleSaveReflection = () => {
+    if (!reflectionText.trim()) return;
+    const now = new Date();
+    onAddJournalEntry({
+      id: `reflection-${Date.now()}`,
+      date: now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      type: "sermon" as const,
+      tag: "Sermon",
+      preview: reflectionText.slice(0, 120) + (reflectionText.length > 120 ? "..." : ""),
+      sermonTitle: SERMON.title,
+      bookmarked: false,
+      fullText: reflectionText,
+    });
+    setJustSaved(true);
+    setReflectionOpen(false);
+  };
 
   return (
     <div
       className="animate-fade-in min-h-screen relative"
-      style={{
-        background: getSkyGradient(),
-      }}
+      style={{ background: getSkyGradient() }}
     >
       {new Date().getHours() >= 17 && <Stars />}
       {/* Greeting */}
@@ -134,123 +158,67 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
         </p>
       </div>
 
-      {/* This Week header */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(0 0% 100%)" }}>
-          This Week
-        </h2>
-      </div>
-
-      {/* Weekly Challenge */}
-      <div className="rounded-3xl p-5 shadow-card -mt-3" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+      {/* Today's Reflection */}
+      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
-            <Target size={14} style={{ color: colors.accent }} />
+            <BookText size={14} style={{ color: colors.accent }} />
           </div>
           <span
             className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
             style={{ background: colors.pillBg, color: colors.pillText }}
           >
-            Weekly Challenge
+            Today's Reflection
           </span>
         </div>
         <p className="text-foreground font-medium text-base leading-relaxed">
-          {SERMON.weeklyChallenge}
+          {getDailyPrompt()}
         </p>
         <p className="text-muted-foreground text-xs mt-2 font-medium">
-          Challenge drawn from Sunday's sermon · {SERMON.title}
+          From Sunday's sermon · {SERMON.title}
         </p>
 
-        <div className="mt-4 space-y-3">
-          {challengeStage === "idle" && (
+        {!completed && !reflectionOpen && (
+          <button
+            onClick={() => setReflectionOpen(true)}
+            className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+            style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+          >
+            <BookText size={16} />
+            Reflect
+          </button>
+        )}
+
+        {!completed && reflectionOpen && (
+          <div className="mt-4 space-y-3">
+            <textarea
+              value={reflectionText}
+              onChange={(e) => setReflectionText(e.target.value)}
+              placeholder="Write your thoughts and reflections here..."
+              className="w-full h-32 text-sm text-foreground bg-transparent resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3"
+              style={{ background: "hsl(40 25% 97%)" }}
+              autoFocus
+            />
             <button
-              onClick={() => setChallengeStage("accepted")}
-              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
-              style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+              onClick={handleSaveReflection}
+              disabled={!reflectionText.trim()}
+              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity disabled:opacity-40"
+              style={{ background: colors.buttonBg, boxShadow: reflectionText.trim() ? colors.buttonShadow : "none" }}
             >
-              <CheckCircle2 size={16} />
-              Accept Challenge
+              <Save size={15} />
+              Save Reflection
             </button>
-          )}
+          </div>
+        )}
 
-          {challengeStage === "accepted" && (
-            <>
-              <div
-                className="w-full flex items-center justify-center gap-2 font-semibold text-sm py-3 rounded-2xl"
-                style={{ background: colors.statusBg, color: colors.statusText }}
-              >
-                <CheckCircle2 size={16} style={{ fill: colors.accent, color: colors.accentFg }} />
-                Challenge Accepted!
-              </div>
-              <button
-                onClick={() => {
-                  setChallengeStage("completed");
-                  confetti({ particleCount: 120, spread: 80, origin: { x: 0.5, y: 0 }, gravity: 0.8, startVelocity: 45 });
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-foreground text-background font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
-              >
-                <CheckCircle2 size={16} />
-                Mark as Complete
-              </button>
-            </>
-          )}
-
-          {challengeStage === "completed" && (
-            <div
-              className="w-full flex items-center justify-center gap-2 font-semibold text-sm py-2.5 rounded-2xl"
-              style={{ background: colors.statusBg, color: colors.statusText }}
-            >
-              <CheckCircle2 size={16} style={{ fill: colors.accent, color: colors.accentFg }} />
-              Challenge Completed! 🎉
-            </div>
-          )}
-        </div>
+        {completed && (
+          <div className="mt-4 flex items-center gap-2" style={{ color: colors.statusText }}>
+            <CheckCircle2 size={18} style={{ fill: colors.accent, color: colors.accentFg }} />
+            <span className="text-sm font-semibold">Reflected today</span>
+            <span className="text-xs text-muted-foreground ml-auto">View in Journal →</span>
+          </div>
+        )}
       </div>
-
-      {/* Streak banner */}
-      <div
-        className="rounded-3xl p-5"
-        style={{
-          background: colors.streakGradient,
-          border: colors.streakBorder,
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: colors.streakIconBg }}>
-            <Flame size={18} className="text-primary-foreground" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Ready to start your challenge streak?
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Complete 7 challenges to earn your first badge
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Guided Reflection */}
-      <button
-        onClick={onGuidedReflection}
-        className="w-full rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
-        style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: colors.accentBg }}>
-            <BookText size={17} style={{ color: colors.accent }} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              Guided Reflection
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Journal prompts for this sermon
-            </p>
-          </div>
-        </div>
-        <ChevronRight size={18} className="text-muted-foreground" />
-      </button>
 
       {/* Bottom spacer for nav */}
       <div className="h-2" />
@@ -258,4 +226,3 @@ export default function HomeTab({ onGuidedReflection, userName = "there", church
     </div>
   );
 }
-

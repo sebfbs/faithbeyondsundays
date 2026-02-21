@@ -3,7 +3,7 @@ import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
 import JournalTab from "@/components/fbs/JournalTab";
-import GuidedReflectionScreen from "@/components/fbs/GuidedReflectionScreen";
+
 import BibleScreen from "@/components/fbs/BibleScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
@@ -18,7 +18,6 @@ import type { CommunityMember } from "@/components/fbs/communityData";
 import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
 
 type OverlayScreen =
-  | "guided-reflection"
   | "profile"
   | "previous-sermons-list"
   | "previous-sermon-detail"
@@ -123,9 +122,6 @@ export default function Index() {
   };
 
   const renderMain = () => {
-    if (overlay === "guided-reflection") {
-      return <GuidedReflectionScreen onBack={() => { setOverlay(null); }} />;
-    }
     if (overlay === "bible") {
       return <BibleScreen onBack={() => { setOverlay(null); }} />;
     }
@@ -175,7 +171,9 @@ export default function Index() {
 
     switch (activeTab) {
       case "home":
-        return <HomeTab onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
+        const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const reflectedToday = journalEntries.some((e) => e.tag === "Sermon" && e.date === today);
+        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={reflectedToday} userName={user.firstName} churchName={user.churchName} />;
       case "sermon":
         return (
           <SermonTab
@@ -185,7 +183,7 @@ export default function Index() {
       case "journal":
         return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} onUpdateEntry={updateJournalEntry} onDeleteEntry={deleteJournalEntry} />;
       default:
-        return <HomeTab onGuidedReflection={() => setOverlay("guided-reflection")} userName={user.firstName} churchName={user.churchName} />;
+        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={false} userName={user.firstName} churchName={user.churchName} />;
     }
   };
 
