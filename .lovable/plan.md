@@ -1,19 +1,36 @@
 
 
-## Add Tiny Twinkling Stars to the Evening Sky
+## Time-Adaptive Accent Colors on the Home Tab
 
-Small decorative star dots will appear at the top of the homepage only during the evening gradient (after 5pm), reinforcing the nighttime sky feel.
+Right now every icon bubble, pill badge, and button uses the same golden amber accent regardless of the time of day. That works beautifully against the warm morning and bright afternoon skies, but clashes with the cool evening palette. We'll make the accent colors shift along with the background.
 
-### What You'll See
+### Color Palettes
 
-Around 15-20 tiny white dots (2-3px) scattered across the top portion of the page. A few will have a gentle twinkle animation. They only render in the evening -- morning and afternoon skies stay clean.
+| Time of Day | Accent Color | Icon Background | Streak Banner |
+|---|---|---|---|
+| **Morning** (before 12pm) | Golden amber (current) | Warm amber tint | Current warm gradient |
+| **Afternoon** (12pm-5pm) | Golden amber (current) | Warm amber tint | Current warm gradient |
+| **Evening** (after 5pm) | Soft sky blue / lavender | Cool blue-indigo tint | Cool blue-toned gradient |
+
+The evening accent will be a soft, luminous blue (around hsl 215-220, lightness ~65%) that complements the deep navy-to-amber sky gradient -- still visible and pretty on the white cards, but no longer fighting the cool tones.
+
+### What Changes
+
+Inside `HomeTab.tsx`, we'll create a helper (similar to `getSkyGradient()`) that returns a set of accent colors based on the hour. The component will use these colors via inline styles instead of the hardcoded Tailwind `text-amber` / `bg-amber` classes. This keeps the change scoped to the Home tab only -- no global CSS variables need to change.
+
+**Elements that will adapt:**
+- Icon circle backgrounds (the small round containers behind Sparkles, Target, BookText, Flame icons)
+- Icon colors themselves
+- Pill badges ("Today's Spark", "Weekly Challenge")
+- "Accept Challenge" button
+- "Challenge Accepted" and "Challenge Completed" status badges
+- Streak banner background, border, and icon square
+- Guided Reflection icon
 
 ### Technical Details
 
-- In `HomeTab.tsx`, add a small `Stars` component that renders ~18 absolutely-positioned tiny white circles near the top of the page.
-- Each star gets a random-looking but fixed position (using hardcoded percentages), varying size (1-3px), and varying opacity (0.3-0.9) for depth.
-- A few stars get a subtle CSS twinkle animation (a slow opacity pulse defined via a Tailwind keyframe or inline style).
-- The stars container uses `pointer-events-none` so it never blocks taps.
-- Wrap the stars render in a time check: only show them when `new Date().getHours() >= 17` (same evening threshold as the greeting and gradient).
-- Add a `twinkle` keyframe animation to `index.css` for the pulsing effect.
+- Add a `getAccentColors()` function that returns an object with keys like `accent`, `accentBg`, `accentBorder`, `pillBg`, `pillText`, etc. Morning/afternoon return the current amber values; evening returns cool blue/lavender equivalents.
+- Replace Tailwind amber utility classes (`text-amber`, `bg-amber`, `bg-amber-bg`, `amber-pill`, `shadow-amber`) with inline `style` attributes that reference the accent object.
+- The streak banner's gradient background and border will also pull from the accent object.
+- No new files, dependencies, or CSS changes needed -- everything is scoped to `HomeTab.tsx`.
 
