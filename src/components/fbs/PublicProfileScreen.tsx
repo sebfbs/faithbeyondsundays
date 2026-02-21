@@ -125,6 +125,21 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
           <p className="text-xs text-muted-foreground mt-0.5">{member.churchName}</p>
         )}
 
+        {/* Instagram handle */}
+        {member.instagramHandle && (
+          <button
+            onClick={() => window.open(`https://instagram.com/${member.instagramHandle}`, "_blank")}
+            className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 tap-active transition-colors hover:bg-muted"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-muted-foreground">
+              <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="18" cy="6" r="1.5" fill="currentColor" />
+            </svg>
+            <span className="text-xs font-medium text-muted-foreground">@{member.instagramHandle}</span>
+          </button>
+        )}
+
         {/* Follow button */}
         <button
           onClick={handleToggleFollow}

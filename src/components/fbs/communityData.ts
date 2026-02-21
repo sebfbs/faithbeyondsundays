@@ -15,6 +15,7 @@ export interface CommunityMember {
   isGroupMember: boolean;
   hasInvited?: boolean;
   role?: "pastor";
+  instagramHandle?: string;
 }
 
 export const DEMO_MEMBERS: CommunityMember[] = [
@@ -29,6 +30,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     isGroupMember: true,
     hasInvited: true,
     role: "pastor",
+    instagramHandle: "pastor_james",
   },
   {
     username: "sarah_m",
@@ -39,6 +41,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     memberSince: "Nov 2024",
     challengesCompleted: 12,
     isGroupMember: true,
+    instagramHandle: "sarah.mitchell",
   },
   {
     username: "david.chen",

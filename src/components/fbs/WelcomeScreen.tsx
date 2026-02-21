@@ -13,6 +13,7 @@ export interface UserData {
   username: string;
   avatarUrl?: string;
   role?: "pastor";
+  instagramHandle?: string;
 }
 
 interface WelcomeScreenProps {
