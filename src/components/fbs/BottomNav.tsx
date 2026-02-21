@@ -1,4 +1,5 @@
 import { Home, BookOpen, BookMarked, MoreHorizontal } from "lucide-react";
+import { getAccentColors } from "./themeColors";
 
 export type TabId = "home" | "sermon" | "journal" | "more";
 
@@ -15,6 +16,7 @@ const tabs = [
 ];
 
 export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+  const colors = getAccentColors();
   return (
     <nav
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card/95 backdrop-blur-md border-t border-border shadow-nav z-50"
@@ -32,12 +34,14 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               <Icon
                 size={22}
                 strokeWidth={isActive ? 2.2 : 1.8}
-                className={isActive ? "text-amber" : "text-muted-foreground"}
+                className={isActive ? undefined : "text-muted-foreground"}
+                style={isActive ? { color: colors.accent } : undefined}
               />
               <span
                 className={`text-[10.5px] font-medium tracking-wide transition-colors ${
-                  isActive ? "text-amber" : "text-muted-foreground"
+                  isActive ? "" : "text-muted-foreground"
                 }`}
+                style={isActive ? { color: colors.accent } : undefined}
               >
                 {label}
               </span>

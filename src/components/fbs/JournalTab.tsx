@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2 } from "lucide-react";
 import type { JournalEntry } from "@/pages/Index";
+import { getAccentColors } from "./themeColors";
 
 type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
 
@@ -12,6 +13,7 @@ interface JournalTabProps {
 }
 
 export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }: JournalTabProps) {
+  const colors = getAccentColors();
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );
@@ -70,14 +72,16 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setComposing(false); setNewTitle(""); setNewBody(""); }}
-            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+            className="flex items-center gap-2 font-semibold text-sm tap-active"
+            style={{ color: colors.accent }}
           >
             <X size={16} /> Cancel
           </button>
           <button
             onClick={handleSaveEntry}
             disabled={!newBody.trim()}
-            className="text-sm font-bold px-4 py-1.5 rounded-full bg-amber text-white disabled:opacity-40 tap-active transition-opacity"
+            className="text-sm font-bold px-4 py-1.5 rounded-full text-white disabled:opacity-40 tap-active transition-opacity"
+            style={{ background: colors.buttonBg }}
           >
             Save
           </button>
@@ -109,7 +113,8 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
         <div className="flex items-center justify-between">
           <button
             onClick={() => setEditing(false)}
-            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+            className="flex items-center gap-2 font-semibold text-sm tap-active"
+            style={{ color: colors.accent }}
           >
             <X size={16} /> Cancel
           </button>
@@ -125,7 +130,8 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
               setEditing(false);
             }}
             disabled={!editBody.trim()}
-            className="text-sm font-bold px-4 py-1.5 rounded-full bg-amber text-white disabled:opacity-40 tap-active transition-opacity"
+            className="text-sm font-bold px-4 py-1.5 rounded-full text-white disabled:opacity-40 tap-active transition-opacity"
+            style={{ background: colors.buttonBg }}
           >
             Save
           </button>
@@ -155,7 +161,8 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
         <div className="flex items-center justify-between">
           <button
             onClick={() => { setSelected(null); setShowDeleteConfirm(false); }}
-            className="flex items-center gap-2 text-amber font-semibold text-sm tap-active"
+            className="flex items-center gap-2 font-semibold text-sm tap-active"
+            style={{ color: colors.accent }}
           >
             ← Back to Journal
           </button>
@@ -270,9 +277,10 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
             onClick={() => setFilterOpen((p) => !p)}
             className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full tap-active transition-colors ${
               activeFilter !== "all"
-                ? "text-amber bg-amber-bg"
+                ? ""
                 : "text-muted-foreground bg-muted"
             }`}
+            style={activeFilter !== "all" ? { color: colors.accent, background: colors.accentBg } : undefined}
           >
             <SlidersHorizontal size={12} />
             {activeFilter === "all" ? "Filter" : filters.find(f => f.value === activeFilter)?.label}
@@ -291,7 +299,7 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
                     className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground tap-active hover:bg-muted/50 transition-colors"
                   >
                     {f.label}
-                    {activeFilter === f.value && <Check size={14} className="text-amber" />}
+                    {activeFilter === f.value && <Check size={14} style={{ color: colors.accent }} />}
                   </button>
                 ))}
               </div>
@@ -338,9 +346,10 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
                     size={18}
                     className={
                       bookmarks[entry.id]
-                        ? "text-amber fill-amber"
+                        ? ""
                         : "text-muted-foreground"
                     }
+                    style={bookmarks[entry.id] ? { color: colors.accent, fill: colors.accent } : undefined}
                   />
                 </button>
                 <ChevronRight size={14} className="text-muted-foreground mt-2" />
@@ -355,7 +364,8 @@ export default function JournalTab({ entries, onAddEntry, onUpdateEntry, onDelet
       {/* Floating Add Button */}
       <button
         onClick={() => setComposing(true)}
-        className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full bg-amber text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
+        className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
+        style={{ background: colors.buttonBg }}
       >
         <Plus size={24} />
       </button>
