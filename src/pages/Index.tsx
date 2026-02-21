@@ -72,6 +72,16 @@ export default function Index() {
     setJournalEntries((prev) => [entry, ...prev]);
   };
 
+  const updateJournalEntry = (updated: JournalEntry) => {
+    setJournalEntries((prev) =>
+      prev.map((e) => (e.id === updated.id ? updated : e))
+    );
+  };
+
+  const deleteJournalEntry = (id: string) => {
+    setJournalEntries((prev) => prev.filter((e) => e.id !== id));
+  };
+
   const handleTabChange = (tab: TabId) => {
     if (tab === "more") {
       setMoreOpen(true);
@@ -120,7 +130,7 @@ export default function Index() {
           />
         );
       case "journal":
-        return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} />;
+        return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} onUpdateEntry={updateJournalEntry} onDeleteEntry={deleteJournalEntry} />;
       default:
         return <HomeTab onChallengeReflection={addJournalEntry} userName={user.firstName} churchName={user.churchName} />;
     }
