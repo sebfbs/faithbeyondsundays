@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab, { getSkyGradient } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
@@ -54,6 +55,20 @@ export default function Index() {
   const { user: authUser, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Derive active screen from URL path
+  const pathScreen = location.pathname.replace(/^\//, "") || "home";
+
+  // Map URL paths to tab vs overlay
+  const tabScreens = ["home", "sermon", "journal"];
+  const overlayScreens = ["community", "bible", "prayer", "profile", "previous-sermons"];
+
+  const activeTab: TabId = tabScreens.includes(pathScreen) ? (pathScreen as TabId) : 
+    overlayScreens.includes(pathScreen) ? "more" : "home";
+  const overlay: OverlayScreen = overlayScreens.includes(pathScreen) ? 
+    (pathScreen === "previous-sermons" ? "previous-sermons-list" : pathScreen as OverlayScreen) : null;
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -71,27 +86,31 @@ export default function Index() {
     });
   };
 
-  const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [overlay, setOverlayRaw] = useState<OverlayScreen>(null);
-  const setOverlay = (screen: OverlayScreen) => {
-    setOverlayRaw(screen);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
+  const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
+  const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
+  // Keep overlay sub-states that don't have their own route
+  const [subOverlay, setSubOverlay] = useState<"previous-sermon-detail" | "public-profile" | null>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = useCallback(() => {
+    mainRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Preserve demo query param in navigation
+  const navTo = useCallback((path: string) => {
+    const search = isDemo ? "?demo=true" : "";
+    navigate(path + search);
+    setSubOverlay(null);
     requestAnimationFrame(() => {
       mainRef.current?.scrollTo(0, 0);
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     });
-  };
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
-  const [selectedSermon, setSelectedSermon] = useState<SermonData | null>(null);
-  const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
-  const mainRef = useRef<HTMLDivElement>(null);
-
-  const scrollToTop = () => {
-    mainRef.current?.scrollTo(0, 0);
-    window.scrollTo(0, 0);
-  };
+  }, [navigate, isDemo]);
 
   // Build a UserData-compatible object for existing components
   const userData: UserData | null = isDemo
@@ -148,8 +167,7 @@ export default function Index() {
 
   const handleSignOut = async () => {
     await signOut();
-    setActiveTab("home");
-    setOverlay(null);
+    navTo("/home");
     setMoreOpen(false);
   };
 
@@ -174,29 +192,13 @@ export default function Index() {
     }
     scrollToTop();
     setMoreOpen(false);
-    setOverlay(null);
-    setActiveTab(tab);
+    navTo(`/${tab}`);
   };
 
   const handleSidebarNavigate = (target: SidebarNavTarget) => {
     scrollToTop();
     setMoreOpen(false);
-    if (target === "home" || target === "sermon" || target === "journal") {
-      setOverlay(null);
-      setActiveTab(target as TabId);
-    } else if (target === "community") {
-      setActiveTab("more");
-      setOverlay("community");
-    } else if (target === "bible") {
-      setActiveTab("more");
-      setOverlay("bible");
-    } else if (target === "prayer") {
-      setActiveTab("more");
-      setOverlay("prayer");
-    } else if (target === "profile") {
-      setActiveTab("more");
-      setOverlay("profile");
-    }
+    navTo(`/${target}`);
   };
 
   const activeSidebarItem: string = overlay || activeTab;
@@ -204,16 +206,34 @@ export default function Index() {
   const renderMain = () => {
     if (!userData) return null;
 
+    // Handle sub-overlays (no dedicated URL)
+    if (subOverlay === "public-profile" && selectedMember) {
+      return (
+        <PublicProfileScreen
+          member={selectedMember}
+          onBack={() => { setSubOverlay(null); navTo("/community"); }}
+        />
+      );
+    }
+    if (subOverlay === "previous-sermon-detail" && selectedSermon) {
+      return (
+        <PreviousSermonDetailScreen
+          sermon={selectedSermon}
+          onBack={() => { setSubOverlay(null); navTo("/previous-sermons"); }}
+        />
+      );
+    }
+
     if (overlay === "bible") {
-      return <BibleScreen onBack={() => setOverlay(null)} />;
+      return <BibleScreen onBack={() => navTo("/home")} />;
     }
     if (overlay === "prayer") {
-      return <PrayerScreen onBack={() => setOverlay(null)} />;
+      return <PrayerScreen onBack={() => navTo("/home")} />;
     }
     if (overlay === "profile") {
       return (
         <ProfileScreen
-          onBack={() => setOverlay(null)}
+          onBack={() => navTo("/home")}
           user={userData}
           onSignOut={handleSignOut}
           onUpdateUser={(updated) => {
@@ -225,40 +245,24 @@ export default function Index() {
     if (overlay === "community") {
       return (
         <CommunityScreen
-          onBack={() => setOverlay(null)}
+          onBack={() => navTo("/home")}
           onViewProfile={(member) => {
             setSelectedMember(member);
-            setOverlay("public-profile");
+            setSubOverlay("public-profile");
           }}
           userChurchCode={userData.churchCode || "cornerstone"}
           userChurchName={userData.churchName}
         />
       );
     }
-    if (overlay === "public-profile" && selectedMember) {
-      return (
-        <PublicProfileScreen
-          member={selectedMember}
-          onBack={() => setOverlay("community")}
-        />
-      );
-    }
     if (overlay === "previous-sermons-list") {
       return (
         <PreviousSermonsListScreen
-          onBack={() => setOverlay(null)}
+          onBack={() => navTo("/sermon")}
           onSelectSermon={(sermon) => {
             setSelectedSermon(sermon);
-            setOverlay("previous-sermon-detail");
+            setSubOverlay("previous-sermon-detail");
           }}
-        />
-      );
-    }
-    if (overlay === "previous-sermon-detail" && selectedSermon) {
-      return (
-        <PreviousSermonDetailScreen
-          sermon={selectedSermon}
-          onBack={() => setOverlay("previous-sermons-list")}
         />
       );
     }
@@ -269,7 +273,7 @@ export default function Index() {
         const reflectedToday = journalEntries.some((e) => e.tag === "Sermon" && e.date === today);
         return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={reflectedToday} userName={userData.firstName} churchName={userData.churchName} />;
       case "sermon":
-        return <SermonTab onPreviousSermons={() => setOverlay("previous-sermons-list")} />;
+        return <SermonTab onPreviousSermons={() => navTo("/previous-sermons")} />;
       case "journal":
         return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} onUpdateEntry={updateJournalEntry} onDeleteEntry={deleteJournalEntry} />;
       default:
@@ -301,7 +305,7 @@ export default function Index() {
       )}
 
       <main
-        key={`${activeTab}-${overlay}`}
+        key={`${activeTab}-${overlay}-${subOverlay}`}
         ref={mainRef}
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
@@ -321,10 +325,10 @@ export default function Index() {
         <MoreSheet
           onClose={() => setMoreOpen(false)}
           givingUrl={GIVING_URL}
-          onProfile={() => { setActiveTab("more"); setOverlay("profile"); setMoreOpen(false); }}
-          onCommunity={() => { setActiveTab("more"); setOverlay("community"); setMoreOpen(false); }}
-          onBible={() => { setActiveTab("more"); setOverlay("bible"); setMoreOpen(false); }}
-          onPrayer={() => { setActiveTab("more"); setOverlay("prayer"); setMoreOpen(false); }}
+          onProfile={() => { navTo("/profile"); setMoreOpen(false); }}
+          onCommunity={() => { navTo("/community"); setMoreOpen(false); }}
+          onBible={() => { navTo("/bible"); setMoreOpen(false); }}
+          onPrayer={() => { navTo("/prayer"); setMoreOpen(false); }}
         />
       )}
     </div>

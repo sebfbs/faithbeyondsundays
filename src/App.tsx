@@ -35,10 +35,18 @@ const App = () => {
             <DemoModeBadge />
             <Routes>
               <Route path="/" element={<Index />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+              <Route path="/home" element={<Index />} />
+              <Route path="/sermon" element={<Index />} />
+              <Route path="/journal" element={<Index />} />
+              <Route path="/community" element={<Index />} />
+              <Route path="/bible" element={<Index />} />
+              <Route path="/prayer" element={<Index />} />
+              <Route path="/profile" element={<Index />} />
+              <Route path="/previous-sermons" element={<Index />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </DemoModeProvider>
         </AuthProvider>
