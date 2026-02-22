@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useMemo, useState } from "react";
@@ -35,7 +36,10 @@ export default function PlatformChurchDetail() {
   const membersQuery = useQuery({
     queryKey: ["platform", "church-members", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, created_at").eq("church_id", id!);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, user_id, first_name, last_name, username, avatar_url, created_at")
+        .eq("church_id", id!);
       if (error) throw error;
       return data;
     },
@@ -82,11 +86,24 @@ export default function PlatformChurchDetail() {
         .eq("church_id", id!)
         .maybeSingle();
 
-      // We can't directly get the email from profiles, so we'll show what we have
       return {
         user_id: roleData.user_id,
         name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.username : null,
       };
+    },
+    enabled: !!id,
+  });
+
+  // Fetch all roles for this church to show role badges on members
+  const rolesQuery = useQuery({
+    queryKey: ["platform", "church-roles", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("church_id", id!);
+      if (error) throw error;
+      return data;
     },
     enabled: !!id,
   });
@@ -96,6 +113,20 @@ export default function PlatformChurchDetail() {
   const sermonCount = sermonsQuery.data?.length ?? 0;
   const events = eventsQuery.data ?? [];
   const owner = ownerQuery.data;
+  const roles = rolesQuery.data ?? [];
+
+  const roleMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    roles.forEach((r) => {
+      // Keep the highest role per user
+      const priority: Record<string, number> = { owner: 5, admin: 4, pastor: 3, leader: 2, member: 1 };
+      const existing = map[r.user_id];
+      if (!existing || (priority[r.role] ?? 0) > (priority[existing] ?? 0)) {
+        map[r.user_id] = r.role;
+      }
+    });
+    return map;
+  }, [roles]);
 
   const giveTaps = events.filter((e) => e.event_type === "give_tap").length;
   const appOpens = events.filter((e) => e.event_type === "app_open").length;
@@ -127,13 +158,14 @@ export default function PlatformChurchDetail() {
       setChangeAdminOpen(false);
       setNewAdminEmail("");
       queryClient.invalidateQueries({ queryKey: ["platform", "church-owner", id] });
+      queryClient.invalidateQueries({ queryKey: ["platform", "church-roles", id] });
+      queryClient.invalidateQueries({ queryKey: ["platform", "church-members", id] });
     }
     setChangingAdmin(false);
   };
 
   const handleResendInvite = async () => {
     if (!id || !church) return;
-    // We need the admin email — prompt if we don't have it
     const email = prompt("Enter the admin's email to resend the invite:");
     if (!email) return;
     setSendingInvite(true);
@@ -175,6 +207,14 @@ export default function PlatformChurchDetail() {
     { label: "Give Taps", value: giveTaps, icon: Hand, color: "text-amber-400" },
     { label: "App Opens", value: appOpens, icon: Smartphone, color: "text-cyan-400" },
   ];
+
+  const roleBadgeColor: Record<string, string> = {
+    owner: "bg-amber-500/20 text-amber-300",
+    admin: "bg-violet-500/20 text-violet-300",
+    pastor: "bg-blue-500/20 text-blue-300",
+    leader: "bg-emerald-500/20 text-emerald-300",
+    member: "bg-slate-500/20 text-slate-400",
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-6xl">
@@ -284,6 +324,58 @@ export default function PlatformChurchDetail() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Member List */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-300 flex items-center gap-2">
+            <Users className="h-4 w-4 text-emerald-400" />
+            All Members ({members.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {members.length === 0 ? (
+            <p className="text-sm text-slate-500">No members yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableHead className="text-slate-400">Name</TableHead>
+                    <TableHead className="text-slate-400">Username</TableHead>
+                    <TableHead className="text-slate-400">Role</TableHead>
+                    <TableHead className="text-slate-400">Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {members
+                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                    .map((m) => {
+                      const fullName = [m.first_name, m.last_name].filter(Boolean).join(" ");
+                      const role = roleMap[m.user_id] || "member";
+                      return (
+                        <TableRow key={m.id} className="border-slate-800">
+                          <TableCell className="text-slate-200 font-medium">
+                            {fullName || "—"}
+                          </TableCell>
+                          <TableCell className="text-slate-400">@{m.username}</TableCell>
+                          <TableCell>
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${roleBadgeColor[role] || roleBadgeColor.member}`}>
+                              {role}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-slate-400 text-sm">
+                            {format(new Date(m.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
