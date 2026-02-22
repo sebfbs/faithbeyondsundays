@@ -247,7 +247,7 @@ serve(async (req) => {
     if (failedTypes.length > 0 && job.attempts < job.max_attempts) {
       // Some content failed but we have retries left — schedule automatic retry
       // Backoff: 1min, 5min, 15min, 30min per attempt
-      const backoffMinutes = [1, 5, 15, 30];
+      const backoffMinutes = [1, 2, 5, 5, 5];
       const delayMinutes = backoffMinutes[Math.min(job.attempts - 1, backoffMinutes.length - 1)];
       const retryAfter = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
 
