@@ -76,7 +76,7 @@ const App = () => {
 
               {/* Church Admin routes */}
               <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
-              <Route path="/admin/reset-password" element={<Suspense fallback={null}><ResetPassword /></Suspense>} />
+              <Route path="/admin/set-password" element={<Suspense fallback={null}><ResetPassword /></Suspense>} />
               <Route path="/admin/setup" element={<Suspense fallback={null}><AdminSetup /></Suspense>} />
               <Route path="/admin" element={<Suspense fallback={null}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
