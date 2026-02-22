@@ -21,12 +21,12 @@ serve(async (req) => {
   const workerId = crypto.randomUUID();
 
   try {
-    // Claim a queued job using optimistic locking
+    // Claim a queued or retrying job using optimistic locking
     const now = new Date().toISOString();
     const { data: jobs, error: claimError } = await supabase
       .from("sermon_jobs")
       .select("*")
-      .eq("status", "queued")
+      .in("status", ["queued", "retrying"])
       .order("priority", { ascending: false })
       .order("created_at", { ascending: true })
       .limit(1);
@@ -39,20 +39,22 @@ serve(async (req) => {
     }
 
     const job = jobs[0];
+    const isRetry = job.status === "retrying";
 
     // Try to claim the job
-    const { error: lockError } = await supabase
+    const { data: claimedRows, error: lockError } = await supabase
       .from("sermon_jobs")
       .update({
         status: "processing",
         worker_id: workerId,
-        started_at: now,
+        started_at: isRetry ? job.started_at : now,
         attempts: job.attempts + 1,
       })
       .eq("id", job.id)
-      .eq("status", "queued"); // Only update if still queued
+      .in("status", ["queued", "retrying"])
+      .select();
 
-    if (lockError) {
+    if (lockError || !claimedRows || claimedRows.length === 0) {
       return new Response(JSON.stringify({ message: "Job already claimed" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -74,81 +76,100 @@ serve(async (req) => {
       });
     }
 
-    // Update sermon status to transcribing
-    await supabase
-      .from("sermons")
-      .update({ status: "transcribing" })
-      .eq("id", sermon.id);
-
-    // Step 1: Download file from storage
-    console.log("Downloading file from storage:", sermon.storage_path);
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from("sermon-media")
-      .download(sermon.storage_path!);
-
-    if (downloadError || !fileData) {
-      await failJob(supabase, job.id, "Failed to download file from storage");
-      await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-      return new Response(JSON.stringify({ error: "Download failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Step 2: Transcribe with ElevenLabs Scribe
-    console.log("Transcribing with ElevenLabs...");
-    const transcribeFormData = new FormData();
-    transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
-    transcribeFormData.append("model_id", "scribe_v2");
-    transcribeFormData.append("tag_audio_events", "false");
-    transcribeFormData.append("diarize", "false");
-
-    const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-      method: "POST",
-      headers: { "xi-api-key": elevenlabsKey },
-      body: transcribeFormData,
-    });
-
-    if (!transcribeResponse.ok) {
-      const errText = await transcribeResponse.text();
-      console.error("ElevenLabs error:", transcribeResponse.status, errText);
-      await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
-      await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-      return new Response(JSON.stringify({ error: "Transcription failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const transcription = await transcribeResponse.json();
-    const transcriptText = transcription.text || "";
-    const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
-
-    // Save transcript
-    const { error: transcriptError } = await supabase
+    // On retry, skip transcription if transcript already exists
+    const { data: existingTranscript } = await supabase
       .from("sermon_transcripts")
-      .insert({
-        sermon_id: sermon.id,
-        full_text: transcriptText,
-        word_count: wordCount,
-        language: "en",
+      .select("id, full_text")
+      .eq("sermon_id", sermon.id)
+      .maybeSingle();
+
+    let transcriptText = existingTranscript?.full_text || "";
+
+    if (!existingTranscript) {
+      // Update sermon status to transcribing
+      await supabase
+        .from("sermons")
+        .update({ status: "transcribing" })
+        .eq("id", sermon.id);
+
+      // Step 1: Download file from storage
+      console.log("Downloading file from storage:", sermon.storage_path);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("sermon-media")
+        .download(sermon.storage_path!);
+
+      if (downloadError || !fileData) {
+        await failJob(supabase, job.id, "Failed to download file from storage");
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Download failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Step 2: Transcribe with ElevenLabs Scribe
+      console.log("Transcribing with ElevenLabs...");
+      const transcribeFormData = new FormData();
+      transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
+      transcribeFormData.append("model_id", "scribe_v2");
+      transcribeFormData.append("tag_audio_events", "false");
+      transcribeFormData.append("diarize", "false");
+
+      const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+        method: "POST",
+        headers: { "xi-api-key": elevenlabsKey },
+        body: transcribeFormData,
       });
 
-    if (transcriptError) {
-      console.error("Transcript save error:", transcriptError);
-      await failJob(supabase, job.id, "Failed to save transcript");
-      await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-      return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      if (!transcribeResponse.ok) {
+        const errText = await transcribeResponse.text();
+        console.error("ElevenLabs error:", transcribeResponse.status, errText);
+        await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Transcription failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    // Step 3: Generate AI content
+      const transcription = await transcribeResponse.json();
+      transcriptText = transcription.text || "";
+      const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+
+      // Save transcript
+      const { error: transcriptError } = await supabase
+        .from("sermon_transcripts")
+        .insert({
+          sermon_id: sermon.id,
+          full_text: transcriptText,
+          word_count: wordCount,
+          language: "en",
+        });
+
+      if (transcriptError) {
+        console.error("Transcript save error:", transcriptError);
+        await failJob(supabase, job.id, "Failed to save transcript");
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } // end if (!existingTranscript)
+
+    // Step 3: Generate AI content (only missing types)
     console.log("Generating AI content...");
     await supabase.from("sermons").update({ status: "generating" }).eq("id", sermon.id);
 
-    const contentTypes = [
+    // Check which content types already exist
+    const { data: existingContent } = await supabase
+      .from("sermon_content")
+      .select("content_type")
+      .eq("sermon_id", sermon.id);
+
+    const existingTypes = new Set((existingContent || []).map((c: any) => c.content_type));
+
+    const allContentTypes = [
       { type: "spark", prompt: buildSparkPrompt(sermon.title, transcriptText) },
       { type: "takeaways", prompt: buildTakeawaysPrompt(sermon.title, transcriptText) },
       { type: "reflection_questions", prompt: buildReflectionPrompt(sermon.title, transcriptText) },
@@ -158,7 +179,15 @@ serve(async (req) => {
       { type: "weekend_reflection", prompt: buildWeekendReflectionPrompt(sermon.title, transcriptText) },
     ];
 
-    for (const ct of contentTypes) {
+    // Only generate what's missing
+    const missingTypes = allContentTypes.filter((ct) => !existingTypes.has(ct.type));
+    const failedTypes: string[] = [];
+
+    if (missingTypes.length === 0) {
+      console.log("All content types already generated");
+    }
+
+    for (const ct of missingTypes) {
       try {
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -180,7 +209,8 @@ serve(async (req) => {
         if (!aiResponse.ok) {
           const errText = await aiResponse.text();
           console.error(`AI error for ${ct.type}:`, aiResponse.status, errText);
-          continue; // Skip this content type, don't fail the whole job
+          failedTypes.push(ct.type);
+          continue;
         }
 
         const aiResult = await aiResponse.json();
@@ -192,6 +222,7 @@ serve(async (req) => {
             content = JSON.parse(toolCall.function.arguments);
           } catch {
             console.error(`Failed to parse AI response for ${ct.type}`);
+            failedTypes.push(ct.type);
             continue;
           }
         }
@@ -205,11 +236,68 @@ serve(async (req) => {
         console.log(`Generated ${ct.type} successfully`);
       } catch (err) {
         console.error(`Error generating ${ct.type}:`, err);
-        // Continue with other content types
+        failedTypes.push(ct.type);
       }
     }
 
-    // Step 4: Mark as complete
+    // Step 4: Determine final status
+    if (failedTypes.length > 0 && job.attempts < job.max_attempts) {
+      // Some content failed but we have retries left — schedule automatic retry
+      console.log(`${failedTypes.length} content types failed, scheduling retry (attempt ${job.attempts}/${job.max_attempts})`);
+      await supabase
+        .from("sermon_jobs")
+        .update({
+          status: "retrying",
+          error_message: `Failed content types: ${failedTypes.join(", ")}`,
+          error_details: { failed_types: failedTypes, attempt: job.attempts },
+        })
+        .eq("id", job.id);
+
+      // Keep sermon in "generating" so users know it's still being worked on
+      return new Response(JSON.stringify({
+        success: false,
+        sermon_id: sermon.id,
+        message: `Retrying ${failedTypes.length} failed content types`,
+        failed_types: failedTypes,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (failedTypes.length > 0) {
+      // Max retries exhausted — mark as failed
+      console.error(`Max retries reached. Still missing: ${failedTypes.join(", ")}`);
+      await supabase
+        .from("sermon_jobs")
+        .update({
+          status: "failed",
+          error_message: `Failed after ${job.max_attempts} attempts. Missing: ${failedTypes.join(", ")}`,
+          error_details: { failed_types: failedTypes, attempt: job.attempts },
+          failed_at: new Date().toISOString(),
+        })
+        .eq("id", job.id);
+
+      // Still mark sermon as complete if most content generated
+      const generatedCount = allContentTypes.length - failedTypes.length;
+      if (generatedCount > 0) {
+        await supabase.from("sermons").update({ status: "complete" }).eq("id", sermon.id);
+      } else {
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+      }
+
+      return new Response(JSON.stringify({
+        success: false,
+        sermon_id: sermon.id,
+        message: `Completed with ${failedTypes.length} missing content types after ${job.max_attempts} attempts`,
+        failed_types: failedTypes,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // All content generated successfully!
     await supabase
       .from("sermons")
       .update({ status: "complete" })
@@ -220,15 +308,17 @@ serve(async (req) => {
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
+        error_message: null,
+        error_details: null,
       })
       .eq("id", job.id);
 
-    console.log(`Sermon ${sermon.id} processed successfully`);
+    console.log(`Sermon ${sermon.id} processed successfully — all content generated`);
 
     return new Response(JSON.stringify({
       success: true,
       sermon_id: sermon.id,
-      message: "Sermon processed successfully",
+      message: "Sermon processed successfully — all content generated",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
