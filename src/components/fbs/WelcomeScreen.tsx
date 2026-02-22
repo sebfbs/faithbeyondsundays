@@ -14,6 +14,8 @@ export interface UserData {
   avatarUrl?: string;
   role?: "pastor";
   instagramHandle?: string;
+  phoneNumber?: string;
+  showPhoneNumber?: boolean;
 }
 
 interface WelcomeScreenProps {

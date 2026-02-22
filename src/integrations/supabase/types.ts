@@ -512,6 +512,7 @@ export type Database = {
           last_name: string | null
           onboarding_complete: boolean
           phone_number: string | null
+          show_phone_number: boolean
           streak_current: number
           streak_longest: number
           updated_at: string
@@ -531,6 +532,7 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone_number?: string | null
+          show_phone_number?: boolean
           streak_current?: number
           streak_longest?: number
           updated_at?: string
@@ -550,6 +552,7 @@ export type Database = {
           last_name?: string | null
           onboarding_complete?: boolean
           phone_number?: string | null
+          show_phone_number?: boolean
           streak_current?: number
           streak_longest?: number
           updated_at?: string

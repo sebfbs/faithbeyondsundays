@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN show_phone_number boolean NOT NULL DEFAULT false;
