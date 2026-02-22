@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share } from "lucide-react";
-import type { SermonData } from "./data";
+import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { toast } from "sonner";
 
 function AccordionSection({
@@ -33,7 +33,7 @@ function AccordionSection({
 }
 
 interface PreviousSermonDetailScreenProps {
-  sermon: SermonData;
+  sermon: SermonUIData;
   onBack: () => void;
 }
 

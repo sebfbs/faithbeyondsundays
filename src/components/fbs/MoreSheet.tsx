@@ -1,8 +1,9 @@
 import { Users, Heart, User, BookOpen, HandCoins, X } from "lucide-react";
-import { FEATURE_FLAGS } from "./featureFlags";
 import { getAccentColors } from "./themeColors";
+import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface MoreSheetProps {
+  featureFlags: FeatureFlags;
   onProfile: () => void;
   onCommunity: () => void;
   onBible: () => void;
@@ -11,52 +12,37 @@ interface MoreSheetProps {
   givingUrl?: string;
 }
 
-const allOptions = [
-  { icon: Users, label: "Community", key: "community", featureKey: "community" as string | null },
-  { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
-  { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as string | null },
-  { icon: HandCoins, label: "Give", key: "give", featureKey: "giving" as string | null },
-  { icon: User, label: "Profile", key: "profile", featureKey: null },
-];
-
-const options = allOptions.filter(
-  (opt) => !opt.featureKey || FEATURE_FLAGS[opt.featureKey]
-);
-
-export default function MoreSheet({ onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl }: MoreSheetProps) {
+export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl }: MoreSheetProps) {
   const colors = getAccentColors();
+
+  const allOptions = [
+    { icon: Users, label: "Community", key: "community", featureKey: "community" as keyof FeatureFlags | null },
+    { icon: BookOpen, label: "Bible", key: "bible", featureKey: null },
+    { icon: Heart, label: "Prayer", key: "prayer", featureKey: "prayer" as keyof FeatureFlags | null },
+    { icon: HandCoins, label: "Give", key: "give", featureKey: "giving" as keyof FeatureFlags | null },
+    { icon: User, label: "Profile", key: "profile", featureKey: null },
+  ];
+
+  const options = allOptions.filter(
+    (opt) => !opt.featureKey || featureFlags[opt.featureKey]
+  );
+
   const handleOption = (key: string) => {
-    if (key === "profile") {
-      onProfile();
-    } else if (key === "community") {
-      onCommunity();
-    } else if (key === "bible") {
-      onBible();
-    } else if (key === "prayer") {
-      onPrayer();
-    } else if (key === "give" && givingUrl) {
-      window.open(givingUrl, "_blank");
-    }
+    if (key === "profile") onProfile();
+    else if (key === "community") onCommunity();
+    else if (key === "bible") onBible();
+    else if (key === "prayer") onPrayer();
+    else if (key === "give" && givingUrl) window.open(givingUrl, "_blank");
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-foreground/15 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Sheet */}
-      <div
-        className="relative w-full max-w-[430px] bg-card rounded-t-3xl px-5 pt-5 pb-28 animate-slide-up shadow-nav"
-      >
+      <div className="absolute inset-0 bg-foreground/15 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-[430px] bg-card rounded-t-3xl px-5 pt-5 pb-28 animate-slide-up shadow-nav">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-foreground">More</h2>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full bg-muted flex items-center justify-center tap-active"
-          >
+          <button onClick={onClose} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center tap-active">
             <X size={14} className="text-muted-foreground" />
           </button>
         </div>

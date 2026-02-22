@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2 } from "lucide-react";
-import type { JournalEntry } from "@/pages/Index";
+import type { JournalEntry } from "@/hooks/useJournalEntries";
 import { getAccentColors } from "./themeColors";
 
 type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
