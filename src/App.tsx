@@ -18,6 +18,13 @@ const PlatformLayout = lazy(() => import("./pages/platform/PlatformLayout"));
 const PlatformDashboard = lazy(() => import("./pages/platform/PlatformDashboard"));
 const PlatformChurches = lazy(() => import("./pages/platform/PlatformChurches"));
 const PlatformChurchDetail = lazy(() => import("./pages/platform/PlatformChurchDetail"));
+
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminSermons = lazy(() => import("./pages/admin/AdminSermons"));
+const AdminMembers = lazy(() => import("./pages/admin/AdminMembers"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
@@ -60,6 +67,15 @@ const App = () => {
                 <Route path="dashboard" element={<PlatformDashboard />} />
                 <Route path="churches" element={<PlatformChurches />} />
                 <Route path="churches/:id" element={<PlatformChurchDetail />} />
+              </Route>
+
+              {/* Church Admin routes */}
+              <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={null}><AdminLayout /></Suspense>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="sermons" element={<AdminSermons />} />
+                <Route path="members" element={<AdminMembers />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

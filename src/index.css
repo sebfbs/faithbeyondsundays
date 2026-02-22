@@ -131,7 +131,8 @@
   }
 
   /* Platform pages break out of member app constraints */
-  #root:has(.platform-root) {
+  #root:has(.platform-root),
+  #root:has(.admin-root) {
     display: block;
   }
 }
