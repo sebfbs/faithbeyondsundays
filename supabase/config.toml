@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.assign-church-admin]
+verify_jwt = false
+
+[functions.send-admin-invite]
+verify_jwt = false
