@@ -20,7 +20,7 @@ export default function PlatformChurches() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", code: "", city: "", state: "" });
+  const [form, setForm] = useState({ name: "", city: "", state: "" });
 
   const memberCounts = members.reduce<Record<string, number>>((acc, m) => {
     acc[m.church_id] = (acc[m.church_id] || 0) + 1;
@@ -30,9 +30,10 @@ export default function PlatformChurches() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
+    const code = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const { error } = await supabase.from("churches").insert({
       name: form.name,
-      code: form.code.toLowerCase().replace(/\s+/g, "-"),
+      code,
       city: form.city || null,
       state: form.state || null,
     });
@@ -41,7 +42,7 @@ export default function PlatformChurches() {
     } else {
       toast.success("Church created");
       setOpen(false);
-      setForm({ name: "", code: "", city: "", state: "" });
+      setForm({ name: "", city: "", state: "" });
       queryClient.invalidateQueries({ queryKey: ["platform", "churches"] });
     }
     setCreating(false);
@@ -79,10 +80,6 @@ export default function PlatformChurches() {
               <div className="space-y-2">
                 <Label className="text-slate-300">Name *</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="bg-slate-800 border-slate-700 text-slate-100" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Code *</Label>
-                <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required placeholder="e.g. grace-nyc" className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
