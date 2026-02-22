@@ -1,1 +1,7 @@
 project_id = "imkpdqtjfgxblvzdlvjc"
+
+[functions.upload-sermon]
+verify_jwt = false
+
+[functions.process-sermon]
+verify_jwt = false
