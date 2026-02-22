@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       type: "recovery",
       email: admin_email,
       options: {
-        redirectTo: "https://faithbeyondsundays.lovable.app/admin/set-password",
+        redirectTo: "https://faithbeyondsundays.lovable.app/admin/setup",
       },
     });
 
@@ -99,13 +99,14 @@ Deno.serve(async (req) => {
             You've been set up as the admin for <strong style="color:#1a1a2e;">${church_name}</strong>.
           </p>
           <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.6;">
-            Click below to set your password and access your dashboard.
+            Click below to get started.
+          </p>
           </p>
         </td></tr>
         <!-- CTA Button -->
         <tr><td style="padding:0 32px 32px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="border-radius:12px;background:#e09a00;text-align:center;"><a href="${recoveryLink}" target="_blank" style="display:block;padding:14px 24px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Set Password & Sign In</a></td></tr>
+            <tr><td style="border-radius:12px;background:#e09a00;text-align:center;"><a href="${recoveryLink}" target="_blank" style="display:block;padding:14px 24px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Get Started</a></td></tr>
           </table>
         </td></tr>
         <!-- Fallback link -->
