@@ -5,7 +5,7 @@ import { useAuth } from "@/components/fbs/AuthProvider";
 export interface UserProfile {
   id: string;
   user_id: string;
-  church_id: string;
+  church_id: string | null;
   username: string;
   first_name: string | null;
   last_name: string | null;

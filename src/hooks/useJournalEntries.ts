@@ -78,7 +78,7 @@ export function useJournalEntries() {
         .from("journal_entries")
         .insert({
           user_id: user.id,
-          church_id: profile.church_id,
+          church_id: profile.church_id || null,
           content: entry.content,
           title: entry.title || null,
           entry_type: entry.entryType || "sermon",
