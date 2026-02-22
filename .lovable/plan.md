@@ -1,59 +1,51 @@
 
-# Multi-Step Admin Setup Wizard with Exciting Username Step
 
-## Overview
-Restructure the AdminSetup page into a 3-step wizard, moving password creation to Step 2, and making Step 3 (username selection) feel like a special, celebratory moment.
+# Preserve Profiles and Journal Entries When a Church Is Deleted
 
-## Step Breakdown
+## What Changes
 
-**Step 1 -- "Welcome"**
-- First Name + Last Name
-- Warm, simple card with the church icon
-- Title: "Welcome!" / Description: "Let's get you set up"
-- Button: "Continue"
+When a church is deleted from the platform admin panel, users will keep their **profiles** (including usernames) and **journal entries** instead of losing them. Their `church_id` will simply be set to `NULL`, indicating they're no longer associated with a church.
 
-**Step 2 -- "Your Details"**
-- Email (read-only, pre-filled)
-- Phone Number
-- Password + Confirm Password (only shown if user arrived via invite/recovery link, hidden for Google OAuth users)
-- Title: "Contact & Security"
-- Button: "Continue"
+## What Gets Preserved vs. Deleted
 
-**Step 3 -- "Claim Your Username" (the exciting one)**
-This step gets a completely different visual treatment to feel ethereal and exciting:
-- Animated gradient background behind the card (subtle shifting amber/sky-blue aurora effect)
-- Large, centered `@username` display that updates live as they type, styled prominently like a profile badge
-- Sparkle/star icon instead of the church icon
-- Title: "Claim Your @" with a playful description like "Every great name is still available. Pick yours."
-- The username input is styled larger and bolder than normal inputs
-- On successful submit: confetti burst (using the already-installed `canvas-confetti` package) before navigating to the dashboard
-- Button: "Claim @username" (dynamically shows their chosen name)
+**Preserved (church_id becomes NULL):**
+- Profile (username, name, avatar, bio, phone, streaks, etc.)
+- Journal entries (reflections, bookmarks, suggested scriptures)
 
-## Visual Details for Step 3
-- Card gets a subtle shimmer/glow border using a CSS gradient animation
-- Background uses a radial gradient with soft animated movement (CSS keyframes, no heavy libraries)
-- The live `@username` preview above the input scales up slightly with a smooth transition as they type
-- Confetti fires on successful profile save using the existing `canvas-confetti` dependency
-- Progress dots use the amber accent color for completed steps
+**Still deleted (CASCADE remains -- correct behavior):**
+- User roles (admin/member/pastor access revoked)
+- Sermons, sermon content, transcripts, sermon jobs
+- Prayer requests
+- Community groups and group memberships
+- Analytics events
+- Church feature flags
 
-## Technical Details
+## Technical Steps
 
-**Files modified:**
-- `src/pages/admin/AdminSetup.tsx` -- Complete rewrite as 3-step wizard with:
-  - `step` state (1, 2, 3)
-  - `password` / `confirmPassword` state (Step 2)
-  - `isRecoveryFlow` state to detect if user arrived via invite link (listen for `PASSWORD_RECOVERY` auth event)
-  - Password update via `supabase.auth.updateUser({ password })` on Step 2 if in recovery flow
-  - Profile update + `onboarding_complete: true` on Step 3 submit
-  - Confetti trigger via `canvas-confetti` on success
-  - Custom CSS keyframes for the shimmer/glow effect on Step 3's card (inline styles or added to index.css)
+### 1. Database Migration
 
-- `src/pages/admin/ResetPassword.tsx` -- Delete this file (functionality merged into AdminSetup)
-- `src/App.tsx` -- Remove the `/admin/set-password` route
-- `src/pages/admin/AdminLogin.tsx` -- Update "Forgot password?" redirect to `/admin/setup`
-- `supabase/functions/send-admin-invite/index.ts` -- Update `redirectTo` to point to `/admin/setup`
+A single migration that updates two tables:
 
-**No database changes needed** -- all columns already exist.
+**profiles.church_id:**
+- Make the column nullable (currently `NOT NULL`)
+- Drop the existing `ON DELETE CASCADE` foreign key
+- Re-add the foreign key with `ON DELETE SET NULL`
 
-## Progress Indicator
-Three small dots at the top of each card, filled for completed/current steps, outlined for upcoming. Smooth transition between steps with a fade animation using existing `animate-fade-in` class.
+**journal_entries.church_id:**
+- Make the column nullable (currently `NOT NULL`)
+- Drop the existing `ON DELETE CASCADE` foreign key
+- Re-add the foreign key with `ON DELETE SET NULL`
+
+### 2. Code Updates
+
+Update code that assumes `church_id` is always present on these tables:
+
+- `src/hooks/useProfile.ts` -- handle `church_id` being `null` (already shows empty string for church name/code when missing, so minimal change)
+- `src/hooks/useJournalEntries.ts` -- the `addEntry` mutation currently requires `profile.church_id`; guard against it being `null`
+- `src/components/fbs/AuthProvider.tsx` -- ensure auth flow handles profiles with no church gracefully
+- RLS policies on `journal_entries` use `user_id = auth.uid()` so they'll continue working regardless of `church_id` value
+
+### 3. No Edge Function Changes Needed
+
+The `get_user_church_id` database function already returns a nullable UUID, so downstream queries will simply return `NULL` for churchless users -- no breakage expected.
+
