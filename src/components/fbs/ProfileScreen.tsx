@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -44,8 +44,12 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const [igInput, setIgInput] = useState(user.instagramHandle || "");
   const [igSaved, setIgSaved] = useState(false);
 
+  // Phone number editing
+  const [phoneInput, setPhoneInput] = useState(user.phoneNumber || "");
+  const [phoneSaved, setPhoneSaved] = useState(false);
+  const [showPhone, setShowPhone] = useState(user.showPhoneNumber || false);
+
   const sanitizeIgHandle = (value: string) => {
-    // Strip @ prefix and only allow valid IG characters
     return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
   };
 
@@ -55,6 +59,20 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     onUpdateUser?.(updated);
     setIgSaved(true);
     setTimeout(() => setIgSaved(false), 2000);
+  };
+
+  const handleSavePhone = () => {
+    const updated = { ...user, phoneNumber: phoneInput.trim() || undefined };
+    onUpdateUser?.(updated);
+    setPhoneSaved(true);
+    setTimeout(() => setPhoneSaved(false), 2000);
+  };
+
+  const handleToggleShowPhone = () => {
+    const newVal = !showPhone;
+    setShowPhone(newVal);
+    const updated = { ...user, showPhoneNumber: newVal };
+    onUpdateUser?.(updated);
   };
 
   return (
@@ -118,11 +136,12 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         </div>
       </section>
 
-      {/* Social */}
+      {/* Social & Contact */}
       <section className="bg-card rounded-3xl p-5 shadow-card">
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-          Social
+          Social & Contact
         </p>
+        {/* Instagram */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 flex-1 bg-muted/50 rounded-2xl px-3 py-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-muted-foreground shrink-0">
@@ -151,6 +170,43 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         {igInput && !/^[a-zA-Z0-9._]{1,30}$/.test(igInput) && (
           <p className="text-xs text-destructive mt-2 ml-1">Only letters, numbers, periods, and underscores</p>
         )}
+
+        {/* Phone Number */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-1 bg-muted/50 rounded-2xl px-3 py-3">
+            <Phone size={16} className="text-muted-foreground shrink-0" />
+            <input
+              type="tel"
+              value={phoneInput}
+              onChange={(e) => { setPhoneInput(e.target.value); setPhoneSaved(false); }}
+              placeholder="Phone number"
+              maxLength={20}
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={handleSavePhone}
+            disabled={phoneSaved || phoneInput.trim() === (user.phoneNumber || "")}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center tap-active transition-colors disabled:opacity-40"
+            style={{ background: phoneSaved ? "hsl(150, 55%, 45%)" : "hsl(var(--muted))" }}
+          >
+            <Check size={16} className={phoneSaved ? "text-white" : "text-foreground"} />
+          </button>
+        </div>
+
+        {/* Show phone toggle */}
+        <button
+          onClick={handleToggleShowPhone}
+          className="w-full flex items-center justify-between mt-3 py-3 tap-active"
+        >
+          <div className="text-left">
+            <span className="text-sm font-medium text-foreground">Show phone on profile</span>
+            <p className="text-xs text-muted-foreground mt-0.5">Let others see your number for networking</p>
+          </div>
+          <div className={`w-11 h-6 rounded-full transition-colors relative ${showPhone ? "bg-amber" : "bg-border"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${showPhone ? "translate-x-5" : "translate-x-0.5"}`} />
+          </div>
+        </button>
       </section>
 
       {/* Appearance */}

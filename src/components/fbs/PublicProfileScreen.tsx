@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
 interface PublicProfileScreenProps {
-  member: CommunityMember & { hasInvited?: boolean };
+  member: CommunityMember & { hasInvited?: boolean; phoneNumber?: string; showPhoneNumber?: boolean };
   onBack: () => void;
 }
 
@@ -139,6 +139,16 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
               </svg>
               <span className="text-xs font-medium text-muted-foreground">@{member.instagramHandle}</span>
             </button>
+          )}
+
+          {member.showPhoneNumber && member.phoneNumber && (
+            <a
+              href={`tel:${member.phoneNumber}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 tap-active transition-colors hover:bg-muted"
+            >
+              <Phone size={14} className="text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">{member.phoneNumber}</span>
+            </a>
           )}
         </div>
 

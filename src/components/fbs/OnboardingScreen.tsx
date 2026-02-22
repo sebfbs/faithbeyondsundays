@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 
@@ -11,7 +11,7 @@ interface ChurchEntry {
   state: string | null;
 }
 
-type Step = "church" | "username";
+type Step = "church" | "details" | "username";
 
 export default function OnboardingScreen() {
   const { user } = useAuth();
@@ -20,6 +20,11 @@ export default function OnboardingScreen() {
   const [churches, setChurches] = useState<ChurchEntry[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedChurch, setSelectedChurch] = useState<ChurchEntry | null>(null);
+
+  // Details step
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   // Username step
   const [username, setUsername] = useState("");
@@ -98,18 +103,14 @@ export default function OnboardingScreen() {
     if (!user || !selectedChurch || !username || usernameError) return;
     setSaving(true);
 
-    // Extract name from user metadata or email
-    const meta = user.user_metadata || {};
-    const firstName = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || "";
-    const lastName = meta.full_name?.split(" ").slice(1).join(" ") || meta.name?.split(" ").slice(1).join(" ") || "";
-
     const { error } = await supabase.from("profiles").insert({
       user_id: user.id,
       church_id: selectedChurch.id,
       username,
-      first_name: firstName,
-      last_name: lastName,
-      avatar_url: meta.avatar_url || null,
+      first_name: firstName.trim() || null,
+      last_name: lastName.trim() || null,
+      phone_number: phoneNumber.trim() || null,
+      avatar_url: user.user_metadata?.avatar_url || null,
       onboarding_complete: true,
     });
 
@@ -246,7 +247,7 @@ export default function OnboardingScreen() {
             {selectedChurch && (
               <div className="animate-fade-in">
                 <button
-                  onClick={() => setStep("username")}
+                  onClick={() => setStep("details")}
                   className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
                 >
                   Continue
@@ -260,6 +261,77 @@ export default function OnboardingScreen() {
     );
   }
 
+  // Details step (name + phone)
+  if (step === "details") {
+    return (
+      <div
+        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
+        style={{ background: "hsl(var(--background))" }}
+      >
+        <div className="pt-14 pb-6">
+          <button onClick={() => setStep("church")} className="mb-4 tap-active">
+            <ArrowLeft size={24} className="text-foreground" />
+          </button>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
+              <User size={18} className="text-amber" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">About You</h1>
+              <p className="text-xs text-muted-foreground">Tell us a bit about yourself</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 flex-1">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              maxLength={50}
+              className="bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+            />
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last name"
+              maxLength={50}
+              className="bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+            />
+          </div>
+          <div className="relative">
+            <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Phone number (optional)"
+              maxLength={20}
+              className="w-full bg-card rounded-2xl pl-11 pr-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground ml-1">
+            Your phone number is private by default. You can choose to share it later.
+          </p>
+        </div>
+
+        <div className="pb-12 pt-6">
+          <button
+            onClick={() => setStep("username")}
+            disabled={!firstName.trim() || !lastName.trim()}
+            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-30"
+          >
+            Continue
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Username step
   return (
     <div
@@ -267,7 +339,7 @@ export default function OnboardingScreen() {
       style={{ background: "hsl(var(--background))" }}
     >
       <div className="pt-14 pb-6">
-        <button onClick={() => setStep("church")} className="mb-4 tap-active">
+        <button onClick={() => setStep("details")} className="mb-4 tap-active">
           <ArrowLeft size={24} className="text-foreground" />
         </button>
         <div className="flex items-center gap-3 mb-2">

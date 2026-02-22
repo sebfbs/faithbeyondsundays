@@ -12,6 +12,8 @@ export interface UserProfile {
   avatar_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  phone_number: string | null;
+  show_phone_number: boolean;
   streak_current: number;
   streak_longest: number;
   challenges_completed: number;
