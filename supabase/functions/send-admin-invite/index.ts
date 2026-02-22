@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Sebastian <sebastian@faithbeyondsundays.com>",
+        from: "Sebastian <sebastian@welcome.faithbeyondsundays.com>",
         to: [admin_email],
         subject: `You've been invited to manage ${church_name} on Faith Beyond Sundays`,
         html: emailHtml,
