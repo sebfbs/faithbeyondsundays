@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, CheckCircle2, Send } from "lucide-react";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { Plus, Loader2, CheckCircle2, Send, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -26,6 +27,9 @@ export default function PlatformChurches() {
   const [createdChurch, setCreatedChurch] = useState<{ id: string; name: string; adminEmail: string } | null>(null);
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const memberCounts = members.reduce<Record<string, number>>((acc, m) => {
     acc[m.church_id] = (acc[m.church_id] || 0) + 1;
@@ -100,6 +104,22 @@ export default function PlatformChurches() {
     const { error } = await supabase.from("churches").update({ is_active: !currentlyActive }).eq("id", id);
     if (error) toast.error(error.message);
     else queryClient.invalidateQueries({ queryKey: ["platform", "churches"] });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || deleteConfirm !== "delete") return;
+    setDeleting(true);
+    const { error } = await supabase.from("churches").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast.error("Failed to delete: " + error.message);
+    } else {
+      toast.success(`"${deleteTarget.name}" deleted`);
+      queryClient.invalidateQueries({ queryKey: ["platform", "churches"] });
+      queryClient.invalidateQueries({ queryKey: ["platform", "members"] });
+    }
+    setDeleting(false);
+    setDeleteTarget(null);
+    setDeleteConfirm("");
   };
 
   if (loading) {
@@ -213,14 +233,24 @@ export default function PlatformChurches() {
                   </TableCell>
                   <TableCell className="text-slate-400 text-sm">{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-slate-400 hover:text-slate-200"
-                      onClick={() => toggleActive(c.id, c.is_active)}
-                    >
-                      {c.is_active ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-slate-200"
+                        onClick={() => toggleActive(c.id, c.is_active)}
+                      >
+                        {c.is_active ? "Deactivate" : "Activate"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -235,6 +265,38 @@ export default function PlatformChurches() {
           </Table>
         </CardContent>
       </Card>
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteConfirm(""); } }}>
+        <AlertDialogContent className="bg-slate-900 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-100">Delete Church Account</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              This will permanently delete <span className="font-semibold text-slate-200">{deleteTarget?.name}</span> and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label className="text-slate-300 text-sm">Type <span className="font-mono font-semibold text-red-400">delete</span> to confirm</Label>
+            <Input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value.toLowerCase())}
+              placeholder="delete"
+              className="bg-slate-800 border-slate-700 text-slate-100"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700">Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirm !== "delete" || deleting}
+              onClick={handleDelete}
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Delete Permanently
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
