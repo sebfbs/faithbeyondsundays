@@ -33,7 +33,7 @@ export function usePlatformAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sermons")
-        .select("id, church_id");
+        .select("id, church_id, duration");
       if (error) throw error;
       return data;
     },
@@ -156,10 +156,24 @@ export function usePlatformAnalytics() {
     costConfigMap[c.key] = c.value_cents;
   });
 
+  // Derived: total sermon minutes from duration strings
+  const sermons = sermonsQuery.data ?? [];
+  const totalSermonMinutes = sermons.reduce((sum, s) => {
+    if (!s.duration) return sum;
+    const parts = s.duration.split(":").map(Number);
+    if (parts.some(isNaN)) return sum;
+    if (parts.length === 3) return sum + parts[0] * 60 + parts[1] + parts[2] / 60;
+    if (parts.length === 2) return sum + parts[0] + parts[1] / 60;
+    return sum;
+  }, 0);
+
+  // Derived: completed sermon jobs count
+  const completedJobCount = sermonJobs.filter(j => j.status === "completed").length;
+
   return {
     churches,
     members: membersQuery.data ?? [],
-    sermons: sermonsQuery.data ?? [],
+    sermons,
     events,
     loading:
       churchesQuery.isLoading ||
@@ -177,6 +191,8 @@ export function usePlatformAnalytics() {
     recentFailures,
     successRate,
     totalJobs,
+    totalSermonMinutes,
+    completedJobCount,
     expenses: (expensesQuery.data ?? []) as any[],
     costConfig: costConfigMap,
     costConfigItems: (costConfigQuery.data ?? []) as any[],
