@@ -8,6 +8,8 @@ import { DemoModeProvider } from "@/components/fbs/DemoModeProvider";
 import { AuthProvider } from "@/components/fbs/AuthProvider";
 import DemoModeBadge from "@/components/fbs/DemoModeBadge";
 import Index from "./pages/Index";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
@@ -33,8 +35,10 @@ const App = () => {
             <DemoModeBadge />
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
             </Routes>
           </DemoModeProvider>
         </AuthProvider>
