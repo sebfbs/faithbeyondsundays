@@ -57,9 +57,9 @@ export default function ResetPassword() {
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
             <Church className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-xl text-card-foreground">Set Your Password</CardTitle>
+          <CardTitle className="text-xl text-card-foreground">Welcome!</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Create a password for your Church Admin account
+            Create a password to finish setting up your Church Admin account
           </CardDescription>
         </CardHeader>
         <CardContent>
