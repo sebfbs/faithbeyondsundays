@@ -278,4 +278,45 @@
     transform: scale(0.97);
     opacity: 0.85;
   }
+
+  /* Step 3 aurora background */
+  @keyframes aurora-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-aurora-bg {
+    background: linear-gradient(
+      135deg,
+      hsl(38, 100%, 47%) 0%,
+      hsl(22, 55%, 75%) 25%,
+      hsl(207, 65%, 76%) 50%,
+      hsl(38, 100%, 60%) 75%,
+      hsl(207, 50%, 82%) 100%
+    );
+    background-size: 300% 300%;
+    animation: aurora-shift 8s ease-in-out infinite;
+  }
+
+  /* Shimmer border for username card */
+  @keyframes shimmer-border {
+    0% { border-color: hsl(38, 100%, 47% / 0.4); box-shadow: 0 0 20px hsl(38, 100%, 47% / 0.1); }
+    50% { border-color: hsl(207, 65%, 76% / 0.6); box-shadow: 0 0 30px hsl(207, 65%, 76% / 0.15); }
+    100% { border-color: hsl(38, 100%, 47% / 0.4); box-shadow: 0 0 20px hsl(38, 100%, 47% / 0.1); }
+  }
+
+  .animate-shimmer-border {
+    border: 2px solid hsl(38, 100%, 47% / 0.4);
+    animation: shimmer-border 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
