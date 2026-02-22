@@ -92,7 +92,7 @@ src/hooks/usePlatformAnalytics.ts           -- Hook: fetches platform-level stat
 ## Route Updates in App.tsx
 New routes added alongside existing member routes:
 ```text
-/platform               -> PlatformLogin
+/platform/login          -> PlatformLogin
 /platform/dashboard     -> PlatformLayout > PlatformDashboard
 /platform/churches      -> PlatformLayout > PlatformChurches
 /platform/churches/:id  -> PlatformLayout > PlatformChurchDetail

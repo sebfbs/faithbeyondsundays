@@ -7,10 +7,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DemoModeProvider } from "@/components/fbs/DemoModeProvider";
 import { AuthProvider } from "@/components/fbs/AuthProvider";
 import DemoModeBadge from "@/components/fbs/DemoModeBadge";
+import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
+
+const PlatformLogin = lazy(() => import("./pages/platform/PlatformLogin"));
+const PlatformLayout = lazy(() => import("./pages/platform/PlatformLayout"));
+const PlatformDashboard = lazy(() => import("./pages/platform/PlatformDashboard"));
+const PlatformChurches = lazy(() => import("./pages/platform/PlatformChurches"));
+const PlatformChurchDetail = lazy(() => import("./pages/platform/PlatformChurchDetail"));
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
@@ -45,6 +52,15 @@ const App = () => {
               <Route path="/previous-sermons" element={<Index />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+
+              {/* Platform Owner routes */}
+              <Route path="/platform/login" element={<Suspense fallback={null}><PlatformLogin /></Suspense>} />
+              <Route path="/platform" element={<Suspense fallback={null}><PlatformLayout /></Suspense>}>
+                <Route path="dashboard" element={<PlatformDashboard />} />
+                <Route path="churches" element={<PlatformChurches />} />
+                <Route path="churches/:id" element={<PlatformChurchDetail />} />
+              </Route>
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
