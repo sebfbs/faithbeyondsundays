@@ -36,6 +36,25 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [churchName, setChurchName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileChecked, setProfileChecked] = useState(false);
+
+  // Check if admin has completed profile setup
+  useEffect(() => {
+    if (!user || !churchId) return;
+    supabase
+      .from("profiles")
+      .select("first_name, onboarding_complete")
+      .eq("user_id", user.id)
+      .eq("church_id", churchId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && (!data.first_name || !data.onboarding_complete)) {
+          navigate("/admin/setup", { replace: true });
+        } else {
+          setProfileChecked(true);
+        }
+      });
+  }, [user, churchId, navigate]);
 
   useEffect(() => {
     if (!churchId) return;
@@ -49,7 +68,7 @@ export default function AdminLayout() {
       });
   }, [churchId]);
 
-  if (loading) {
+  if (loading || !profileChecked) {
     return (
       <div className="admin-root min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
