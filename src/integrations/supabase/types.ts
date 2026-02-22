@@ -511,6 +511,7 @@ export type Database = {
           is_email_verified: boolean
           last_name: string | null
           onboarding_complete: boolean
+          phone_number: string | null
           streak_current: number
           streak_longest: number
           updated_at: string
@@ -529,6 +530,7 @@ export type Database = {
           is_email_verified?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
+          phone_number?: string | null
           streak_current?: number
           streak_longest?: number
           updated_at?: string
@@ -547,6 +549,7 @@ export type Database = {
           is_email_verified?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
+          phone_number?: string | null
           streak_current?: number
           streak_longest?: number
           updated_at?: string

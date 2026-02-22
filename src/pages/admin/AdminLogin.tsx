@@ -31,7 +31,20 @@ export default function AdminLogin() {
       .in("role", ["owner", "admin", "pastor"]);
 
     if (roles && roles.length > 0) {
-      navigate("/admin", { replace: true });
+      // Check if profile setup is complete
+      const churchId = roles[0].church_id;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, onboarding_complete")
+        .eq("user_id", userId)
+        .eq("church_id", churchId)
+        .maybeSingle();
+
+      if (profile && (!profile.first_name || !profile.onboarding_complete)) {
+        navigate("/admin/setup", { replace: true });
+      } else {
+        navigate("/admin", { replace: true });
+      }
     } else {
       setAccessDenied(true);
       setSubmitting(false);

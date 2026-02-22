@@ -28,6 +28,7 @@ const AdminGroups = lazy(() => import("./pages/admin/AdminGroups"));
 const AdminPrayer = lazy(() => import("./pages/admin/AdminPrayer"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
@@ -74,6 +75,7 @@ const App = () => {
 
               {/* Church Admin routes */}
               <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
+              <Route path="/admin/setup" element={<Suspense fallback={null}><AdminSetup /></Suspense>} />
               <Route path="/admin" element={<Suspense fallback={null}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="sermons" element={<AdminSermons />} />
