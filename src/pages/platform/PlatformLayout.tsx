@@ -17,7 +17,7 @@ export default function PlatformLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950" style={{ maxWidth: "100%" }}>
+      <div className="platform-root min-h-screen flex items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
       </div>
     );
@@ -31,7 +31,7 @@ export default function PlatformLayout() {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-slate-950" style={{ maxWidth: "100%" }}>
+    <div className="platform-root min-h-screen flex w-full bg-slate-950">
       {/* Sidebar */}
       <aside className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
         <div className="p-5 border-b border-slate-800">

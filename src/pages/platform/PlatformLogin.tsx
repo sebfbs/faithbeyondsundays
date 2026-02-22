@@ -63,14 +63,14 @@ export default function PlatformLogin() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="platform-root min-h-screen flex items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4" style={{ maxWidth: "100%" }}>
+    <div className="platform-root min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <Card className="w-full max-w-sm border-slate-800 bg-slate-900 shadow-2xl">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -102,7 +102,7 @@ export default function PlatformLogin() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="sebastian@faithbeyondsundays.com"
+                  placeholder="you@example.com"
                   required
                   className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
                 />
