@@ -1,123 +1,96 @@
 
 
-# Platform Owner Panel -- Build Plan
+# Enhanced Platform Dashboard -- Business Intelligence
 
 ## Overview
 
-Build your personal command center at `/platform/*` where you (Sebastian) get a complete top-down view of every church account, all members across the platform, and platform-wide analytics. This gets built first so you can create and manage church accounts before onboarding any churches.
+Build a comprehensive business command center for the platform admin dashboard with financial tracking, engagement metrics, and platform health monitoring. Includes a 14-day inactivity threshold for church churn risk (instead of 30 days).
 
 ## Database Changes
 
-### 1. New table: `platform_admins`
-Stores platform-level superadmin access, completely separate from church roles.
+### New table: `platform_expenses`
+Stores manually entered cost line items. Only platform admins can CRUD.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Auto-generated |
-| user_id | uuid (unique) | Your auth user ID |
-| created_at | timestamptz | Auto-set |
+| Column | Type | Default |
+|--------|------|---------|
+| id | uuid PK | gen_random_uuid() |
+| name | text | -- |
+| amount_cents | integer | -- |
+| frequency | text | 'monthly' |
+| category | text | 'other' |
+| notes | text (nullable) | NULL |
+| created_at | timestamptz | now() |
+| updated_at | timestamptz | now() |
 
-RLS policies:
-- SELECT: Only rows where `is_platform_admin(auth.uid())` returns true
-- No INSERT/UPDATE/DELETE from client (managed via backend only)
+RLS: All operations restricted to `is_platform_admin(auth.uid())`.
 
-### 2. New function: `is_platform_admin(user_id)`
-A security definer function that checks the `platform_admins` table. Used in RLS policies to gate platform-level access without recursion issues.
+### New table: `platform_cost_config`
+Stores unit-cost assumptions for auto-calculation.
 
-### 3. New table: `analytics_events`
-Tracks member interactions for both church admin and platform dashboards.
+| Column | Type | Default |
+|--------|------|---------|
+| id | uuid PK | gen_random_uuid() |
+| key | text (unique) | -- |
+| value_cents | integer | 0 |
+| label | text | -- |
+| updated_at | timestamptz | now() |
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Auto-generated |
-| church_id | uuid | Which church the user belongs to |
-| user_id | uuid | Who performed the action |
-| event_type | text | e.g. `app_open`, `give_tap`, `sermon_view` |
-| metadata | jsonb | Optional extra data |
-| created_at | timestamptz | When it happened |
+RLS: All operations restricted to `is_platform_admin(auth.uid())`.
 
-RLS policies:
-- INSERT: Members can insert their own events (`user_id = auth.uid()`)
-- SELECT: Platform admins can read all events; church admins can read their church's events
-- No UPDATE/DELETE from client
+Seed defaults: `base_hosting_monthly` = 2500 ($25), `cost_per_sermon` = 50 ($0.50), `cost_per_member` = 0.
 
-### 4. Update churches table RLS
-Add a SELECT policy so platform admins can view all churches (currently only publicly readable, but we need admin-level write access too). Add an ALL policy for platform admins to manage any church.
+### New RLS policy on `sermon_jobs`
+Add a SELECT policy for platform admins so the dashboard can show pipeline status.
 
-## Pages and Routes
+## Dashboard Sections
 
-| Route | Page | What it does |
-|-------|------|-------------|
-| `/platform` | Platform Login | Login screen, checks `platform_admins` table |
-| `/platform/dashboard` | Dashboard | Platform-wide analytics |
-| `/platform/churches` | Churches List | All church accounts with member counts |
-| `/platform/churches/:id` | Church Detail | Deep-dive into a specific church |
+### 1. Enhanced Stats Row
+Keep existing 5 cards, add:
+- **Active Users (7d)** -- distinct users with events in last 7 days
+- **Active Users (30d)** -- same for 30 days
+- **Avg Members / Church** -- quick health ratio
 
-## Platform Login Flow
-1. You visit `/platform` and see a clean login form
-2. You log in with `sebastian@faithbeyondsundays.com`
-3. The app checks `platform_admins` for your user ID
-4. If found, you're redirected to `/platform/dashboard`
-5. If not found, you see "Access Denied" with a link back to the member app
-6. After you sign up for the first time, I'll seed your account into `platform_admins` via a backend SQL command
+### 2. Financial Overview
+- **Auto-calculated estimates**: base hosting + (sermons x cost-per-sermon) + (members x cost-per-member)
+- **Manual expenses**: add/edit/delete line items (name, amount, frequency, category)
+- **Summary**: total monthly burn, revenue placeholder ($0 -- "No pricing plan yet"), net burn
+- **Cost config button**: dialog to adjust unit-cost assumptions
 
-## Platform Dashboard
-- Total churches (active count)
-- Total members across all churches
-- New signups over time (line chart)
-- Most active churches (ranked by member engagement)
-- Platform-wide sermon count
-- Platform-wide Give tap count
-- App opens across all churches
+### 3. Growth Charts (enhanced)
+- Keep 30-day signup chart
+- Add toggle to switch between Signups, App Opens, Give Taps
+- Trend indicator (percentage vs prior period)
 
-## Churches Management
-- Table listing all churches with: name, city/state, member count, active status, date created
-- Click a church to see its detail page
-- Create new church account (name, code, city, state)
-- Activate / deactivate a church
-- Church detail page shows that church's analytics (same data their admin would see)
+### 4. Engagement Metrics
+- DAU/MAU ratio
+- Average app opens per user per week
+- **Churches with zero activity in last 14 days** (churn risk -- flagged prominently)
 
-## New Files
+### 5. Platform Health Card
+This shows operational status of all backend workflows:
+- **Sermon pipeline**: count of jobs by status (queued, processing, completed, failed)
+- **Recent failures**: list of last 5 failed jobs with error messages and timestamps
+- **Processing success rate**: percentage of completed vs total jobs
+- **Storage usage estimate** based on sermon count
+- Visual status indicator (green/yellow/red) based on failure rate
 
-```text
-src/pages/platform/PlatformLogin.tsx        -- Login gate with platform_admins check
-src/pages/platform/PlatformLayout.tsx       -- Sidebar + content area wrapper
-src/pages/platform/PlatformDashboard.tsx    -- Platform-wide analytics
-src/pages/platform/PlatformChurches.tsx     -- Church accounts list
-src/pages/platform/PlatformChurchDetail.tsx -- Individual church deep-dive
-src/hooks/usePlatformAuth.ts               -- Hook: checks platform_admins table
-src/hooks/usePlatformAnalytics.ts           -- Hook: fetches platform-level stats
-```
+## File Changes
 
-## Route Updates in App.tsx
-New routes added alongside existing member routes:
-```text
-/platform/login          -> PlatformLogin
-/platform/dashboard     -> PlatformLayout > PlatformDashboard
-/platform/churches      -> PlatformLayout > PlatformChurches
-/platform/churches/:id  -> PlatformLayout > PlatformChurchDetail
-```
+### Modified
+- **`src/hooks/usePlatformAnalytics.ts`** -- add queries for: sermon_jobs (grouped by status + recent failures), platform_expenses, platform_cost_config, active user counts (7d/30d via analytics_events), churches with no events in 14 days
+- **`src/pages/platform/PlatformDashboard.tsx`** -- restructure layout into sections using new components; enhanced stats row at top, then financial + health side by side, then charts + engagement
 
-## Design Approach
-- Clean, professional design using existing Tailwind setup and shadcn/ui components
-- Sidebar navigation with: Dashboard, Churches
-- Your name and email shown in sidebar header
-- Responsive layout (works on desktop and tablet)
-- Uses existing `recharts` library for charts
-- Color scheme: neutral/dark sidebar to visually distinguish from the member app
-
-## Bootstrapping Your Account
-1. You sign up at the member app with `sebastian@faithbeyondsundays.com`
-2. I run a one-time SQL command: `INSERT INTO platform_admins (user_id) VALUES ('<your-user-id>')`
-3. You can then access `/platform` and see everything
+### New Components
+- **`src/components/platform/FinancialOverview.tsx`** -- auto costs + manual expense table with add/edit/delete buttons + cost config access
+- **`src/components/platform/ExpenseDialog.tsx`** -- form dialog for creating/editing a manual expense (name, amount, frequency, category, notes)
+- **`src/components/platform/CostConfigDialog.tsx`** -- form to adjust unit-cost assumptions
+- **`src/components/platform/EngagementMetrics.tsx`** -- DAU/MAU ratio, avg opens/user/week, 14-day inactive churches list
+- **`src/components/platform/PlatformHealthCard.tsx`** -- sermon pipeline status bars, failure list with error details, success rate gauge, overall health indicator
 
 ## Build Order
-1. Database migration: `platform_admins` table, `is_platform_admin` function, `analytics_events` table, RLS policies
-2. `usePlatformAuth` hook (checks platform admin status, redirects if unauthorized)
-3. Platform Login page
-4. Platform Layout (sidebar + outlet)
-5. Platform Dashboard with analytics queries
-6. Churches list page
-7. Church detail page
-8. Wire `app_open` event tracking in the member app (logs to `analytics_events` on app load)
+1. Database migration: create tables, seed cost config, add sermon_jobs RLS policy
+2. Update `usePlatformAnalytics` hook with all new queries
+3. Build dialog components (ExpenseDialog, CostConfigDialog)
+4. Build dashboard section components (FinancialOverview, EngagementMetrics, PlatformHealthCard)
+5. Restructure PlatformDashboard to compose all sections
 
