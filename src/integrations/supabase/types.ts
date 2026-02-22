@@ -362,6 +362,63 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_cost_config: {
+        Row: {
+          id: string
+          key: string
+          label: string
+          updated_at: string
+          value_cents: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          label: string
+          updated_at?: string
+          value_cents?: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          label?: string
+          updated_at?: string
+          value_cents?: number
+        }
+        Relationships: []
+      }
+      platform_expenses: {
+        Row: {
+          amount_cents: number
+          category: string
+          created_at: string
+          frequency: string
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          category?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prayer_requests: {
         Row: {
           answered_at: string | null
