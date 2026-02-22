@@ -79,16 +79,25 @@ export default function PlatformChurchDetail() {
       if (roleError) throw roleError;
       if (!roleData) return null;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, username")
-        .eq("user_id", roleData.user_id)
-        .eq("church_id", id!)
-        .maybeSingle();
+      const [profileRes, emailRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name, last_name, username")
+          .eq("user_id", roleData.user_id)
+          .eq("church_id", id!)
+          .maybeSingle(),
+        supabase.functions.invoke("get-user-email", {
+          body: { user_id: roleData.user_id },
+        }),
+      ]);
+
+      const profile = profileRes.data;
+      const email = emailRes.data?.email ?? null;
 
       return {
         user_id: roleData.user_id,
         name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.username : null,
+        email,
       };
     },
     enabled: !!id,
@@ -256,7 +265,7 @@ export default function PlatformChurchDetail() {
               {owner ? (
                 <>
                   <p className="text-sm font-medium text-slate-200">{owner.name || "Name not set"}</p>
-                  <p className="text-xs text-slate-500">User ID: {owner.user_id.slice(0, 8)}…</p>
+                  <p className="text-xs text-slate-400">{owner.email || `ID: ${owner.user_id.slice(0, 8)}…`}</p>
                 </>
               ) : (
                 <p className="text-sm text-slate-500">No admin assigned</p>
