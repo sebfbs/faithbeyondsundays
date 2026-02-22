@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users } from "lucide-react";
-import { SERMON } from "./data";
 import { getAccentColors } from "./themeColors";
+import type { SermonUIData } from "@/hooks/useCurrentSermon";
+import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
 const STARS = [
   { top: '3%', left: '8%', size: 2, opacity: 0.7, twinkle: true },
@@ -50,7 +51,6 @@ function Stars() {
 function SunRays() {
   return (
     <div className="absolute top-0 right-0 w-full h-72 pointer-events-none overflow-hidden z-0">
-      {/* Main sun glow */}
       <div
         className="absolute animate-sun-pulse"
         style={{
@@ -62,7 +62,6 @@ function SunRays() {
           background: 'radial-gradient(circle, hsl(42 90% 70% / 0.35) 0%, hsl(38 100% 60% / 0.1) 50%, transparent 70%)',
         }}
       />
-      {/* Ray 1 */}
       <div
         className="absolute animate-sun-pulse"
         style={{
@@ -77,7 +76,6 @@ function SunRays() {
           animationDelay: '0.5s',
         }}
       />
-      {/* Ray 2 */}
       <div
         className="absolute animate-sun-pulse"
         style={{
@@ -92,7 +90,6 @@ function SunRays() {
           animationDelay: '1.2s',
         }}
       />
-      {/* Ray 3 */}
       <div
         className="absolute animate-sun-pulse"
         style={{
@@ -107,7 +104,6 @@ function SunRays() {
           animationDelay: '2s',
         }}
       />
-      {/* Ray 4 - wider soft beam */}
       <div
         className="absolute animate-sun-pulse"
         style={{
@@ -125,7 +121,6 @@ function SunRays() {
     </div>
   );
 }
-
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -154,19 +149,17 @@ function formatDate() {
   });
 }
 
-function getDailyPromptIndex(): number {
+function getDailyPrompt(sermon: SermonUIData): string {
   const day = new Date().getDay();
-  if (day === 0 || day === 6) return -1; // weekend
-  return day - 1; // Mon=0, Tue=1, Wed=2, Thu=3, Fri=4
-}
-
-function getDailyPrompt(): string {
-  const idx = getDailyPromptIndex();
-  if (idx === -1) return SERMON.weekendReflection;
-  return SERMON.reflectionQuestions[idx] || SERMON.reflectionQuestions[0];
+  if (day === 0 || day === 6) return sermon.weekendReflection || "Look back on this week — what has God been teaching you?";
+  const idx = day - 1; // Mon=0..Fri=4
+  return sermon.reflectionQuestions[idx] || sermon.reflectionQuestions[0] || "";
 }
 
 interface HomeTabProps {
+  sermon: SermonUIData | null;
+  isLoading?: boolean;
+  featureFlags: FeatureFlags;
   onAddJournalEntry: (entry: any) => void;
   reflectedToday: boolean;
   userName?: string;
@@ -174,7 +167,7 @@ interface HomeTabProps {
   onNavigate?: (screen: string) => void;
 }
 
-export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = "there", churchName, onNavigate }: HomeTabProps) {
+export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, onNavigate }: HomeTabProps) {
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -183,26 +176,27 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
   const completed = reflectedToday || justSaved;
 
   const handleSaveReflection = () => {
-    if (!reflectionText.trim()) return;
+    if (!reflectionText.trim() || !sermon) return;
     const now = new Date();
     onAddJournalEntry({
-      id: `reflection-${Date.now()}`,
-      date: now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      type: "sermon" as const,
-      tag: "Sermon",
-      preview: reflectionText.slice(0, 120) + (reflectionText.length > 120 ? "..." : ""),
-      sermonTitle: SERMON.title,
-      bookmarked: false,
-      fullText: reflectionText,
+      content: reflectionText,
+      title: sermon.title,
+      entryType: "sermon",
+      sermonId: sermon.id,
     });
     setJustSaved(true);
     setReflectionOpen(false);
   };
 
+  // Quick links filtered by feature flags
+  const quickLinks = [
+    { icon: BookOpen, label: "Bible", screen: "bible", visible: true },
+    { icon: Heart, label: "Prayer", screen: "prayer", visible: featureFlags.prayer },
+    { icon: Users, label: "Community", screen: "community", visible: featureFlags.community },
+  ].filter((l) => l.visible);
+
   return (
-    <div
-      className="animate-fade-in min-h-screen relative"
-    >
+    <div className="animate-fade-in min-h-screen relative">
       {new Date().getHours() < 12 ? <SunRays /> : new Date().getHours() >= 17 ? <Stars /> : null}
       {/* Greeting */}
       <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
@@ -217,7 +211,21 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
 
       <div className="px-5 pt-6 pb-6 space-y-6">
 
+      {/* Empty state when no sermon */}
+      {!isLoading && !sermon && (
+        <div className="rounded-3xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <Sparkles size={24} style={{ color: colors.accent }} />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">Welcome to Faith Beyond Sundays</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Your pastor hasn't uploaded a sermon yet. Once they do, you'll see daily sparks, reflections, and scripture right here.
+          </p>
+        </div>
+      )}
+
       {/* Today's Spark */}
+      {sermon && (
       <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
@@ -228,14 +236,16 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </span>
         </div>
         <p className="text-foreground font-medium text-base leading-relaxed italic">
-          "{SERMON.spark}"
+          "{sermon.spark}"
         </p>
         <p className="text-muted-foreground text-xs mt-2 font-medium">
-          From Sunday's sermon · {SERMON.title}
+          From Sunday's sermon · {sermon.title}
         </p>
       </div>
+      )}
 
       {/* Today's Reflection */}
+      {sermon && (
       <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
@@ -246,10 +256,10 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </span>
         </div>
         <p className="text-foreground font-medium text-base leading-relaxed">
-          {getDailyPrompt()}
+          {getDailyPrompt(sermon)}
         </p>
         <p className="text-muted-foreground text-xs mt-2 font-medium">
-          From Sunday's sermon · {SERMON.title}
+          From Sunday's sermon · {sermon.title}
         </p>
 
         {!completed && !reflectionOpen && (
@@ -293,8 +303,10 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </div>
         )}
       </div>
+      )}
 
       {/* Scripture of the Day */}
+      {sermon && sermon.scriptures.length > 0 && (
       <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
@@ -305,23 +317,20 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
           </span>
         </div>
         <p className="text-foreground font-semibold text-sm mb-1">
-          {SERMON.scriptures[new Date().getDay() % SERMON.scriptures.length].reference}
+          {sermon.scriptures[new Date().getDay() % sermon.scriptures.length].reference}
         </p>
         <p className="text-foreground text-base leading-relaxed italic">
-          "{SERMON.scriptures[new Date().getDay() % SERMON.scriptures.length].text}"
+          "{sermon.scriptures[new Date().getDay() % sermon.scriptures.length].text}"
         </p>
         <p className="text-muted-foreground text-xs mt-3 font-medium">
-          From Sunday's sermon · {SERMON.title}
+          From Sunday's sermon · {sermon.title}
         </p>
       </div>
+      )}
 
       {/* Quick Links */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { icon: BookOpen, label: "Bible", screen: "bible" },
-          { icon: Heart, label: "Prayer", screen: "prayer" },
-          { icon: Users, label: "Community", screen: "community" },
-        ].map(({ icon: Icon, label, screen }) => (
+      <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${quickLinks.length}, minmax(0, 1fr))` }}>
+        {quickLinks.map(({ icon: Icon, label, screen }) => (
           <button
             key={screen}
             onClick={() => onNavigate?.(screen)}
@@ -336,7 +345,6 @@ export default function HomeTab({ onAddJournalEntry, reflectedToday, userName = 
         ))}
       </div>
 
-      {/* Bottom spacer for nav */}
       <div className="h-2" />
       </div>
     </div>

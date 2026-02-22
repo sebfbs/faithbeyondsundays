@@ -1,19 +1,17 @@
 import { ChevronLeft, ChevronRight, Clock, Calendar } from "lucide-react";
-import { PREVIOUS_SERMONS, SERMON } from "./data";
-import type { SermonData } from "./data";
+import type { SermonUIData } from "@/hooks/useCurrentSermon";
 
 interface PreviousSermonsListScreenProps {
+  sermons: SermonUIData[];
   onBack: () => void;
-  onSelectSermon: (sermon: SermonData) => void;
+  onSelectSermon: (sermon: SermonUIData) => void;
 }
 
 export default function PreviousSermonsListScreen({
+  sermons,
   onBack,
   onSelectSermon,
 }: PreviousSermonsListScreenProps) {
-  const allPrevious = [SERMON, ...PREVIOUS_SERMONS].slice(1); // exclude current week
-  const sermons = PREVIOUS_SERMONS;
-
   return (
     <div className="animate-fade-in min-h-screen" style={{ background: "hsl(var(--background))" }}>
       {/* Header */}
@@ -33,24 +31,33 @@ export default function PreviousSermonsListScreen({
       </div>
 
       <div className="px-5 pt-4 pb-6 space-y-3">
-        {sermons.map((sermon, i) => (
+        {sermons.length === 0 && (
+          <div className="bg-card rounded-3xl p-8 shadow-card text-center">
+            <p className="text-sm text-muted-foreground">No previous sermons yet.</p>
+          </div>
+        )}
+        {sermons.map((sermon) => (
           <button
-            key={i}
+            key={sermon.id}
             onClick={() => onSelectSermon(sermon)}
             className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
           >
             <div className="flex-1 min-w-0 pr-3">
               <p className="text-base font-bold text-foreground leading-tight">{sermon.title}</p>
-              <p className="text-xs text-muted-foreground mt-1">{sermon.subtitle}</p>
+              {sermon.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1">{sermon.subtitle}</p>
+              )}
               <div className="flex items-center gap-3 mt-2">
                 <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
                   <Calendar size={11} />
                   {sermon.date}
                 </span>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-                  <Clock size={11} />
-                  {sermon.duration}
-                </span>
+                {sermon.duration && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                    <Clock size={11} />
+                    {sermon.duration}
+                  </span>
+                )}
               </div>
             </div>
             <ChevronRight size={18} className="text-muted-foreground flex-shrink-0" />
