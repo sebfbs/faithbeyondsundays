@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab, { getSkyGradient } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
 import JournalTab from "@/components/fbs/JournalTab";
-
 import BibleScreen from "@/components/fbs/BibleScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
@@ -12,14 +11,18 @@ import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScr
 import CommunityScreen from "@/components/fbs/CommunityScreen";
 import PrayerScreen from "@/components/fbs/PrayerScreen";
 import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
-import WelcomeScreen, { UserData } from "@/components/fbs/WelcomeScreen";
+import AuthScreen from "@/components/fbs/AuthScreen";
+import OnboardingScreen from "@/components/fbs/OnboardingScreen";
 import TabletSidebar, { SidebarNavTarget } from "@/components/fbs/TabletSidebar";
 import { JOURNAL_ENTRIES, GIVING_URL } from "@/components/fbs/data";
 import type { SermonData } from "@/components/fbs/data";
 import type { CommunityMember } from "@/components/fbs/communityData";
-import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDemoMode } from "@/components/fbs/DemoModeProvider";
+import { useAuth } from "@/components/fbs/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
+import type { UserData } from "@/components/fbs/WelcomeScreen";
+import { Loader2 } from "lucide-react";
 
 type OverlayScreen =
   | "profile"
@@ -46,18 +49,12 @@ export type JournalEntry = {
   };
 };
 
-function loadUser(): UserData | null {
-  try {
-    const raw = localStorage.getItem("fbs_user");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 export default function Index() {
   const { isDemo } = useDemoMode();
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const isMobile = useIsMobile();
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem("fbs_sidebar_collapsed") === "true";
@@ -73,18 +70,7 @@ export default function Index() {
       return next;
     });
   };
-  const [user, setUser] = useState<UserData | null>(() => {
-    if (isDemo) {
-      return {
-        firstName: "Grace",
-        lastName: "Demo",
-        username: "grace_demo",
-        churchCode: "cornerstone",
-        churchName: "Cornerstone Community Church",
-      } as UserData;
-    }
-    return loadUser();
-  });
+
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
   const [overlay, setOverlayRaw] = useState<OverlayScreen>(null);
@@ -107,27 +93,65 @@ export default function Index() {
     window.scrollTo(0, 0);
   };
 
-  const handleOnboardingComplete = (data: UserData) => {
-    localStorage.setItem("fbs_user", JSON.stringify(data));
-    setUser(data);
-    // Auto-follow church members on signup
-    const churchMembers = DEMO_MEMBERS.filter((m) => m.churchCode === data.churchCode);
-    const currentFollows = getFollows();
-    const newFollows = [...new Set([...currentFollows, ...churchMembers.map((m) => m.username)])];
-    setFollows(newFollows);
-  };
+  // Build a UserData-compatible object for existing components
+  const userData: UserData | null = isDemo
+    ? {
+        firstName: "Grace",
+        lastName: "Demo",
+        username: "grace_demo",
+        churchCode: "cornerstone",
+        churchName: "Cornerstone Community Church",
+        phone: "",
+        email: "",
+      }
+    : profile
+    ? {
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        username: profile.username,
+        churchCode: profile.church_code || "",
+        churchName: profile.church_name || "",
+        phone: "",
+        email: authUser?.email || "",
+        avatarUrl: profile.avatar_url || undefined,
+        instagramHandle: profile.instagram_handle || undefined,
+      }
+    : null;
 
-  const handleSignOut = () => {
-    localStorage.removeItem("fbs_user");
-    setUser(null);
+  // Loading state
+  if (!isDemo && authLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center" style={{ background: "hsl(var(--background))" }}>
+        <Loader2 size={32} className="animate-spin text-amber" />
+      </div>
+    );
+  }
+
+  // Not authenticated → show auth screen
+  if (!isDemo && !authUser) {
+    return <AuthScreen />;
+  }
+
+  // Authenticated but no profile → onboarding
+  if (!isDemo && !profileLoading && !profile) {
+    return <OnboardingScreen />;
+  }
+
+  // Still loading profile
+  if (!isDemo && profileLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center" style={{ background: "hsl(var(--background))" }}>
+        <Loader2 size={32} className="animate-spin text-amber" />
+      </div>
+    );
+  }
+
+  const handleSignOut = async () => {
+    await signOut();
     setActiveTab("home");
     setOverlay(null);
     setMoreOpen(false);
   };
-
-  if (!user) {
-    return <WelcomeScreen onComplete={handleOnboardingComplete} />;
-  }
 
   const addJournalEntry = (entry: JournalEntry) => {
     setJournalEntries((prev) => [entry, ...prev]);
@@ -175,18 +199,28 @@ export default function Index() {
     }
   };
 
-  // Determine which sidebar item is active
   const activeSidebarItem: string = overlay || activeTab;
 
   const renderMain = () => {
+    if (!userData) return null;
+
     if (overlay === "bible") {
-      return <BibleScreen onBack={() => { setOverlay(null); }} />;
+      return <BibleScreen onBack={() => setOverlay(null)} />;
     }
     if (overlay === "prayer") {
-      return <PrayerScreen onBack={() => { setOverlay(null); }} />;
+      return <PrayerScreen onBack={() => setOverlay(null)} />;
     }
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => { setOverlay(null); }} user={user} onSignOut={handleSignOut} onUpdateUser={(updated) => setUser(updated)} />;
+      return (
+        <ProfileScreen
+          onBack={() => setOverlay(null)}
+          user={userData}
+          onSignOut={handleSignOut}
+          onUpdateUser={(updated) => {
+            // For now, profile updates will refetch from DB
+          }}
+        />
+      );
     }
     if (overlay === "community") {
       return (
@@ -196,8 +230,8 @@ export default function Index() {
             setSelectedMember(member);
             setOverlay("public-profile");
           }}
-          userChurchCode={user.churchCode || "cornerstone"}
-          userChurchName={user.churchName}
+          userChurchCode={userData.churchCode || "cornerstone"}
+          userChurchName={userData.churchName}
         />
       );
     }
@@ -233,23 +267,18 @@ export default function Index() {
       case "home":
         const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         const reflectedToday = journalEntries.some((e) => e.tag === "Sermon" && e.date === today);
-        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={reflectedToday} userName={user.firstName} churchName={user.churchName} />;
+        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={reflectedToday} userName={userData.firstName} churchName={userData.churchName} />;
       case "sermon":
-        return (
-          <SermonTab
-            onPreviousSermons={() => setOverlay("previous-sermons-list")}
-          />
-        );
+        return <SermonTab onPreviousSermons={() => setOverlay("previous-sermons-list")} />;
       case "journal":
         return <JournalTab entries={journalEntries} onAddEntry={addJournalEntry} onUpdateEntry={updateJournalEntry} onDeleteEntry={deleteJournalEntry} />;
       default:
-        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={false} userName={user.firstName} churchName={user.churchName} />;
+        return <HomeTab onAddJournalEntry={addJournalEntry} reflectedToday={false} userName={userData.firstName} churchName={userData.churchName} />;
     }
   };
 
   return (
     <div className={`app-container relative mx-auto ${!isMobile ? "tablet-layout" : ""}`} style={{ background: "hsl(var(--background))" }}>
-      {/* Tablet sidebar */}
       {!isMobile && (
         <TabletSidebar
           activeItem={activeSidebarItem}
@@ -259,7 +288,6 @@ export default function Index() {
         />
       )}
 
-      {/* Frosted status bar backdrop for iPhone notch/Dynamic Island */}
       {isMobile && (
         <div
           className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
@@ -278,7 +306,7 @@ export default function Index() {
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
-          background: (overlay === null && (activeTab === "home")) ? getSkyGradient() : "hsl(var(--background))",
+          background: (overlay === null && activeTab === "home") ? getSkyGradient() : "hsl(var(--background))",
           ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 180 } : {}),
         }}
       >
@@ -293,26 +321,10 @@ export default function Index() {
         <MoreSheet
           onClose={() => setMoreOpen(false)}
           givingUrl={GIVING_URL}
-          onProfile={() => {
-            setActiveTab("more");
-            setOverlay("profile");
-            setMoreOpen(false);
-          }}
-          onCommunity={() => {
-            setActiveTab("more");
-            setOverlay("community");
-            setMoreOpen(false);
-          }}
-          onBible={() => {
-            setActiveTab("more");
-            setOverlay("bible");
-            setMoreOpen(false);
-          }}
-          onPrayer={() => {
-            setActiveTab("more");
-            setOverlay("prayer");
-            setMoreOpen(false);
-          }}
+          onProfile={() => { setActiveTab("more"); setOverlay("profile"); setMoreOpen(false); }}
+          onCommunity={() => { setActiveTab("more"); setOverlay("community"); setMoreOpen(false); }}
+          onBible={() => { setActiveTab("more"); setOverlay("bible"); setMoreOpen(false); }}
+          onPrayer={() => { setActiveTab("more"); setOverlay("prayer"); setMoreOpen(false); }}
         />
       )}
     </div>

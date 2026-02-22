@@ -270,6 +270,7 @@ export type Database = {
           first_name: string | null
           id: string
           instagram_handle: string | null
+          is_email_verified: boolean
           last_name: string | null
           onboarding_complete: boolean
           streak_current: number
@@ -287,6 +288,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           instagram_handle?: string | null
+          is_email_verified?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
           streak_current?: number
@@ -304,6 +306,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           instagram_handle?: string | null
+          is_email_verified?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
           streak_current?: number
