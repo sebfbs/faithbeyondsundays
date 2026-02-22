@@ -129,6 +129,11 @@
     min-height: 100dvh;
     background: hsl(var(--background));
   }
+
+  /* Platform pages break out of member app constraints */
+  #root:has(.platform-root) {
+    display: block;
+  }
 }
 
 @layer utilities {
