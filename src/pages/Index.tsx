@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab, { getSkyGradient } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
@@ -57,6 +58,18 @@ export default function Index() {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Log app_open event once per session
+  useEffect(() => {
+    if (!profile || isDemo) return;
+    const key = "fbs_app_open_logged";
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    supabase
+      .from("analytics_events")
+      .insert({ church_id: profile.church_id, user_id: authUser!.id, event_type: "app_open" })
+      .then(() => {});
+  }, [profile, isDemo, authUser]);
 
   // Derive active screen from URL path
   const pathScreen = location.pathname.replace(/^\//, "") || "home";
