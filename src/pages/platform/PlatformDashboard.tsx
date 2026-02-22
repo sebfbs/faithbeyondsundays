@@ -1,40 +1,60 @@
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Church, Users, BookOpen, Hand, Smartphone, Loader2 } from "lucide-react";
+import { Church, Users, BookOpen, Hand, Smartphone, Loader2, UserCheck, UserCheck2, BarChart3 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { useMemo } from "react";
-import { format, subDays, startOfDay } from "date-fns";
+import { useMemo, useState } from "react";
+import { format, subDays } from "date-fns";
+import FinancialOverview from "@/components/platform/FinancialOverview";
+import EngagementMetrics from "@/components/platform/EngagementMetrics";
+import PlatformHealthCard from "@/components/platform/PlatformHealthCard";
 
 export default function PlatformDashboard() {
-  const { churches, members, sermons, events, loading } = usePlatformAnalytics();
+  const analytics = usePlatformAnalytics();
+  const { churches, members, sermons, events, loading } = analytics;
 
   const activeChurches = churches.filter((c) => c.is_active).length;
   const totalMembers = members.length;
   const totalSermons = sermons.length;
   const giveTaps = events.filter((e) => e.event_type === "give_tap").length;
   const appOpens = events.filter((e) => e.event_type === "app_open").length;
+  const avgMembersPerChurch = activeChurches > 0 ? (totalMembers / activeChurches).toFixed(1) : "—";
 
-  // Signups over last 30 days
-  const signupChart = useMemo(() => {
+  const [chartMetric, setChartMetric] = useState<"signups" | "app_open" | "give_tap">("signups");
+
+  const chartData = useMemo(() => {
     const days = 30;
     const buckets: Record<string, number> = {};
     for (let i = days - 1; i >= 0; i--) {
-      const key = format(subDays(new Date(), i), "MMM d");
-      buckets[key] = 0;
+      buckets[format(subDays(new Date(), i), "MMM d")] = 0;
     }
-    members.forEach((m) => {
-      const key = format(new Date(m.created_at), "MMM d");
-      if (key in buckets) buckets[key]++;
-    });
+    if (chartMetric === "signups") {
+      members.forEach((m) => {
+        const key = format(new Date(m.created_at), "MMM d");
+        if (key in buckets) buckets[key]++;
+      });
+    } else {
+      events
+        .filter((e) => e.event_type === chartMetric)
+        .forEach((e) => {
+          const key = format(new Date(e.created_at), "MMM d");
+          if (key in buckets) buckets[key]++;
+        });
+    }
     return Object.entries(buckets).map(([date, count]) => ({ date, count }));
-  }, [members]);
+  }, [members, events, chartMetric]);
 
-  // Most active churches by event count
+  // Trend: compare last 15 days vs prior 15 days
+  const trend = useMemo(() => {
+    const mid = Math.floor(chartData.length / 2);
+    const recent = chartData.slice(mid).reduce((s, d) => s + d.count, 0);
+    const prior = chartData.slice(0, mid).reduce((s, d) => s + d.count, 0);
+    if (prior === 0) return null;
+    return ((recent - prior) / prior) * 100;
+  }, [chartData]);
+
   const topChurches = useMemo(() => {
     const counts: Record<string, number> = {};
-    events.forEach((e) => {
-      counts[e.church_id] = (counts[e.church_id] || 0) + 1;
-    });
+    events.forEach((e) => { counts[e.church_id] = (counts[e.church_id] || 0) + 1; });
     return churches
       .map((c) => ({ name: c.name, events: counts[c.id] || 0 }))
       .sort((a, b) => b.events - a.events)
@@ -55,48 +75,105 @@ export default function PlatformDashboard() {
     { label: "Sermons", value: totalSermons, icon: BookOpen, color: "text-violet-400" },
     { label: "Give Taps", value: giveTaps, icon: Hand, color: "text-amber-400" },
     { label: "App Opens", value: appOpens, icon: Smartphone, color: "text-cyan-400" },
+    { label: "Active 7d", value: analytics.activeUsers7d, icon: UserCheck, color: "text-green-400" },
+    { label: "Active 30d", value: analytics.activeUsers30d, icon: UserCheck2, color: "text-teal-400" },
+    { label: "Avg/Church", value: avgMembersPerChurch, icon: BarChart3, color: "text-pink-400" },
+  ];
+
+  const metricOptions: { key: "signups" | "app_open" | "give_tap"; label: string }[] = [
+    { key: "signups", label: "Signups" },
+    { key: "app_open", label: "App Opens" },
+    { key: "give_tap", label: "Give Taps" },
   ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-6xl">
+    <div className="p-6 lg:p-8 space-y-6 max-w-7xl">
       <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {stats.map((s) => (
           <Card key={s.label} className="bg-slate-900 border-slate-800">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-                <span className="text-xs text-slate-400">{s.label}</span>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
+                <span className="text-[10px] text-slate-400 truncate">{s.label}</span>
               </div>
-              <p className="text-2xl font-bold text-slate-100">{s.value.toLocaleString()}</p>
+              <p className="text-xl font-bold text-slate-100">{typeof s.value === "number" ? s.value.toLocaleString() : s.value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Signups chart */}
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-sm text-slate-300">New Signups — Last 30 Days</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={signupChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 20% 22%)" />
-                <XAxis dataKey="date" tick={{ fill: "hsl(220 15% 55%)", fontSize: 11 }} interval="preserveStartEnd" />
-                <YAxis tick={{ fill: "hsl(220 15% 55%)", fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(220 20% 14%)", border: "1px solid hsl(220 20% 22%)", borderRadius: 8, color: "hsl(40 30% 95%)" }}
-                />
-                <Line type="monotone" dataKey="count" stroke="hsl(38 100% 50%)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Financial + Health side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FinancialOverview
+          totalSermons={totalSermons}
+          totalMembers={totalMembers}
+          costConfig={analytics.costConfig}
+          costConfigItems={analytics.costConfigItems}
+          expenses={analytics.expenses}
+          addExpense={analytics.addExpense}
+          updateExpense={analytics.updateExpense}
+          deleteExpense={analytics.deleteExpense}
+          updateCostConfig={analytics.updateCostConfig}
+        />
+        <PlatformHealthCard
+          jobsByStatus={analytics.jobsByStatus}
+          recentFailures={analytics.recentFailures}
+          successRate={analytics.successRate}
+          totalJobs={analytics.totalJobs}
+          totalSermons={totalSermons}
+        />
+      </div>
+
+      {/* Growth chart + Engagement side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle className="text-sm text-slate-300">Growth — Last 30 Days</CardTitle>
+              {trend !== null && (
+                <span className={`text-xs ${trend >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {trend >= 0 ? "↑" : "↓"} {Math.abs(trend).toFixed(0)}% vs prior period
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {metricOptions.map(m => (
+                <button
+                  key={m.key}
+                  onClick={() => setChartMetric(m.key)}
+                  className={`text-[10px] px-2 py-1 rounded-full transition-colors ${chartMetric === m.key ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-slate-200"}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 20% 22%)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(220 15% 55%)", fontSize: 10 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: "hsl(220 15% 55%)", fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: "hsl(220 20% 14%)", border: "1px solid hsl(220 20% 22%)", borderRadius: 8, color: "hsl(40 30% 95%)" }} />
+                  <Line type="monotone" dataKey="count" stroke="hsl(38 100% 50%)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <EngagementMetrics
+          activeUsers7d={analytics.activeUsers7d}
+          activeUsers30d={analytics.activeUsers30d}
+          totalMembers={totalMembers}
+          events={events}
+          inactiveChurches={analytics.inactiveChurches}
+        />
+      </div>
 
       {/* Top churches */}
       <Card className="bg-slate-900 border-slate-800">
