@@ -23,10 +23,13 @@ serve(async (req) => {
   try {
     // Claim a queued or retrying job using optimistic locking
     const now = new Date().toISOString();
+
+    // Fetch queued jobs directly, and retrying jobs that have waited long enough (backoff)
     const { data: jobs, error: claimError } = await supabase
       .from("sermon_jobs")
       .select("*")
       .in("status", ["queued", "retrying"])
+      .or(`status.eq.queued,and(status.eq.retrying,locked_until.is.null),and(status.eq.retrying,locked_until.lte.${now})`)
       .order("priority", { ascending: false })
       .order("created_at", { ascending: true })
       .limit(1);
@@ -243,12 +246,18 @@ serve(async (req) => {
     // Step 4: Determine final status
     if (failedTypes.length > 0 && job.attempts < job.max_attempts) {
       // Some content failed but we have retries left — schedule automatic retry
-      console.log(`${failedTypes.length} content types failed, scheduling retry (attempt ${job.attempts}/${job.max_attempts})`);
+      // Backoff: 1min, 5min, 15min, 30min per attempt
+      const backoffMinutes = [1, 5, 15, 30];
+      const delayMinutes = backoffMinutes[Math.min(job.attempts - 1, backoffMinutes.length - 1)];
+      const retryAfter = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+
+      console.log(`${failedTypes.length} content types failed, scheduling retry in ${delayMinutes}min (attempt ${job.attempts}/${job.max_attempts})`);
       await supabase
         .from("sermon_jobs")
         .update({
           status: "retrying",
-          error_message: `Failed content types: ${failedTypes.join(", ")}`,
+          locked_until: retryAfter,
+          error_message: `Failed content types: ${failedTypes.join(", ")}. Retrying in ${delayMinutes}min.`,
           error_details: { failed_types: failedTypes, attempt: job.attempts },
         })
         .eq("id", job.id);
