@@ -1,47 +1,59 @@
 
-
-# Church Admin Invite System — Final Plan
+# Multi-Step Admin Setup Wizard with Exciting Username Step
 
 ## Overview
-Store the correct Resend API key, build two backend functions, and update the platform dashboard UI so you can assign church admins and send branded invite emails.
+Restructure the AdminSetup page into a 3-step wizard, moving password creation to Step 2, and making Step 3 (username selection) feel like a special, celebratory moment.
 
-## Steps
+## Step Breakdown
 
-### 1. Store the Resend API Key
-Save `RESEND_API_KEY` as a secure backend secret.
+**Step 1 -- "Welcome"**
+- First Name + Last Name
+- Warm, simple card with the church icon
+- Title: "Welcome!" / Description: "Let's get you set up"
+- Button: "Continue"
 
-### 2. Create `assign-church-admin` Backend Function
-- Accepts `{ church_id, admin_email }`
-- Validates caller is a platform admin
-- Finds existing user or creates a new one (with email auto-confirmed)
-- Assigns "owner" role in `user_roles`
-- Creates a profile row linked to the church
-- Returns `{ user_id, is_new_user, email }`
+**Step 2 -- "Your Details"**
+- Email (read-only, pre-filled)
+- Phone Number
+- Password + Confirm Password (only shown if user arrived via invite/recovery link, hidden for Google OAuth users)
+- Title: "Contact & Security"
+- Button: "Continue"
 
-### 3. Create `send-admin-invite` Backend Function
-- Accepts `{ church_id, church_name, admin_email }`
-- Validates caller is a platform admin
-- Generates a password recovery link so the admin can set their password
-- Sends a branded HTML email via Resend from `Sebastian <sebastian@faithbeyondsundays.com>` with FBS styling and a CTA button
+**Step 3 -- "Claim Your Username" (the exciting one)**
+This step gets a completely different visual treatment to feel ethereal and exciting:
+- Animated gradient background behind the card (subtle shifting amber/sky-blue aurora effect)
+- Large, centered `@username` display that updates live as they type, styled prominently like a profile badge
+- Sparkle/star icon instead of the church icon
+- Title: "Claim Your @" with a playful description like "Every great name is still available. Pick yours."
+- The username input is styled larger and bolder than normal inputs
+- On successful submit: confetti burst (using the already-installed `canvas-confetti` package) before navigating to the dashboard
+- Button: "Claim @username" (dynamically shows their chosen name)
 
-### 4. Update Config
-Register both new functions in the backend config.
+## Visual Details for Step 3
+- Card gets a subtle shimmer/glow border using a CSS gradient animation
+- Background uses a radial gradient with soft animated movement (CSS keyframes, no heavy libraries)
+- The live `@username` preview above the input scales up slightly with a smooth transition as they type
+- Confetti fires on successful profile save using the existing `canvas-confetti` dependency
+- Progress dots use the amber accent color for completed steps
 
-### 5. Update Create Church Dialog (`PlatformChurches.tsx`)
-- Add "Admin Email" field to the form
-- After creation, call `assign-church-admin`
-- Show success screen with "Send Admin Invite" button
-- Button calls `send-admin-invite`, shows toast on success
+## Technical Details
 
-### 6. Update Church Detail Page (`PlatformChurchDetail.tsx`)
-- Add "Church Admin" card showing the current owner's email
-- "Change Admin" button to reassign ownership
-- "Resend Invite" button to re-send the branded email
+**Files modified:**
+- `src/pages/admin/AdminSetup.tsx` -- Complete rewrite as 3-step wizard with:
+  - `step` state (1, 2, 3)
+  - `password` / `confirmPassword` state (Step 2)
+  - `isRecoveryFlow` state to detect if user arrived via invite link (listen for `PASSWORD_RECOVERY` auth event)
+  - Password update via `supabase.auth.updateUser({ password })` on Step 2 if in recovery flow
+  - Profile update + `onboarding_complete: true` on Step 3 submit
+  - Confetti trigger via `canvas-confetti` on success
+  - Custom CSS keyframes for the shimmer/glow effect on Step 3's card (inline styles or added to index.css)
 
-## Files Changed
-- `supabase/functions/assign-church-admin/index.ts` (new)
-- `supabase/functions/send-admin-invite/index.ts` (new)
-- `supabase/config.toml` (updated)
-- `src/pages/platform/PlatformChurches.tsx` (updated)
-- `src/pages/platform/PlatformChurchDetail.tsx` (updated)
+- `src/pages/admin/ResetPassword.tsx` -- Delete this file (functionality merged into AdminSetup)
+- `src/App.tsx` -- Remove the `/admin/set-password` route
+- `src/pages/admin/AdminLogin.tsx` -- Update "Forgot password?" redirect to `/admin/setup`
+- `supabase/functions/send-admin-invite/index.ts` -- Update `redirectTo` to point to `/admin/setup`
 
+**No database changes needed** -- all columns already exist.
+
+## Progress Indicator
+Three small dots at the top of each card, filled for completed/current steps, outlined for upcoming. Smooth transition between steps with a fade animation using existing `animate-fade-in` class.
