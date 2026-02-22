@@ -13,6 +13,9 @@ import {
   Settings,
   Menu,
   X,
+  Users2,
+  Heart,
+  Bell,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +24,9 @@ const navItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
   { title: "Sermons", url: "/admin/sermons", icon: Mic },
   { title: "Members", url: "/admin/members", icon: Users },
+  { title: "Groups & Flags", url: "/admin/groups", icon: Users2 },
+  { title: "Prayer", url: "/admin/prayer", icon: Heart },
+  { title: "Notifications", url: "/admin/notifications", icon: Bell },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 

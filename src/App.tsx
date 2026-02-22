@@ -24,6 +24,9 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminSermons = lazy(() => import("./pages/admin/AdminSermons"));
 const AdminMembers = lazy(() => import("./pages/admin/AdminMembers"));
+const AdminGroups = lazy(() => import("./pages/admin/AdminGroups"));
+const AdminPrayer = lazy(() => import("./pages/admin/AdminPrayer"));
+const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
@@ -75,6 +78,9 @@ const App = () => {
                 <Route index element={<AdminDashboard />} />
                 <Route path="sermons" element={<AdminSermons />} />
                 <Route path="members" element={<AdminMembers />} />
+                <Route path="groups" element={<AdminGroups />} />
+                <Route path="prayer" element={<AdminPrayer />} />
+                <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
