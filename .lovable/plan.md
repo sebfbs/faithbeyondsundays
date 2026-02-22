@@ -1,53 +1,81 @@
-# Church Admin Panel
 
-## Overview
-Separate admin experience at `/admin` for church leaders (owner/admin/pastor roles) to manage their church's content, members, and settings. Uses the member app's design system (light theme with amber accents).
 
-## Architecture
-- **Route**: `/admin` with nested routes, dedicated login at `/admin/login`
-- **Auth**: Role-gated — requires `owner`, `admin`, or `pastor` role in `user_roles` table
-- **Layout**: Responsive sidebar (collapsible on mobile) with 7 nav items
-- **Design**: Uses member app's semantic design tokens (not dark theme)
+# Making FBS Operational — Wire Real Data
 
-## Phases — All Complete ✅
+## Goal
+Replace all hardcoded/demo data with live database content so when an admin uploads a sermon and it gets processed, members actually see it. This is the critical path to showing the app to real churches.
 
-### Phase 1 — Foundation & Auth ✅
-- `useChurchAdminAuth` hook — checks user_roles for admin/owner/pastor
-- `/admin/login` — dedicated login page with access denied handling
-- `AdminLayout` — sidebar nav, mobile hamburger menu, sign out
+## Priority Order
 
-### Phase 2 — Sermon Management ✅
-- Sermon list with status badges, publish/draft toggle, set current
-- Upload dialog with file upload or YouTube link modes
-- Calls existing `upload-sermon` edge function
+### 1. Wire Sermon Content from Database
+**The most important change.** Currently, `HomeTab`, `SermonTab`, and `PreviousSermonsListScreen` all read from the hardcoded `SERMON` constant in `data.ts`.
 
-### Phase 3 — Member Management ✅
-- Member list with search
-- Role assignment via dropdown (owner/admin/pastor/leader/member)
+**What changes:**
+- Create a `useCurrentSermon` hook that fetches the church's current sermon (`is_current = true, is_published = true`) and its `sermon_content` rows
+- Transform the DB content types (`spark`, `takeaways`, `reflection_questions`, `scriptures`, `chapters`, `weekly_challenge`, `weekend_reflection`) into the shape the UI expects
+- Update `HomeTab` to use real spark, scripture of the day, and reflection questions
+- Update `SermonTab` to show real sermon title/date/speaker/chapters/scriptures/takeaways
+- Create a `usePreviousSermons` hook for the previous sermons list
+- Show a graceful empty state when no sermon has been uploaded yet ("Your pastor hasn't uploaded a sermon yet")
 
-### Phase 4 — Church Settings ✅
-- Edit church profile (name, city, state, website, Instagram, giving URL)
+### 2. Wire Journal Entries to Database
+Currently journal entries live in React state and reset on refresh.
 
-### Phase 5 — Groups, Prayer, Notifications ✅
-- Community groups CRUD with active/inactive toggle
-- Feature flags management (community, prayer, giving)
-- Prayer request moderation view
-- Push notification composer with recent log history
-- New `church_feature_flags` table with RLS
+**What changes:**
+- Create a `useJournalEntries` hook that reads/writes to the `journal_entries` table
+- Save reflections and challenge completions to the DB
+- Load existing entries on mount
+- Support bookmark toggle, edit, and delete via DB mutations
 
-### Phase 6 — Church Analytics ✅
-- Dashboard with summary cards (sermons, members, active 7d/30d)
-- 14-day daily active users bar chart
-- Content stats and top event types (30d)
+### 3. Wire Feature Flags from Database
+The admin panel can toggle feature flags, but the member app ignores them.
 
-## Files
-- `src/hooks/useChurchAdminAuth.ts`
-- `src/pages/admin/AdminLogin.tsx`
-- `src/pages/admin/AdminLayout.tsx`
-- `src/pages/admin/AdminDashboard.tsx`
-- `src/pages/admin/AdminSermons.tsx`
-- `src/pages/admin/AdminMembers.tsx`
-- `src/pages/admin/AdminGroups.tsx`
-- `src/pages/admin/AdminPrayer.tsx`
-- `src/pages/admin/AdminNotifications.tsx`
-- `src/pages/admin/AdminSettings.tsx`
+**What changes:**
+- Create a `useFeatureFlags` hook that reads from `church_feature_flags` for the user's church
+- Falls back to defaults (all enabled) if no overrides exist
+- Use it in `BottomNav`, `MoreSheet`, `TabletSidebar`, and `HomeTab` quick links to hide/show community, prayer, and giving
+
+### 4. Clean Up Hardcoded Data
+- Remove the static `SERMON`, `PREVIOUS_SERMONS`, and `JOURNAL_ENTRIES` from `data.ts` (keep only `GIVING_URL` or wire that from church settings too)
+- Remove `featureFlags.ts` static export
+
+---
+
+## Technical Details
+
+### New Files
+- `src/hooks/useCurrentSermon.ts` — fetches current published sermon + sermon_content for user's church
+- `src/hooks/usePreviousSermons.ts` — fetches past published sermons + their content
+- `src/hooks/useJournalEntries.ts` — CRUD for journal_entries table
+- `src/hooks/useFeatureFlags.ts` — reads church_feature_flags with defaults
+
+### Modified Files
+- `src/components/fbs/HomeTab.tsx` — accept sermon data as props instead of importing SERMON
+- `src/components/fbs/SermonTab.tsx` — accept sermon data as props
+- `src/components/fbs/JournalTab.tsx` — use DB-backed entries
+- `src/pages/Index.tsx` — orchestrate hooks and pass data down
+- `src/components/fbs/BottomNav.tsx` — respect feature flags
+- `src/components/fbs/MoreSheet.tsx` — respect feature flags
+- `src/components/fbs/TabletSidebar.tsx` — respect feature flags
+- `src/components/fbs/PreviousSermonsListScreen.tsx` — use DB data
+- `src/components/fbs/data.ts` — remove hardcoded sermon/journal data
+
+### Data Shape Mapping
+The `process-sermon` edge function generates these `sermon_content` types, which map to the UI like this:
+
+- `spark` -> HomeTab "Today's Spark" card (title + summary)
+- `reflection_questions` -> HomeTab daily reflection + prompts
+- `scriptures` -> HomeTab scripture of the day + SermonTab scripture accordion
+- `takeaways` -> SermonTab takeaways accordion
+- `chapters` -> SermonTab chapters accordion
+- `weekly_challenge` -> SermonTab/JournalTab challenge
+- `weekend_reflection` -> HomeTab weekend prompt
+
+### Empty States
+When no sermon exists yet for a church:
+- HomeTab shows a welcome message instead of spark/reflection cards
+- SermonTab shows "No sermon yet — check back after Sunday!"
+- Previous sermons shows empty list
+
+### Demo Mode
+Demo mode (`?demo=true`) will continue to use hardcoded data so the app is always showable without real content. The static data moves to a `demoData.ts` file used only in demo mode.
