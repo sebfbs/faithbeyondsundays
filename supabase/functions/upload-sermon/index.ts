@@ -156,11 +156,27 @@ serve(async (req) => {
       // Still return success — sermon was created, job can be retried
     }
 
+    // Immediately trigger processing (fire-and-forget, cron is the safety net)
+    try {
+      const processUrl = `${supabaseUrl}/functions/v1/process-sermon`;
+      fetch(processUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")}`,
+        },
+        body: JSON.stringify({}),
+      }).catch((err) => console.error("Fire-and-forget process trigger failed:", err));
+    } catch (triggerErr) {
+      console.error("Failed to trigger immediate processing:", triggerErr);
+      // Not critical — cron will pick it up within 1 minute
+    }
+
     return new Response(JSON.stringify({
       success: true,
       sermon_id: sermon.id,
       status: "queued",
-      message: "Sermon uploaded and queued for processing",
+      message: "Sermon uploaded and processing started",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
