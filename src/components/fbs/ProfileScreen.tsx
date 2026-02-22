@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
 } from "./NotificationModals";
 import type { UserData } from "./WelcomeScreen";
 import { hasInvited } from "./communityData";
+import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -34,10 +35,9 @@ type Appearance = "light" | "dark" | "horizon";
 
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const [appearance, setAppearance] = useState<Appearance>("horizon");
-  const [daysModal, setDaysModal] = useState(false);
-  const [timeModal, setTimeModal] = useState(false);
-  const [notifDays, setNotifDays] = useState(["Mon", "Wed", "Fri"]);
-  const [notifTime, setNotifTime] = useState("Morning (8 AM)");
+  const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
+  const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
+  const { preferences, updatePreference } = useNotificationPreferences();
   const badges = getProfileBadges(user);
 
   // Instagram handle editing
@@ -180,28 +180,65 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
           Notification Preferences
         </p>
-        <button
-          onClick={() => setDaysModal(true)}
-          className="w-full flex items-center justify-between py-3.5 border-b border-border tap-active"
-        >
-          <span className="text-sm font-medium text-foreground">Frequency</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-muted-foreground">
-              {notifDays.length === 0 ? "Off" : notifDays.join(", ")}
-            </span>
-            <ChevronRight size={15} className="text-muted-foreground" />
+        <div className="space-y-1">
+          {/* New Sermon — toggle only */}
+          <NotifToggleRow
+            label="New Sermon Available"
+            sublabel="When your church publishes a new sermon"
+            enabled={preferences.find(p => p.notification_type === "new_sermon")?.enabled ?? true}
+            onToggle={(v) => updatePreference("new_sermon", { enabled: v })}
+          />
+
+          {/* Daily Spark — toggle + days/time */}
+          <NotifToggleRow
+            label="Daily Spark"
+            sublabel="Daily devotional reminder"
+            enabled={preferences.find(p => p.notification_type === "daily_spark")?.enabled ?? true}
+            onToggle={(v) => updatePreference("daily_spark", { enabled: v })}
+          />
+          {preferences.find(p => p.notification_type === "daily_spark")?.enabled !== false && (
+            <NotifScheduleRow
+              days={preferences.find(p => p.notification_type === "daily_spark")?.days ?? []}
+              time={preferences.find(p => p.notification_type === "daily_spark")?.preferred_time ?? "Morning (8 AM)"}
+              onDaysPress={() => setDaysModal("daily_spark")}
+              onTimePress={() => setTimeModal("daily_spark")}
+            />
+          )}
+
+          {/* Daily Reflection — toggle + days/time */}
+          <NotifToggleRow
+            label="Daily Reflection"
+            sublabel="Reflection question reminder"
+            enabled={preferences.find(p => p.notification_type === "daily_reflection")?.enabled ?? true}
+            onToggle={(v) => updatePreference("daily_reflection", { enabled: v })}
+          />
+          {preferences.find(p => p.notification_type === "daily_reflection")?.enabled !== false && (
+            <NotifScheduleRow
+              days={preferences.find(p => p.notification_type === "daily_reflection")?.days ?? []}
+              time={preferences.find(p => p.notification_type === "daily_reflection")?.preferred_time ?? "Morning (8 AM)"}
+              onDaysPress={() => setDaysModal("daily_reflection")}
+              onTimePress={() => setTimeModal("daily_reflection")}
+            />
+          )}
+
+          {/* New Follower — always on, shown as info */}
+          <div className="flex items-center justify-between py-3.5 border-b border-border">
+            <div>
+              <span className="text-sm font-medium text-foreground">New Follower</span>
+              <p className="text-xs text-muted-foreground mt-0.5">Always on</p>
+            </div>
+            <Bell size={16} className="text-amber" />
           </div>
-        </button>
-        <button
-          onClick={() => setTimeModal(true)}
-          className="w-full flex items-center justify-between pt-3.5 tap-active"
-        >
-          <span className="text-sm font-medium text-foreground">Time of day</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-muted-foreground">{notifTime}</span>
-            <ChevronRight size={15} className="text-muted-foreground" />
+
+          {/* Someone Prayed for You — always on */}
+          <div className="flex items-center justify-between py-3.5">
+            <div>
+              <span className="text-sm font-medium text-foreground">Someone Prayed for You</span>
+              <p className="text-xs text-muted-foreground mt-0.5">Always on</p>
+            </div>
+            <Bell size={16} className="text-amber" />
           </div>
-        </button>
+        </div>
       </section>
 
       {/* Sign Out */}
@@ -217,18 +254,76 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
 
       {daysModal && (
         <NotificationDaysModal
-          onClose={() => setDaysModal(false)}
-          selectedDays={notifDays}
-          onSave={setNotifDays}
+          onClose={() => setDaysModal(null)}
+          selectedDays={preferences.find(p => p.notification_type === daysModal)?.days ?? []}
+          onSave={(days) => updatePreference(daysModal, { days })}
         />
       )}
       {timeModal && (
         <NotificationTimeModal
-          onClose={() => setTimeModal(false)}
-          selectedTime={notifTime}
-          onSave={setNotifTime}
+          onClose={() => setTimeModal(null)}
+          selectedTime={preferences.find(p => p.notification_type === timeModal)?.preferred_time ?? "Morning (8 AM)"}
+          onSave={(time) => updatePreference(timeModal, { preferred_time: time })}
         />
       )}
+    </div>
+  );
+}
+
+/* ---- Sub-components ---- */
+
+function NotifToggleRow({ label, sublabel, enabled, onToggle }: {
+  label: string;
+  sublabel: string;
+  enabled: boolean;
+  onToggle: (enabled: boolean) => void;
+}) {
+  return (
+    <button
+      onClick={() => onToggle(!enabled)}
+      className="w-full flex items-center justify-between py-3.5 border-b border-border tap-active"
+    >
+      <div className="text-left">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
+      </div>
+      <div className={`w-11 h-6 rounded-full transition-colors relative ${enabled ? "bg-amber" : "bg-border"}`}>
+        <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${enabled ? "translate-x-5" : "translate-x-0.5"}`} />
+      </div>
+    </button>
+  );
+}
+
+function NotifScheduleRow({ days, time, onDaysPress, onTimePress }: {
+  days: string[];
+  time: string;
+  onDaysPress: () => void;
+  onTimePress: () => void;
+}) {
+  return (
+    <div className="pl-4 border-b border-border">
+      <button
+        onClick={onDaysPress}
+        className="w-full flex items-center justify-between py-3 tap-active"
+      >
+        <span className="text-xs font-medium text-muted-foreground">Days</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">
+            {days.length === 0 ? "None" : days.length === 7 ? "Every day" : days.join(", ")}
+          </span>
+          <ChevronRight size={13} className="text-muted-foreground" />
+        </div>
+      </button>
+      <button
+        onClick={onTimePress}
+        className="w-full flex items-center justify-between py-3 tap-active"
+      >
+        <span className="text-xs font-medium text-muted-foreground">Time</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">{time}</span>
+          <ChevronRight size={13} className="text-muted-foreground" />
+        </div>
+      </button>
     </div>
   );
 }
