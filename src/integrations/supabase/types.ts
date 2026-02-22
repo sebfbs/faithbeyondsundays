@@ -132,6 +132,33 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -212,6 +239,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_log: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json | null
+          error_message: string | null
+          id: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          id?: string
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          days: string[] | null
+          enabled: boolean
+          id: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          preferred_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days?: string[] | null
+          enabled?: boolean
+          id?: string
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          preferred_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days?: string[] | null
+          enabled?: boolean
+          id?: string
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          preferred_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       prayer_requests: {
         Row: {
@@ -601,6 +697,13 @@ export type Database = {
     Enums: {
       app_role: "owner" | "admin" | "pastor" | "leader" | "member"
       job_status: "queued" | "processing" | "completed" | "failed" | "retrying"
+      notification_type:
+        | "new_sermon"
+        | "daily_spark"
+        | "daily_reflection"
+        | "new_follower"
+        | "prayer_for_you"
+        | "sermon_processing_complete"
       prayer_visibility: "church" | "private"
       sermon_content_type:
         | "spark"
@@ -747,6 +850,14 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "admin", "pastor", "leader", "member"],
       job_status: ["queued", "processing", "completed", "failed", "retrying"],
+      notification_type: [
+        "new_sermon",
+        "daily_spark",
+        "daily_reflection",
+        "new_follower",
+        "prayer_for_you",
+        "sermon_processing_complete",
+      ],
       prayer_visibility: ["church", "private"],
       sermon_content_type: [
         "spark",
