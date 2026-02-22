@@ -56,6 +56,7 @@ const App = () => {
               {/* Platform Owner routes */}
               <Route path="/platform/login" element={<Suspense fallback={null}><PlatformLogin /></Suspense>} />
               <Route path="/platform" element={<Suspense fallback={null}><PlatformLayout /></Suspense>}>
+                <Route index element={<PlatformDashboard />} />
                 <Route path="dashboard" element={<PlatformDashboard />} />
                 <Route path="churches" element={<PlatformChurches />} />
                 <Route path="churches/:id" element={<PlatformChurchDetail />} />
