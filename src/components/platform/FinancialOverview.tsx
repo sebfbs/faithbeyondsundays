@@ -5,9 +5,14 @@ import { DollarSign, Plus, Pencil, Trash2, Settings2 } from "lucide-react";
 import ExpenseDialog from "./ExpenseDialog";
 import CostConfigDialog from "./CostConfigDialog";
 
+// ElevenLabs Scribe v2: $0.0125 per minute = 1.25 cents per minute
+const ELEVENLABS_CENTS_PER_MINUTE = 1.25;
+// Each completed sermon job generates 7 AI content calls
+const AI_CALLS_PER_SERMON = 7;
+
 interface FinancialOverviewProps {
-  totalSermons: number;
-  totalMembers: number;
+  totalSermonMinutes: number;
+  completedJobCount: number;
   costConfig: Record<string, number>;
   costConfigItems: { key: string; value_cents: number; label: string }[];
   expenses: any[];
@@ -24,18 +29,19 @@ function toMonthly(amount_cents: number, frequency: string) {
 }
 
 export default function FinancialOverview({
-  totalSermons, totalMembers, costConfig, costConfigItems, expenses,
+  totalSermonMinutes, completedJobCount, costConfig, costConfigItems, expenses,
   addExpense, updateExpense, deleteExpense, updateCostConfig,
 }: FinancialOverviewProps) {
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [costConfigOpen, setCostConfigOpen] = useState(false);
 
-  const baseHosting = costConfig["base_hosting_monthly"] ?? 0;
-  const perSermon = costConfig["cost_per_sermon"] ?? 0;
-  const perMember = costConfig["cost_per_member"] ?? 0;
+  const lovablePlan = costConfig["lovable_plan_monthly"] ?? 10000;
+  const elevenLabsCost = totalSermonMinutes * ELEVENLABS_CENTS_PER_MINUTE;
+  const costPerAiCall = costConfig["cost_per_ai_call"] ?? 2;
+  const aiCost = completedJobCount * AI_CALLS_PER_SERMON * costPerAiCall;
 
-  const autoCosts = baseHosting + (totalSermons * perSermon) + (totalMembers * perMember);
+  const autoCosts = lovablePlan + elevenLabsCost + aiCost;
   const manualMonthly = expenses.reduce((sum, e) => sum + toMonthly(e.amount_cents, e.frequency), 0);
   const totalBurn = autoCosts + manualMonthly;
 
@@ -58,16 +64,18 @@ export default function FinancialOverview({
             <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Estimated Costs (auto)</p>
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">Hosting</p>
-                <p className="text-sm font-semibold text-slate-200">{fmt(baseHosting)}/mo</p>
+                <p className="text-xs text-slate-400">Lovable Plan</p>
+                <p className="text-sm font-semibold text-slate-200">{fmt(lovablePlan)}/mo</p>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">AI Processing</p>
-                <p className="text-sm font-semibold text-slate-200">{fmt(totalSermons * perSermon)}/mo</p>
+                <p className="text-xs text-slate-400">ElevenLabs STT</p>
+                <p className="text-sm font-semibold text-slate-200">{fmt(elevenLabsCost)}</p>
+                <p className="text-[10px] text-slate-500">{Math.round(totalSermonMinutes)} min transcribed</p>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">Per-Member</p>
-                <p className="text-sm font-semibold text-slate-200">{fmt(totalMembers * perMember)}/mo</p>
+                <p className="text-xs text-slate-400">Lovable AI</p>
+                <p className="text-sm font-semibold text-slate-200">{fmt(aiCost)}</p>
+                <p className="text-[10px] text-slate-500">{completedJobCount * AI_CALLS_PER_SERMON} calls</p>
               </div>
             </div>
           </div>

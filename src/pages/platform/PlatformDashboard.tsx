@@ -108,8 +108,8 @@ export default function PlatformDashboard() {
       {/* Financial + Health side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FinancialOverview
-          totalSermons={totalSermons}
-          totalMembers={totalMembers}
+          totalSermonMinutes={analytics.totalSermonMinutes}
+          completedJobCount={analytics.completedJobCount}
           costConfig={analytics.costConfig}
           costConfigItems={analytics.costConfigItems}
           expenses={analytics.expenses}
