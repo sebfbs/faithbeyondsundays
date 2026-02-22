@@ -116,9 +116,11 @@ export default function OnboardingScreen() {
     if (error) {
       console.error("Profile creation error:", error);
       setUsernameError(error.message.includes("unique") ? "Username is already taken" : "Something went wrong. Please try again.");
+      setSaving(false);
+    } else {
+      // Force full reload so useProfile picks up the new profile
+      window.location.reload();
     }
-    setSaving(false);
-    // AuthProvider will detect the profile via onAuthStateChange / re-render
   };
 
   // Church selection step
