@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       type: "recovery",
       email: admin_email,
       options: {
-        redirectTo: "https://faithbeyondsundays.lovable.app/admin/login",
+        redirectTo: "https://faithbeyondsundays.lovable.app/admin/reset-password",
       },
     });
 
