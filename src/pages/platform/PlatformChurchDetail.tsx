@@ -225,7 +225,7 @@ export default function PlatformChurchDetail() {
             <div className="flex gap-2">
               <Dialog open={changeAdminOpen} onOpenChange={setChangeAdminOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:text-slate-100">
+                  <Button variant="outline" size="sm" className="border-slate-500 text-slate-100 bg-slate-700 hover:bg-slate-600 hover:text-white">
                     <UserCog className="h-3.5 w-3.5 mr-1.5" />
                     {owner ? "Change" : "Assign"} Admin
                   </Button>
@@ -256,7 +256,7 @@ export default function PlatformChurchDetail() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-700 text-slate-300 hover:text-slate-100"
+                className="border-slate-500 text-slate-100 bg-slate-700 hover:bg-slate-600 hover:text-white"
                 onClick={handleResendInvite}
                 disabled={sendingInvite}
               >
