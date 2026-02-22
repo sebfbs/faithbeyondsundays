@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { DemoModeProvider } from "@/components/fbs/DemoModeProvider";
+import DemoModeBadge from "@/components/fbs/DemoModeBadge";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
@@ -25,11 +27,14 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <DemoModeProvider>
+          <DemoModeBadge />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </DemoModeProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

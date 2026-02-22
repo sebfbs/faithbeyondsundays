@@ -19,6 +19,7 @@ import type { SermonData } from "@/components/fbs/data";
 import type { CommunityMember } from "@/components/fbs/communityData";
 import { setFollows, getFollows, DEMO_MEMBERS } from "@/components/fbs/communityData";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useDemoMode } from "@/components/fbs/DemoModeProvider";
 
 type OverlayScreen =
   | "profile"
@@ -55,6 +56,7 @@ function loadUser(): UserData | null {
 }
 
 export default function Index() {
+  const { isDemo } = useDemoMode();
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -71,7 +73,18 @@ export default function Index() {
       return next;
     });
   };
-  const [user, setUser] = useState<UserData | null>(loadUser);
+  const [user, setUser] = useState<UserData | null>(() => {
+    if (isDemo) {
+      return {
+        firstName: "Grace",
+        lastName: "Demo",
+        username: "grace_demo",
+        churchCode: "cornerstone",
+        churchName: "Cornerstone Community Church",
+      } as UserData;
+    }
+    return loadUser();
+  });
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [moreOpen, setMoreOpen] = useState(false);
   const [overlay, setOverlayRaw] = useState<OverlayScreen>(null);
