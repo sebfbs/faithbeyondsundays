@@ -78,41 +78,50 @@ Deno.serve(async (req) => {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0f1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f1117;">
-    <tr><td align="center" style="padding:40px 20px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#1a1d29;border-radius:16px;overflow:hidden;">
-        <!-- Header -->
-        <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:32px 32px 24px;text-align:center;">
-          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Faith Beyond Sundays</h1>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(180deg,#c0d4e8 0%,#e8d5c4 38%,#dba84e 65%,#e09a00 100%);min-height:600px;">
+    <tr><td align="center" style="padding:60px 20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.1);">
+        <!-- Icon -->
+        <tr><td style="padding:36px 32px 0;text-align:center;">
+          <div style="width:52px;height:52px;margin:0 auto;background:#fef3c7;border-radius:14px;line-height:52px;font-size:24px;">🏛</div>
+        </td></tr>
+        <!-- Title -->
+        <tr><td style="padding:16px 32px 0;text-align:center;">
+          <h1 style="margin:0;color:#1a1a2e;font-size:22px;font-weight:700;">Church Admin</h1>
+        </td></tr>
+        <tr><td style="padding:6px 32px 0;text-align:center;">
+          <p style="margin:0;color:#9ca3af;font-size:14px;">Manage your church on Faith Beyond Sundays</p>
         </td></tr>
         <!-- Body -->
-        <tr><td style="padding:32px;">
-          <h2 style="margin:0 0 8px;color:#f5f0e8;font-size:20px;font-weight:600;">You're Invited!</h2>
-          <p style="margin:0 0 20px;color:#9ca3af;font-size:15px;line-height:1.6;">
-            You've been set up as the admin for <strong style="color:#f5f0e8;">${church_name}</strong> on Faith Beyond Sundays.
+        <tr><td style="padding:28px 32px 0;">
+          <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
+            You've been set up as the admin for <strong style="color:#1a1a2e;">${church_name}</strong>.
           </p>
-          <p style="margin:0 0 28px;color:#9ca3af;font-size:15px;line-height:1.6;">
-            Click the button below to set your password and access your church admin dashboard.
-          </p>
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-            <tr><td style="border-radius:10px;background:#d97706;"><a href="${recoveryLink}" target="_blank" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Set Password & Sign In</a></td></tr>
-          </table>
-          <p style="margin:28px 0 0;color:#6b7280;font-size:13px;line-height:1.5;text-align:center;">
-            If the button doesn't work, copy and paste this link into your browser:<br/>
-            <a href="${recoveryLink}" style="color:#d97706;word-break:break-all;">${recoveryLink}</a>
+          <p style="margin:0 0 28px;color:#374151;font-size:15px;line-height:1.6;">
+            Click below to set your password and access your dashboard.
           </p>
         </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:20px 32px;border-top:1px solid #2a2d3a;text-align:center;">
-          <p style="margin:0;color:#4b5563;font-size:12px;">Faith Beyond Sundays &bull; Empowering churches through technology</p>
+        <!-- CTA Button -->
+        <tr><td style="padding:0 32px 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="border-radius:12px;background:#e09a00;text-align:center;"><a href="${recoveryLink}" target="_blank" style="display:block;padding:14px 24px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Set Password & Sign In</a></td></tr>
+          </table>
+        </td></tr>
+        <!-- Fallback link -->
+        <tr><td style="padding:0 32px 28px;">
+          <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.5;text-align:center;">
+            If the button doesn't work, copy and paste this link:<br/>
+            <a href="${recoveryLink}" style="color:#e09a00;word-break:break-all;font-size:11px;">${recoveryLink}</a>
+          </p>
         </td></tr>
       </table>
+      <!-- Footer outside card -->
+      <p style="margin:24px 0 0;color:rgba(255,255,255,0.7);font-size:12px;text-align:center;">Faith Beyond Sundays &bull; Empowering churches through technology</p>
     </td></tr>
   </table>
 </body>
 </html>`;
-
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
