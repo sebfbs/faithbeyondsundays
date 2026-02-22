@@ -249,7 +249,7 @@ export type Database = {
       }
       journal_entries: {
         Row: {
-          church_id: string
+          church_id: string | null
           content: string
           created_at: string
           entry_type: string
@@ -263,7 +263,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          church_id: string
+          church_id?: string | null
           content: string
           created_at?: string
           entry_type?: string
@@ -277,7 +277,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          church_id?: string
+          church_id?: string | null
           content?: string
           created_at?: string
           entry_type?: string
@@ -503,7 +503,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           challenges_completed: number
-          church_id: string
+          church_id: string | null
           created_at: string
           first_name: string | null
           id: string
@@ -523,7 +523,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           challenges_completed?: number
-          church_id: string
+          church_id?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
@@ -543,7 +543,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           challenges_completed?: number
-          church_id?: string
+          church_id?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
