@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users } from "lucide-react";
 import { getAccentColors } from "./themeColors";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -156,6 +159,14 @@ function getDailyPrompt(sermon: SermonUIData): string {
   return sermon.reflectionQuestions[idx] || sermon.reflectionQuestions[0] || "";
 }
 
+interface DailyContent {
+  spark_message: string;
+  reflection_prompt: string;
+}
+
+const FALLBACK_SPARK = "Even when the path ahead looks a bit foggy, we can trust the One who is leading the way. Focus on taking just the next right step in faith — the rest will unfold as it should.";
+const FALLBACK_REFLECTION = "What would look different in your week if you truly believed God was already in the middle of it?";
+
 interface HomeTabProps {
   sermon: SermonUIData | null;
   isLoading?: boolean;
@@ -174,17 +185,38 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
   const [justSaved, setJustSaved] = useState(false);
   const colors = getAccentColors();
 
+  // Fetch AI-generated daily content for churchless users
+  const { data: dailyContent, isLoading: isDailyContentLoading } = useQuery<DailyContent>({
+    queryKey: ["daily-content"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-daily-content");
+      if (error) throw error;
+      return data as DailyContent;
+    },
+    enabled: !hasChurch,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    retry: 1,
+  });
+
   const completed = reflectedToday || justSaved;
 
   const handleSaveReflection = () => {
-    if (!reflectionText.trim() || !sermon) return;
-    const now = new Date();
-    onAddJournalEntry({
-      content: reflectionText,
-      title: sermon.title,
-      entryType: "sermon",
-      sermonId: sermon.id,
-    });
+    if (!reflectionText.trim()) return;
+    if (sermon) {
+      onAddJournalEntry({
+        content: reflectionText,
+        title: sermon.title,
+        entryType: "sermon",
+        sermonId: sermon.id,
+      });
+    } else {
+      // Churchless reflection
+      onAddJournalEntry({
+        content: reflectionText,
+        title: "Daily Reflection",
+        entryType: "sermon",
+      });
+    }
     setJustSaved(true);
     setReflectionOpen(false);
   };
@@ -215,23 +247,100 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       {/* Churchless experience */}
       {!hasChurch && (
         <>
-          <div className="rounded-3xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-            <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
-              <BookOpen size={24} style={{ color: colors.accent }} />
+          {/* Daily Spark - AI generated */}
+          {isDailyContentLoading ? (
+            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Skeleton className="w-7 h-7 rounded-full" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
-            <h2 className="text-lg font-bold text-foreground mb-2">Welcome to Faith Beyond Sundays</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-              Start your faith journey — journal your thoughts, explore scripture, and connect when you're ready.
-            </p>
-            <button
-              onClick={() => onNavigate?.("journal")}
-              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
-              style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
-            >
-              <BookText size={16} />
-              Start Journaling
-            </button>
-          </div>
+          ) : (
+            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+                  <Sparkles size={14} style={{ color: colors.accent }} />
+                </div>
+                <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+                  Today's Spark
+                </span>
+              </div>
+              <p className="text-foreground font-medium text-base leading-relaxed italic">
+                "{dailyContent?.spark_message || FALLBACK_SPARK}"
+              </p>
+            </div>
+          )}
+
+          {/* Guided Reflection - AI generated */}
+          {isDailyContentLoading ? (
+            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Skeleton className="w-7 h-7 rounded-full" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          ) : (
+            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+                  <BookText size={14} style={{ color: colors.accent }} />
+                </div>
+                <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+                  Today's Reflection
+                </span>
+              </div>
+              <p className="text-foreground font-medium text-base leading-relaxed">
+                {dailyContent?.reflection_prompt || FALLBACK_REFLECTION}
+              </p>
+
+              {!completed && !reflectionOpen && (
+                <button
+                  onClick={() => setReflectionOpen(true)}
+                  className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+                  style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+                >
+                  <BookText size={16} />
+                  Reflect
+                </button>
+              )}
+
+              {!completed && reflectionOpen && (
+                <div className="mt-4 space-y-3">
+                  <textarea
+                    value={reflectionText}
+                    onChange={(e) => setReflectionText(e.target.value)}
+                    placeholder="Write your thoughts and reflections here..."
+                    className="w-full h-32 text-sm text-foreground bg-transparent resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3"
+                    style={{ background: "hsl(40 25% 97%)" }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveReflection}
+                    disabled={!reflectionText.trim()}
+                    className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity disabled:opacity-40"
+                    style={{ background: colors.buttonBg, boxShadow: reflectionText.trim() ? colors.buttonShadow : "none" }}
+                  >
+                    <Save size={15} />
+                    Save Reflection
+                  </button>
+                </div>
+              )}
+
+              {completed && (
+                <div className="mt-4 flex items-center gap-2" style={{ color: colors.statusText }}>
+                  <CheckCircle2 size={18} style={{ fill: colors.accent, color: colors.accentFg }} />
+                  <span className="text-sm font-semibold">Reflected today</span>
+                  <span className="text-xs text-muted-foreground ml-auto">View in Journal →</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Connect to a Church */}
           <button
             onClick={() => onNavigate?.("community")}
             className="w-full rounded-3xl p-5 shadow-card text-left tap-active hover:opacity-90 transition-opacity"
