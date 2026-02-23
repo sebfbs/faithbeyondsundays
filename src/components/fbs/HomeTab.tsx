@@ -197,7 +197,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
   return (
     <div className="animate-fade-in min-h-screen relative">
-      {new Date().getHours() < 12 ? <SunRays /> : new Date().getHours() >= 17 ? <Stars /> : null}
+      {new Date().getHours() >= 17 ? <Stars /> : null}
       {/* Greeting */}
       <div className="px-5 pb-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <h1 className="text-2xl font-bold leading-tight" style={{ color: "hsl(0 0% 100%)" }}>
