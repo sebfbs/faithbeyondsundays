@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.get-user-email]
 verify_jwt = false
+
+[functions.generate-daily-content]
+verify_jwt = false

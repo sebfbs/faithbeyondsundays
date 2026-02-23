@@ -1,0 +1,167 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const SPARK_PROMPT = `Write a 2-3 sentence reflection grounded in Christian faith. It should feel like quiet wisdom -- something you'd read and sit with for a moment. Do NOT start with a greeting like 'Good morning' or 'Hey'. Do NOT address the reader directly as 'buddy', 'friend', or 'you' in a casual way. Do NOT include Bible verse references or citations. Do NOT use hashtags or exclamation marks. The tone should be calm, thoughtful, and grounded -- like something a wise pastor would write in a devotional book, not a text message to a friend. Examples of the right tone: 'It's easy to get caught up in the what's next of the week, but try to take a breath and remember that God is already in this moment with you. You don't have to go looking for Him; He's right here.' and 'Never underestimate the impact of a small act of kindness today. We're called to be light in the world, and sometimes that light is as simple as a patient word or a genuine smile to a stranger.' Write one original message in this style. Return ONLY the message text, nothing else.`;
+
+const REFLECTION_PROMPT = `Write a single thought-provoking reflection question rooted in Christian faith. It should make someone genuinely pause and think. Do NOT make it generic like 'How are you feeling today?' or 'What are you grateful for?' -- it should have depth and specificity. Do NOT start with 'Hey' or any greeting. Do NOT include Bible verse references. The tone should feel like a question from a thoughtful pastor during a quiet moment, not a therapy session or a pep talk. Examples of the right tone: 'What would look different in your week if you truly believed God was already in the middle of it?' and 'Is there something you've been holding onto that you know God has been asking you to release?' Write one original question. Return ONLY the question text, nothing else.`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Get today's date in UTC
+    const today = new Date().toISOString().split("T")[0];
+
+    // Check cache
+    const { data: cached } = await supabase
+      .from("daily_content")
+      .select("spark_message, reflection_prompt")
+      .eq("content_date", today)
+      .maybeSingle();
+
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Generate with AI using tool calling for structured output
+    const aiResponse = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a content generator for a Christian faith app. Generate daily devotional content with the exact tone specified. Never add greetings, Bible citations, hashtags, or exclamation marks.",
+            },
+            {
+              role: "user",
+              content: `Generate today's daily content. For the spark: ${SPARK_PROMPT}\n\nFor the reflection: ${REFLECTION_PROMPT}`,
+            },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "save_daily_content",
+                description:
+                  "Save the generated daily spark message and reflection prompt.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    spark_message: {
+                      type: "string",
+                      description:
+                        "A 2-3 sentence calm, grounded reflection on faith. No greetings, no Bible refs, no exclamation marks.",
+                    },
+                    reflection_prompt: {
+                      type: "string",
+                      description:
+                        "A single thought-provoking question rooted in faith. No greetings, no Bible refs.",
+                    },
+                  },
+                  required: ["spark_message", "reflection_prompt"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: {
+            type: "function",
+            function: { name: "save_daily_content" },
+          },
+        }),
+      }
+    );
+
+    if (!aiResponse.ok) {
+      const status = aiResponse.status;
+      const text = await aiResponse.text();
+      console.error("AI gateway error:", status, text);
+
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limited, please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI gateway returned ${status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+
+    if (!toolCall?.function?.arguments) {
+      throw new Error("No tool call in AI response");
+    }
+
+    const generated = JSON.parse(toolCall.function.arguments);
+    const sparkMessage = generated.spark_message;
+    const reflectionPrompt = generated.reflection_prompt;
+
+    if (!sparkMessage || !reflectionPrompt) {
+      throw new Error("Missing fields in AI response");
+    }
+
+    // Insert into cache
+    const { error: insertError } = await supabase
+      .from("daily_content")
+      .insert({
+        content_date: today,
+        spark_message: sparkMessage,
+        reflection_prompt: reflectionPrompt,
+      });
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      // Still return the content even if caching fails
+    }
+
+    const result = {
+      spark_message: sparkMessage,
+      reflection_prompt: reflectionPrompt,
+    };
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("generate-daily-content error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});

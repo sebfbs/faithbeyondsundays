@@ -199,6 +199,30 @@ export type Database = {
           },
         ]
       }
+      daily_content: {
+        Row: {
+          content_date: string
+          created_at: string
+          id: string
+          reflection_prompt: string
+          spark_message: string
+        }
+        Insert: {
+          content_date: string
+          created_at?: string
+          id?: string
+          reflection_prompt: string
+          spark_message: string
+        }
+        Update: {
+          content_date?: string
+          created_at?: string
+          id?: string
+          reflection_prompt?: string
+          spark_message?: string
+        }
+        Relationships: []
+      }
       device_tokens: {
         Row: {
           created_at: string
