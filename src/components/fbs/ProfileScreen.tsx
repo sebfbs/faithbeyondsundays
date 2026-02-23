@@ -19,12 +19,15 @@ interface ProfileScreenProps {
 }
 
 const getProfileBadges = (user: UserData) => {
-  const badges = [
+  const hasChurch = !!user.churchCode;
+  const badges: { icon: any; label: string; detail: string; color: string }[] = [
     { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
-    { icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" },
-    { icon: BookOpen, label: "First Reflection", detail: "Daily Journaler", color: "hsl(340 70% 55%)" },
-    { icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" },
   ];
+  if (hasChurch) {
+    badges.push({ icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" });
+    badges.push({ icon: BookOpen, label: "First Reflection", detail: "Daily Journaler", color: "hsl(340 70% 55%)" });
+    badges.push({ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" });
+  }
   if (hasInvited()) {
     badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170 55% 45%)" });
   }

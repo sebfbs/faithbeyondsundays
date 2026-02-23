@@ -236,7 +236,7 @@ export default function Index() {
         <CommunityScreen
           onBack={() => navTo("/home")}
           onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); }}
-          userChurchCode={userData.churchCode || "cornerstone"}
+          userChurchCode={userData.churchCode}
           userChurchName={userData.churchName}
         />
       );
