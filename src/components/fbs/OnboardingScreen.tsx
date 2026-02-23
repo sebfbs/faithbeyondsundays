@@ -511,7 +511,7 @@ export default function OnboardingScreen() {
           <div className="bg-card/95 backdrop-blur-sm rounded-3xl animate-fade-in animate-shimmer-border shadow-xl p-6 space-y-6">
             <div className="text-center space-y-3">
               <ProgressDots current="username" />
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-sky-400 flex items-center justify-center shadow-lg">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-300 via-yellow-400 to-sky-300 flex items-center justify-center shadow-lg">
                 <Sparkles className="h-7 w-7 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-card-foreground tracking-tight">Claim Your @</h1>
@@ -521,7 +521,7 @@ export default function OnboardingScreen() {
             {/* Live username preview */}
             <div className="flex justify-center">
               <span
-                className="text-3xl font-bold tracking-tight transition-all duration-300 bg-gradient-to-r from-amber-500 to-sky-500 bg-clip-text text-transparent"
+                className="text-3xl font-bold tracking-tight transition-all duration-300 bg-gradient-to-r from-amber-400 via-yellow-400 to-sky-400 bg-clip-text text-transparent"
                 style={{ transform: username.trim() ? "scale(1.05)" : "scale(1)" }}
               >
                 @{displayUsername}
