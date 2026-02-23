@@ -1,14 +1,18 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Search, Church, Users, Award, Share2 } from "lucide-react";
+import { ArrowLeft, Search, Church, Users, Share2, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { DEMO_MEMBERS, getFollows, markInviteSent, type CommunityMember } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
 
 interface CommunityScreenProps {
   onBack: () => void;
   onViewProfile: (member: CommunityMember) => void;
   userChurchCode: string;
   userChurchName: string;
+  isDemo?: boolean;
 }
 
 export default function CommunityScreen({
@@ -16,33 +20,78 @@ export default function CommunityScreen({
   onViewProfile,
   userChurchCode,
   userChurchName,
+  isDemo,
 }: CommunityScreenProps) {
   const [search, setSearch] = useState("");
   const colors = getAccentColors();
   const follows = getFollows();
+  const { user: authUser } = useAuth();
+
+  // Fetch real community members from DB
+  const { data: realMembers = [], isLoading } = useQuery({
+    queryKey: ["community-members", userChurchCode],
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("*, churches(name, code)");
+      if (error) throw error;
+
+      // Fetch roles visible in this church (RLS filters to same church)
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+      const roleMap = new Map<string, string>();
+      roles?.forEach((r) => roleMap.set(r.user_id, r.role));
+
+      return (profiles || [])
+        .filter((p) => p.user_id !== authUser?.id) // exclude self
+        .map((p) => ({
+          username: p.username,
+          firstName: p.first_name || "",
+          lastName: p.last_name || "",
+          churchName: (p.churches as any)?.name || "",
+          churchCode: (p.churches as any)?.code || "",
+          avatarUrl: p.avatar_url || undefined,
+          memberSince: new Date(p.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+          }),
+          challengesCompleted: 0,
+          isGroupMember: false,
+          role: roleMap.get(p.user_id) === "pastor" ? ("pastor" as const) : undefined,
+          instagramHandle: p.instagram_handle || undefined,
+        })) as CommunityMember[];
+    },
+    enabled: !isDemo && !!userChurchCode,
+  });
+
+  const allMembers = isDemo ? DEMO_MEMBERS : realMembers;
 
   const churchMembers = useMemo(
-    () =>
-      DEMO_MEMBERS
-        .filter((m) => m.churchCode === userChurchCode)
-        .sort((a, b) => {
-          if (a.role === "pastor") return -1;
-          if (b.role === "pastor") return 1;
-          return 0;
-        }),
-    [userChurchCode]
+    () => {
+      const filtered = isDemo
+        ? allMembers.filter((m) => m.churchCode === userChurchCode)
+        : allMembers; // Real data already filtered by RLS
+      return filtered.sort((a, b) => {
+        if (a.role === "pastor") return -1;
+        if (b.role === "pastor") return 1;
+        return 0;
+      });
+    },
+    [allMembers, userChurchCode, isDemo]
   );
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
     const q = search.toLowerCase();
-    return DEMO_MEMBERS.filter(
+    const source = isDemo ? DEMO_MEMBERS : allMembers;
+    return source.filter(
       (m) =>
         m.username.includes(q) ||
         m.firstName.toLowerCase().includes(q) ||
         m.lastName.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, isDemo, allMembers]);
 
   const displayList = searchResults ?? churchMembers;
   const isSearching = searchResults !== null;
@@ -63,7 +112,7 @@ export default function CommunityScreen({
         toast({ title: "Invite link copied!", description: "Share it with a friend." });
       }
     } catch (e) {
-      // User cancelled share sheet — no action needed
+      // User cancelled share sheet
     }
   };
 
@@ -177,74 +226,83 @@ export default function CommunityScreen({
           : "Church Members"}
       </p>
 
+      {/* Loading state */}
+      {!isDemo && isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      )}
+
       {/* Member list */}
-      <div className="space-y-2">
-        {displayList.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No members found
-          </p>
-        )}
-        {displayList.map((member) => (
-          <button
-            key={member.username}
-            onClick={() => onViewProfile(member)}
-            className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow text-left"
-          >
-            {/* Avatar */}
-            <div
-              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-              style={{ background: "hsl(var(--muted))" }}
+      {(!isLoading || isDemo) && (
+        <div className="space-y-2">
+          {displayList.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {isSearching ? "No members found" : "No other members yet — invite someone!"}
+            </p>
+          )}
+          {displayList.map((member) => (
+            <button
+              key={member.username}
+              onClick={() => onViewProfile(member)}
+              className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow text-left"
             >
-              {member.avatarUrl ? (
-                <img
-                  src={member.avatarUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-bold text-muted-foreground">
-                  {member.firstName[0]}
-                  {member.lastName[0]}
-                </span>
-              )}
-            </div>
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">
-                {member.firstName} {member.lastName}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                @{member.username}
-                {member.role === "pastor" && (
-                  <span
-                    className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
-                    style={{
-                      background: "hsl(38, 100%, 47%, 0.12)",
-                      color: "hsl(38, 100%, 47%)",
-                    }}
-                  >
-                    Pastor
-                  </span>
-                )}
-                {isSearching && (
-                  <span className="ml-1.5 text-muted-foreground/70">
-                    · {member.churchName}
-                  </span>
-                )}
-              </p>
-            </div>
-            {/* Following indicator */}
-            {follows.includes(member.username) && (
+              {/* Avatar */}
               <div
-                className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
-                style={{ background: colors.accentBg, color: colors.accent }}
+                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+                style={{ background: "hsl(var(--muted))" }}
               >
-                Following
+                {member.avatarUrl ? (
+                  <img
+                    src={member.avatarUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-muted-foreground">
+                    {member.firstName[0]}
+                    {member.lastName[0]}
+                  </span>
+                )}
               </div>
-            )}
-          </button>
-        ))}
-      </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {member.firstName} {member.lastName}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  @{member.username}
+                  {member.role === "pastor" && (
+                    <span
+                      className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{
+                        background: "hsl(38, 100%, 47%, 0.12)",
+                        color: "hsl(38, 100%, 47%)",
+                      }}
+                    >
+                      Pastor
+                    </span>
+                  )}
+                  {isSearching && isDemo && (
+                    <span className="ml-1.5 text-muted-foreground/70">
+                      · {member.churchName}
+                    </span>
+                  )}
+                </p>
+              </div>
+              {/* Following indicator */}
+              {follows.includes(member.username) && (
+                <div
+                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
+                  style={{ background: colors.accentBg, color: colors.accent }}
+                >
+                  Following
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

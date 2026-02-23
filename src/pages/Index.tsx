@@ -227,7 +227,7 @@ export default function Index() {
       return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => { setSubOverlay(null); navTo("/previous-sermons"); }} />;
     }
     if (overlay === "bible") return <BibleScreen onBack={() => navTo("/home")} />;
-    if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} />;
+    if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} isDemo={isDemo} />;
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => navTo("/home")} user={userData} onSignOut={handleSignOut} onUpdateUser={() => {}} />;
     }
@@ -238,6 +238,7 @@ export default function Index() {
           onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); }}
           userChurchCode={userData.churchCode}
           userChurchName={userData.churchName}
+          isDemo={isDemo}
         />
       );
     }
