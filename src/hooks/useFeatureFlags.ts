@@ -14,6 +14,12 @@ const DEFAULTS: FeatureFlags = {
   giving: true,
 };
 
+const CHURCHLESS_FLAGS: FeatureFlags = {
+  community: true,
+  prayer: false,
+  giving: false,
+};
+
 export function useFeatureFlags(): FeatureFlags {
   const { profile } = useProfile();
   const churchId = profile?.church_id;
@@ -21,7 +27,7 @@ export function useFeatureFlags(): FeatureFlags {
   const { data } = useQuery({
     queryKey: ["feature-flags", churchId],
     queryFn: async (): Promise<FeatureFlags> => {
-      if (!churchId) return DEFAULTS;
+      if (!churchId) return CHURCHLESS_FLAGS;
       const { data: rows, error } = await supabase
         .from("church_feature_flags")
         .select("feature_key, enabled")
@@ -41,5 +47,6 @@ export function useFeatureFlags(): FeatureFlags {
     staleTime: 10 * 60 * 1000,
   });
 
+  if (!churchId) return CHURCHLESS_FLAGS;
   return data || DEFAULTS;
 }

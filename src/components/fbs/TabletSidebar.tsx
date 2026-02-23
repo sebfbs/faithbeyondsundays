@@ -1,4 +1,4 @@
-import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, PanelLeft, PanelLeftClose } from "lucide-react";
+import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, PanelLeft, PanelLeftClose, Lock } from "lucide-react";
 import { getAccentColors } from "./themeColors";
 import { GIVING_URL } from "./data";
 import FBSLogo from "@/assets/FBS_Logo_white.png";
@@ -38,9 +38,7 @@ const moreItemsDef = [
 export default function TabletSidebar({ featureFlags, activeItem, onNavigate, collapsed, onToggle }: TabletSidebarProps) {
   const colors = getAccentColors();
 
-  const filteredMoreItems = moreItemsDef.filter(
-    (item) => !item.featureKey || featureFlags[item.featureKey]
-  );
+  const filteredMoreItems = moreItemsDef;
 
   const handleClick = (id: SidebarNavTarget) => {
     if (id === "give") {
@@ -50,31 +48,42 @@ export default function TabletSidebar({ featureFlags, activeItem, onNavigate, co
     onNavigate(id);
   };
 
-  const renderItem = (id: SidebarNavTarget, label: string, Icon: React.ElementType) => {
-    const isActive = activeItem === id;
+  const renderItem = (id: SidebarNavTarget, label: string, Icon: React.ElementType, locked = false) => {
+    const isActive = !locked && activeItem === id;
     return (
       <button
         key={id}
-        onClick={() => handleClick(id)}
+        onClick={() => !locked && handleClick(id)}
         title={collapsed ? label : undefined}
         className={`w-full flex items-center gap-3 rounded-lg transition-colors text-left hover:bg-muted ${
           collapsed ? "justify-center px-2 py-3" : "px-4 py-3"
-        }`}
+        } ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
         style={{ background: isActive ? colors.accentBg : undefined }}
       >
-        <Icon
-          size={20}
-          strokeWidth={isActive ? 2.2 : 1.8}
-          style={{ color: isActive ? colors.accent : "hsl(var(--muted-foreground))" }}
-          className="flex-shrink-0"
-        />
+        {locked ? (
+          <Lock
+            size={20}
+            strokeWidth={1.8}
+            className="flex-shrink-0 text-muted-foreground"
+          />
+        ) : (
+          <Icon
+            size={20}
+            strokeWidth={isActive ? 2.2 : 1.8}
+            style={{ color: isActive ? colors.accent : "hsl(var(--muted-foreground))" }}
+            className="flex-shrink-0"
+          />
+        )}
         {!collapsed && (
-          <span
-            className="text-sm font-semibold whitespace-nowrap"
-            style={{ color: isActive ? colors.accent : "hsl(var(--foreground))" }}
-          >
-            {label}
-          </span>
+          <div>
+            <span
+              className="text-sm font-semibold whitespace-nowrap"
+              style={{ color: locked ? "hsl(var(--muted-foreground))" : isActive ? colors.accent : "hsl(var(--foreground))" }}
+            >
+              {label}
+            </span>
+            {locked && <p className="text-[10px] text-muted-foreground">Requires church</p>}
+          </div>
         )}
       </button>
     );
@@ -106,7 +115,7 @@ export default function TabletSidebar({ featureFlags, activeItem, onNavigate, co
       <nav className={`flex-1 space-y-1 ${collapsed ? "px-2" : "px-3"}`}>
         {mainItems.map(({ id, label, Icon }) => renderItem(id, label, Icon))}
         <div className="my-3 border-t border-border" />
-        {filteredMoreItems.map(({ id, label, Icon }) => renderItem(id, label, Icon))}
+        {filteredMoreItems.map(({ id, label, Icon, featureKey }) => renderItem(id, label, Icon, featureKey ? !featureFlags[featureKey] : false))}
       </nav>
 
       <div className={`pb-4 ${collapsed ? "px-2" : "px-3"}`}>

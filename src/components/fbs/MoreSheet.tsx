@@ -1,4 +1,4 @@
-import { Users, Heart, User, BookOpen, HandCoins, X } from "lucide-react";
+import { Users, Heart, User, BookOpen, HandCoins, X, Lock } from "lucide-react";
 import { getAccentColors } from "./themeColors";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -23,9 +23,7 @@ export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBibl
     { icon: User, label: "Profile", key: "profile", featureKey: null },
   ];
 
-  const options = allOptions.filter(
-    (opt) => !opt.featureKey || featureFlags[opt.featureKey]
-  );
+  const options = allOptions;
 
   const handleOption = (key: string) => {
     if (key === "profile") onProfile();
@@ -47,18 +45,24 @@ export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBibl
           </button>
         </div>
         <div className="space-y-2">
-          {options.map(({ icon: Icon, label, key }) => (
-            <button
-              key={key}
-              onClick={() => handleOption(key)}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-muted/50 tap-active hover:bg-muted transition-colors text-left"
-            >
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: colors.accentBg }}>
-                <Icon size={18} style={{ color: colors.accent }} />
-              </div>
-              <span className="text-sm font-semibold text-foreground">{label}</span>
-            </button>
-          ))}
+          {options.map(({ icon: Icon, label, key, featureKey }) => {
+            const locked = featureKey ? !featureFlags[featureKey] : false;
+            return (
+              <button
+                key={key}
+                onClick={() => !locked && handleOption(key)}
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl tap-active transition-colors text-left ${locked ? "opacity-50 cursor-not-allowed bg-muted/30" : "bg-muted/50 hover:bg-muted"}`}
+              >
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: locked ? "hsl(var(--muted))" : colors.accentBg }}>
+                  {locked ? <Lock size={18} className="text-muted-foreground" /> : <Icon size={18} style={{ color: colors.accent }} />}
+                </div>
+                <div>
+                  <span className={`text-sm font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
+                  {locked && <p className="text-xs text-muted-foreground">Requires church</p>}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

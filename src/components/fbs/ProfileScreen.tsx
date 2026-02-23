@@ -166,7 +166,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {user.churchName}
+          {user.churchName || "Independent"}
         </p>
       </div>
 

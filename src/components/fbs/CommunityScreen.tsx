@@ -67,6 +67,35 @@ export default function CommunityScreen({
     }
   };
 
+  // Churchless banner
+  if (!userChurchCode) {
+    return (
+      <div
+        className="px-5 pb-6 space-y-5 animate-fade-in"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-9 h-9 rounded-full bg-card shadow-card flex items-center justify-center tap-active"
+          >
+            <ArrowLeft size={18} className="text-foreground" />
+          </button>
+          <h1 className="text-xl font-bold text-foreground">Community</h1>
+        </div>
+        <div className="bg-card rounded-3xl p-8 shadow-card text-center">
+          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
+            <Church size={24} style={{ color: colors.accent }} />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">Find Your Community</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Connect to a church to see members, join groups, and grow together in faith.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="px-5 pb-6 space-y-5 animate-fade-in"
