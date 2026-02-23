@@ -5,7 +5,6 @@ import { useAuth } from "@/components/fbs/AuthProvider";
 export type NotificationType =
   | "new_sermon"
   | "daily_spark"
-  | "daily_reflection"
   | "new_follower"
   | "prayer_for_you"
   | "sermon_processing_complete";
@@ -23,7 +22,6 @@ const DEFAULT_TIME = "Morning (8 AM)";
 const ALL_TYPES: NotificationType[] = [
   "new_sermon",
   "daily_spark",
-  "daily_reflection",
   "new_follower",
   "prayer_for_you",
   "sermon_processing_complete",
@@ -57,7 +55,7 @@ export function useNotificationPreferences() {
         return existing.get(type) as NotificationPreference;
       }
       // Defaults
-      const isDaily = type === "daily_spark" || type === "daily_reflection";
+      const isDaily = type === "daily_spark";
       return {
         notification_type: type,
         enabled: true,

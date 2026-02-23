@@ -322,22 +322,6 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
             />
           )}
 
-          {/* Daily Reflection — toggle + days/time */}
-          <NotifToggleRow
-            label="Daily Reflection"
-            sublabel="Reflection question reminder"
-            enabled={preferences.find(p => p.notification_type === "daily_reflection")?.enabled ?? true}
-            onToggle={(v) => updatePreference("daily_reflection", { enabled: v })}
-          />
-          {preferences.find(p => p.notification_type === "daily_reflection")?.enabled !== false && (
-            <NotifScheduleRow
-              days={preferences.find(p => p.notification_type === "daily_reflection")?.days ?? []}
-              time={preferences.find(p => p.notification_type === "daily_reflection")?.preferred_time ?? "Morning (8 AM)"}
-              onDaysPress={() => setDaysModal("daily_reflection")}
-              onTimePress={() => setTimeModal("daily_reflection")}
-            />
-          )}
-
           {/* New Follower — always on, shown as info */}
           <div className="flex items-center justify-between py-3.5 border-b border-border">
             <div>
