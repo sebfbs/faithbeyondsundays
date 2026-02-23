@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2 } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -131,9 +131,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           </button>
           <h1 className="text-xl font-bold text-foreground">Profile</h1>
         </div>
-        <button className="w-9 h-9 rounded-full bg-card shadow-card flex items-center justify-center tap-active">
-          <Settings size={17} className="text-muted-foreground" />
-        </button>
+        <div className="w-9 h-9" />
       </div>
 
       {/* Avatar & Name */}
