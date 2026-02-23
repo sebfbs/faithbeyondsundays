@@ -1,64 +1,43 @@
 
 
-# "Everyone In" — Church Search with Optional Request
+## Remove Guided Reflection Push Notifications
 
-## Summary
-When a user searches for their church and it isn't found, they'll see **two options side by side**: "Request Your Church" and a "Continue" button. After submitting a request, the confirmation screen also shows a "Continue" button alongside "Back to Search." This ensures every user can proceed through onboarding regardless of whether their church is on the platform, without forcing them to submit a request.
+You're spot on -- two daily push notifications is too aggressive and will lead to users muting everything. One meaningful daily touchpoint (the Daily Spark) is the sweet spot. Reflections should live as a natural in-app experience, not an interruption.
 
-## Changes
+### What Changes
 
-### 1. OnboardingScreen.tsx — "No Results" State (lines ~400-410)
-Currently shows only "Request Your Church" link. Add a "Continue" button below/beside it so users can proceed without requesting.
+**1. Onboarding -- Remove the Guided Reflections notification setup step**
+- Remove the entire "tour3" step (the Guided Reflections notification config screen with days/time pickers shown in your screenshot)
+- Update the step flow: tour2 (Daily Sparks) will skip directly to tour4 (The Whole Bible) instead of going to tour3
+- Remove the `handleSaveReflectionPrefs` function and related state variables (`reflectionEnabled`, `reflectionDays`, `reflectionTime`)
+- Update the STEPS array to remove "tour3" and update the progress dots accordingly
 
-**Before:**
-- "Don't see your church?"
-- "Request Your Church" link
+**2. Profile Settings -- Remove the Daily Reflection notification row**
+- Remove the "Daily Reflection" toggle and its schedule picker from the notification settings section in ProfileScreen
+- Keep only: New Sermon, Daily Spark, New Follower, Someone Prayed for You, Sermon Processing Complete
 
-**After:**
-- "Don't see your church?"
-- "Request Your Church" button (styled as secondary/text)
-- "Continue without a church" button (styled as amber primary)
+**3. Notification Preferences Hook -- Remove daily_reflection type**
+- Remove `"daily_reflection"` from the `ALL_TYPES` array and `NotificationType` union
+- This means it won't show up anywhere and won't be saved/fetched
 
-### 2. OnboardingScreen.tsx — "Request Submitted" State (lines ~306-321)
-Currently shows only "Back to Search." Add a "Continue" button so users can move forward after submitting.
+**4. Reflections stay in the app**
+- The Guided Reflection card on the Home tab stays exactly as-is -- users still see and interact with reflections daily
+- It just won't send a push notification about it
 
-**Before:**
-- "We're on it!" confirmation
-- "Back to Search" link
+### Technical Details
 
-**After:**
-- "We're on it!" confirmation
-- "Continue" primary button (advances to `details` step with `selectedChurch = null`)
-- "Back to Search" text link
+**OnboardingScreen.tsx:**
+- Remove `reflectionEnabled`, `reflectionDays`, `reflectionTime` state
+- Remove `handleSaveReflectionPrefs` function
+- Remove the `step === "tour3"` block entirely
+- Change `handleSaveSparkPrefs` to call `setStep("tour4")` instead of `setStep("tour3")`
+- Remove "tour3" from `STEPS` array and `Step` type
+- Renumber remaining steps so progress dots are correct
 
-### 3. OnboardingScreen.tsx — handleClaimUsername (line 244)
-Remove the `!selectedChurch` guard so users without a church can complete onboarding.
+**ProfileScreen.tsx:**
+- Remove the "Daily Reflection" `NotifRow` and its associated `NotifScheduleRow`
+- Remove any `daysModal === "daily_reflection"` and `timeModal === "daily_reflection"` references
 
-**Before:** `if (!user || !selectedChurch || !username || usernameError) return;`
-**After:** `if (!user || !username || usernameError) return;`
-
-Also update the insert to use `church_id: selectedChurch?.id || null`.
-
-### 4. Index.tsx — Analytics Guard (line ~78)
-Skip the `analytics_events` insert when `profile.church_id` is null (since that column is NOT NULL).
-
-### 5. Remaining "Everyone In" Changes
-The rest of the churchless experience (HomeTab, SermonTab, MoreSheet, TabletSidebar, CommunityScreen, ProfileScreen, useFeatureFlags, dailyVerse utility) will follow the previously agreed plan — this change just handles the onboarding entry point.
-
-## Technical Details
-
-### OnboardingScreen.tsx — No Results Section (~line 401)
-Replace the current "Don't see your church?" block with:
-- A "Request Your Church" text button (keeps existing behavior)
-- A "Continue" amber button that sets `selectedChurch = null` and calls `setStep("details")`
-
-### OnboardingScreen.tsx — Request Submitted Section (~line 306)
-Add a "Continue" amber button after the confirmation message that sets `selectedChurch = null` and calls `setStep("details")`.
-
-### OnboardingScreen.tsx — handleClaimUsername (~line 243-256)
-- Change guard: `if (!user || !username || usernameError) return;`
-- Change insert: `church_id: selectedChurch?.id || null`
-
-### Index.tsx — Analytics (~line 75-80)
-Wrap the analytics insert in a `if (profile.church_id)` check.
+**useNotificationPreferences.ts:**
+- Remove `"daily_reflection"` from `NotificationType` union and `ALL_TYPES` array
 
