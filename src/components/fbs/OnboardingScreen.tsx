@@ -496,7 +496,7 @@ export default function OnboardingScreen() {
             />
           </div>
           <p className="text-xs text-muted-foreground ml-1">
-            Your phone number is private by default. You can choose to share it later.
+            Your phone number is private by default.
           </p>
         </div>
 
