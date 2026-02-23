@@ -164,10 +164,11 @@ interface HomeTabProps {
   reflectedToday: boolean;
   userName?: string;
   churchName?: string;
+  hasChurch?: boolean;
   onNavigate?: (screen: string) => void;
 }
 
-export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, onNavigate }: HomeTabProps) {
+export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate }: HomeTabProps) {
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -211,8 +212,46 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
       <div className="px-5 pt-6 pb-6 space-y-6">
 
-      {/* Empty state when no sermon */}
-      {!isLoading && !sermon && (
+      {/* Churchless experience */}
+      {!hasChurch && (
+        <>
+          <div className="rounded-3xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+            <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
+              <BookOpen size={24} style={{ color: colors.accent }} />
+            </div>
+            <h2 className="text-lg font-bold text-foreground mb-2">Welcome to Faith Beyond Sundays</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              Start your faith journey — journal your thoughts, explore scripture, and connect when you're ready.
+            </p>
+            <button
+              onClick={() => onNavigate?.("journal")}
+              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+              style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+            >
+              <BookText size={16} />
+              Start Journaling
+            </button>
+          </div>
+          <button
+            onClick={() => onNavigate?.("community")}
+            className="w-full rounded-3xl p-5 shadow-card text-left tap-active hover:opacity-90 transition-opacity"
+            style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+                <Users size={18} style={{ color: colors.accent }} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Connect to a Church</p>
+                <p className="text-xs text-muted-foreground">Join a community for sermons, prayer & more</p>
+              </div>
+            </div>
+          </button>
+        </>
+      )}
+
+      {/* Empty state when no sermon (has church but no sermon yet) */}
+      {hasChurch && !isLoading && !sermon && (
         <div className="rounded-3xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
           <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={24} style={{ color: colors.accent }} />

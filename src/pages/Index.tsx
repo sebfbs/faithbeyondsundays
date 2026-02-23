@@ -264,6 +264,7 @@ export default function Index() {
             reflectedToday={reflectedToday}
             userName={userData.firstName}
             churchName={userData.churchName}
+            hasChurch={!!userData.churchCode}
             onNavigate={(screen) => navTo(`/${screen}`)}
           />
         );
@@ -275,6 +276,7 @@ export default function Index() {
             isLoading={!isDemo && sermonLoading}
             previousSermonsCount={prevSermons.length}
             onPreviousSermons={() => navTo("/previous-sermons")}
+            hasChurch={!!userData?.churchCode}
           />
         );
       case "journal":
@@ -296,6 +298,7 @@ export default function Index() {
             reflectedToday={false}
             userName={userData.firstName}
             churchName={userData.churchName}
+            hasChurch={!!userData.churchCode}
             onNavigate={(screen) => navTo(`/${screen}`)}
           />
         );

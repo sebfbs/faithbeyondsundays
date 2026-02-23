@@ -6,6 +6,7 @@ import {
   Calendar,
   Play,
   Share,
+  Church,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
@@ -15,6 +16,7 @@ interface SermonTabProps {
   isLoading?: boolean;
   previousSermonsCount: number;
   onPreviousSermons: () => void;
+  hasChurch?: boolean;
 }
 
 function AccordionSection({
@@ -48,7 +50,7 @@ function AccordionSection({
   );
 }
 
-export default function SermonTab({ sermon, isLoading, previousSermonsCount, onPreviousSermons }: SermonTabProps) {
+export default function SermonTab({ sermon, isLoading, previousSermonsCount, onPreviousSermons, hasChurch = true }: SermonTabProps) {
   const handleShare = async () => {
     if (!sermon) return;
     const shareData = {
@@ -67,6 +69,27 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
       // User cancelled share
     }
   };
+
+  // Churchless state
+  if (!hasChurch) {
+    return (
+      <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Sermon</h1>
+          <p className="text-sm text-muted-foreground font-medium mt-0.5">This week's message</p>
+        </div>
+        <div className="bg-card rounded-3xl p-8 shadow-card text-center">
+          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-muted">
+            <Church size={24} className="text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">Connect to a Church</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Join a church to access weekly sermons, daily sparks, reflections, and more.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Empty state
   if (!isLoading && !sermon) {
