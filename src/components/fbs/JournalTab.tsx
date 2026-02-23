@@ -3,7 +3,7 @@ import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Tras
 import type { JournalEntry } from "@/hooks/useJournalEntries";
 import { getAccentColors } from "./themeColors";
 
-type FilterType = "all" | "sermon" | "challenge" | "bookmarked";
+type FilterType = "all" | "sermon" | "bookmarked";
 
 interface JournalTabProps {
   entries: JournalEntry[];
@@ -31,7 +31,6 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
     { label: "Sermon", value: "sermon" },
-    { label: "Challenge", value: "challenge" },
     { label: "Bookmarked", value: "bookmarked" },
   ];
 

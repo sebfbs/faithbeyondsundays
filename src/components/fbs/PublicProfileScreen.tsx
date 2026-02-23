@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Award, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone } from "lucide-react";
+import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
@@ -36,12 +36,6 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
       detail: member.memberSince,
       color: "hsl(207, 65%, 55%)",
     },
-    {
-      icon: Award,
-      label: "Challenges",
-      detail: `${member.challengesCompleted} completed`,
-      color: "hsl(38, 100%, 47%)",
-    },
     ...(member.isGroupMember
       ? [
           {
@@ -49,26 +43,6 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
             label: "Group Member",
             detail: "Community",
             color: "hsl(150, 55%, 45%)",
-          },
-        ]
-      : []),
-    ...(member.challengesCompleted >= 10
-      ? [
-          {
-            icon: Star,
-            label: "Dedicated",
-            detail: "10+ challenges",
-            color: "hsl(340, 70%, 55%)",
-          },
-        ]
-      : []),
-    ...(member.challengesCompleted >= 20
-      ? [
-          {
-            icon: Medal,
-            label: "Champion",
-            detail: "20+ challenges",
-            color: "hsl(270, 60%, 55%)",
           },
         ]
       : []),
