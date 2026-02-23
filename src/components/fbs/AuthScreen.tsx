@@ -99,9 +99,9 @@ export default function AuthScreen() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-white/30" />
-            <span className="text-xs font-medium text-white/70">or</span>
-            <div className="flex-1 h-px bg-white/30" />
+            <div className="flex-1 h-px bg-gray-400/40" />
+            <span className="text-xs font-medium text-gray-600">or</span>
+            <div className="flex-1 h-px bg-gray-400/40" />
           </div>
 
           {/* Email buttons */}
@@ -115,7 +115,7 @@ export default function AuthScreen() {
 
           <button
             onClick={() => setMode("signin")}
-            className="w-full text-center text-sm font-medium text-white/90 tap-active py-2"
+            className="w-full text-center text-sm font-medium text-gray-600 tap-active py-2"
           >
             Already have an account? <span className="underline">Sign In</span>
           </button>
