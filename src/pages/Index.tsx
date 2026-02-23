@@ -68,7 +68,7 @@ export default function Index() {
 
   // Log app_open event once per session
   useEffect(() => {
-    if (!profile || isDemo) return;
+    if (!profile || isDemo || !profile.church_id) return;
     const key = "fbs_app_open_logged";
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");

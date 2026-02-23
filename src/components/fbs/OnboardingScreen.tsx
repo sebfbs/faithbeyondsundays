@@ -241,12 +241,12 @@ export default function OnboardingScreen() {
   };
 
   const handleClaimUsername = async () => {
-    if (!user || !selectedChurch || !username || usernameError) return;
+    if (!user || !username || usernameError) return;
     setSaving(true);
 
     const { error } = await supabase.from("profiles").insert({
       user_id: user.id,
-      church_id: selectedChurch.id,
+      church_id: selectedChurch?.id || null,
       username,
       first_name: firstName.trim() || null,
       last_name: lastName.trim() || null,
@@ -309,12 +309,19 @@ export default function OnboardingScreen() {
               <CheckCircle size={32} className="text-amber" />
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">We're on it!</h2>
-            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-8">
+            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-6">
               We'll reach out to <span className="font-semibold text-foreground">{requestForm.name}</span> and let you know when they're ready.
             </p>
             <button
+              onClick={() => { setSelectedChurch(null); setStep("details"); }}
+              className="w-full max-w-[280px] flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 mb-3"
+            >
+              Continue
+              <ArrowRight size={16} />
+            </button>
+            <button
               onClick={() => { setRequestSubmitted(false); setShowRequestForm(false); setSearchQuery(""); }}
-              className="text-sm font-medium text-amber tap-active"
+              className="text-sm font-medium text-muted-foreground tap-active"
             >
               ← Back to Search
             </button>
@@ -398,11 +405,18 @@ export default function OnboardingScreen() {
                     </button>
                   ))
                 ) : (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-muted-foreground mb-3">Don't see your church?</p>
+                  <div className="text-center py-6 space-y-4">
+                    <p className="text-sm text-muted-foreground">Don't see your church?</p>
+                    <button
+                      onClick={() => { setSelectedChurch(null); setStep("details"); }}
+                      className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+                    >
+                      Continue without a church
+                      <ArrowRight size={16} />
+                    </button>
                     <button
                       onClick={() => { setShowRequestForm(true); setRequestForm((prev) => ({ ...prev, name: searchQuery })); }}
-                      className="text-sm font-semibold text-amber tap-active"
+                      className="text-sm font-medium text-muted-foreground tap-active"
                     >
                       Request Your Church →
                     </button>
