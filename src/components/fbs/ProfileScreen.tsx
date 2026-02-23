@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -36,6 +37,7 @@ const getProfileBadges = (user: UserData) => {
 type Appearance = "light" | "dark" | "horizon";
 
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
+  const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
@@ -165,9 +167,17 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         </div>
         <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {user.churchName || "Independent"}
-        </p>
+        {user.churchName ? (
+          <p className="text-xs text-muted-foreground mt-0.5">{user.churchName}</p>
+        ) : (
+          <button
+            onClick={() => navigate("/community")}
+            className="flex items-center gap-1 text-xs font-medium text-primary mt-0.5 hover:underline"
+          >
+            <Church className="w-3 h-3" />
+            Find a Church
+          </button>
+        )}
       </div>
 
       {/* Badges */}
