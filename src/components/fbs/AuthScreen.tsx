@@ -212,7 +212,7 @@ export default function AuthScreen() {
 
         <button
           onClick={() => { setMode(isSignUp ? "signin" : "signup"); setError(null); }}
-          className="w-full text-center text-sm text-muted-foreground tap-active py-2"
+          className="w-full text-center text-sm text-white/80 tap-active py-2"
         >
           {isSignUp ? (
             <>Already have an account? <span className="font-medium text-amber">Sign In</span></>
