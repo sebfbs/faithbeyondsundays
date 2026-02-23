@@ -14,9 +14,9 @@ interface ChurchEntry {
   state: string | null;
 }
 
-type Step = "church" | "details" | "username" | "tour1" | "tour2" | "tour3" | "tour4" | "tour5";
+type Step = "church" | "details" | "username" | "tour1" | "tour2" | "tour4" | "tour5";
 
-const STEPS: Step[] = ["church", "details", "username", "tour1", "tour2", "tour3", "tour4", "tour5"];
+const STEPS: Step[] = ["church", "details", "username", "tour1", "tour2", "tour4", "tour5"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_OPTIONS = [
   { label: "Morning", time: "8 AM" },
@@ -159,11 +159,6 @@ export default function OnboardingScreen() {
   const [sparkDays, setSparkDays] = useState(DAYS);
   const [sparkTime, setSparkTime] = useState("Morning (8 AM)");
 
-  // Local state for reflection notification setup
-  const [reflectionEnabled, setReflectionEnabled] = useState(true);
-  const [reflectionDays, setReflectionDays] = useState(DAYS);
-  const [reflectionTime, setReflectionTime] = useState("Morning (8 AM)");
-
   // Sync local state from preferences when loaded
   useEffect(() => {
     const spark = preferences.find((p) => p.notification_type === "daily_spark");
@@ -171,12 +166,6 @@ export default function OnboardingScreen() {
       setSparkEnabled(spark.enabled);
       setSparkDays(spark.days || DAYS);
       setSparkTime(spark.preferred_time || "Morning (8 AM)");
-    }
-    const reflection = preferences.find((p) => p.notification_type === "daily_reflection");
-    if (reflection) {
-      setReflectionEnabled(reflection.enabled);
-      setReflectionDays(reflection.days || DAYS);
-      setReflectionTime(reflection.preferred_time || "Morning (8 AM)");
     }
   }, [preferences]);
 
@@ -275,15 +264,6 @@ export default function OnboardingScreen() {
       enabled: sparkEnabled,
       days: sparkEnabled ? sparkDays : null,
       preferred_time: sparkEnabled ? sparkTime : null,
-    });
-    setStep("tour3");
-  };
-
-  const handleSaveReflectionPrefs = () => {
-    updatePreference("daily_reflection", {
-      enabled: reflectionEnabled,
-      days: reflectionEnabled ? reflectionDays : null,
-      preferred_time: reflectionEnabled ? reflectionTime : null,
     });
     setStep("tour4");
   };
@@ -680,33 +660,6 @@ export default function OnboardingScreen() {
             onToggle={setSparkEnabled}
             onDaysChange={setSparkDays}
             onTimeChange={setSparkTime}
-          />
-        </div>
-      </TourCard>
-    );
-  }
-
-  // ─── Tour 3: Guided Reflections ───
-  if (step === "tour3") {
-    return (
-      <TourCard
-        currentStep="tour3"
-        icon={<PenLine className="h-9 w-9 text-white" />}
-        iconGradient="bg-gradient-to-br from-sky-400 to-indigo-400"
-        headline="Guided Reflections"
-        description="Go deeper. Each reflection is a personal journal prompt rooted in the week's sermon — designed to help you process, pray, and grow. This is where the message becomes yours."
-        buttonLabel="Next"
-        onNext={handleSaveReflectionPrefs}
-      >
-        <div className="w-full text-left">
-          <NotificationSetup
-            type="daily_reflection"
-            enabled={reflectionEnabled}
-            days={reflectionDays}
-            time={reflectionTime}
-            onToggle={setReflectionEnabled}
-            onDaysChange={setReflectionDays}
-            onTimeChange={setReflectionTime}
           />
         </div>
       </TourCard>
