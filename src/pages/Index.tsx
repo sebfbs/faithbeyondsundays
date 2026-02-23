@@ -174,8 +174,8 @@ export default function Index() {
       setDemoJournalEntries((prev) => [{
         id: `demo-${Date.now()}`,
         date: dateStr,
-        type: entry.entryType === "challenge" ? "challenge" as const : "sermon" as const,
-        tag: entry.entryType === "challenge" ? "Challenge" : "Sermon",
+        type: "sermon" as const,
+        tag: "Sermon",
         preview: (entry.content || "").slice(0, 120),
         sermonTitle: entry.title || "Reflection",
         bookmarked: false,

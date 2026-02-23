@@ -227,8 +227,8 @@ export const DEMO_JOURNAL_ENTRIES = [
   {
     id: "2",
     date: "Feb 8, 2026",
-    type: "challenge" as const,
-    tag: "Challenge",
+    type: "sermon" as const,
+    tag: "Sermon",
     preview: "I wrote down my fear: 'That I'm not enough.' Next to it I put Romans 8:38–39. I read it three times and something...",
     sermonTitle: "Grace in the Storm",
     bookmarked: false,
