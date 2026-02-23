@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { getAccentColors } from "./themeColors";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
 
 interface PrayerRequest {
   id: string;
@@ -12,9 +16,9 @@ interface PrayerRequest {
   anonymous: boolean;
 }
 
+// localStorage helpers for demo mode only
 const STORAGE_KEY = "fbs_prayer_requests";
-
-function loadRequests(): PrayerRequest[] {
+function loadDemoRequests(): PrayerRequest[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -22,24 +26,74 @@ function loadRequests(): PrayerRequest[] {
     return [];
   }
 }
-
-function saveRequests(requests: PrayerRequest[]) {
+function saveDemoRequests(requests: PrayerRequest[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
 }
 
 interface PrayerScreenProps {
   onBack: () => void;
+  isDemo?: boolean;
 }
 
-export default function PrayerScreen({ onBack }: PrayerScreenProps) {
+export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
   const colors = getAccentColors();
   const [text, setText] = useState("");
   const [anonymous, setAnonymous] = useState(false);
-  const [requests, setRequests] = useState<PrayerRequest[]>(loadRequests);
+  const { user: authUser } = useAuth();
+  const { profile } = useProfile();
+  const queryClient = useQueryClient();
 
+  // Demo state
+  const [demoRequests, setDemoRequests] = useState<PrayerRequest[]>(loadDemoRequests);
   useEffect(() => {
-    saveRequests(requests);
-  }, [requests]);
+    if (isDemo) saveDemoRequests(demoRequests);
+  }, [demoRequests, isDemo]);
+
+  // Real data: fetch user's prayer requests
+  const { data: dbRequests = [], isLoading } = useQuery({
+    queryKey: ["prayer-requests", authUser?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("prayer_requests")
+        .select("*")
+        .eq("user_id", authUser!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []).map((r) => ({
+        id: r.id,
+        text: r.content,
+        date: new Date(r.created_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        anonymous: r.visibility === "private",
+      }));
+    },
+    enabled: !isDemo && !!authUser,
+  });
+
+  // Real data: submit prayer request
+  const submitMutation = useMutation({
+    mutationFn: async (params: { content: string; anonymous: boolean }) => {
+      const { error } = await supabase.from("prayer_requests").insert({
+        user_id: authUser!.id,
+        church_id: profile!.church_id!,
+        content: params.content,
+        visibility: params.anonymous ? "private" : "church",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prayer-requests"] });
+      toast({ title: "Prayer request submitted", description: "Your prayer team will be notified." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Could not submit prayer request. Try again." });
+    },
+  });
+
+  const requests = isDemo ? demoRequests : dbRequests;
 
   const handleSubmit = () => {
     const trimmed = text.trim();
@@ -48,16 +102,22 @@ export default function PrayerScreen({ onBack }: PrayerScreenProps) {
       toast({ title: "Request is too long", description: "Please keep it under 1000 characters." });
       return;
     }
-    const newRequest: PrayerRequest = {
-      id: crypto.randomUUID(),
-      text: trimmed,
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      anonymous,
-    };
-    setRequests((prev) => [newRequest, ...prev]);
+
+    if (isDemo) {
+      const newRequest: PrayerRequest = {
+        id: crypto.randomUUID(),
+        text: trimmed,
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        anonymous,
+      };
+      setDemoRequests((prev) => [newRequest, ...prev]);
+      toast({ title: "Prayer request submitted", description: "Your prayer team will be notified." });
+    } else {
+      submitMutation.mutate({ content: trimmed, anonymous });
+    }
+
     setText("");
     setAnonymous(false);
-    toast({ title: "Prayer request submitted", description: "Your prayer team will be notified." });
   };
 
   return (
@@ -85,7 +145,7 @@ export default function PrayerScreen({ onBack }: PrayerScreenProps) {
         </div>
         <button
           onClick={handleSubmit}
-          disabled={!text.trim()}
+          disabled={!text.trim() || submitMutation.isPending}
           className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
             background: colors.buttonBg,
@@ -93,9 +153,16 @@ export default function PrayerScreen({ onBack }: PrayerScreenProps) {
             boxShadow: text.trim() ? colors.buttonShadow : "none",
           }}
         >
-          Submit Prayer Request
+          {submitMutation.isPending ? "Submitting..." : "Submit Prayer Request"}
         </button>
       </div>
+
+      {/* Loading */}
+      {!isDemo && isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      )}
 
       {/* Past Requests */}
       {requests.length > 0 && (
