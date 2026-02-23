@@ -153,9 +153,9 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           </div>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber flex items-center justify-center shadow-amber tap-active"
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-muted flex items-center justify-center shadow-sm border border-border/50 tap-active"
           >
-            <Camera size={14} className="text-primary-foreground" />
+            <Camera size={14} className="text-muted-foreground" />
           </button>
           <input
             ref={fileInputRef}
