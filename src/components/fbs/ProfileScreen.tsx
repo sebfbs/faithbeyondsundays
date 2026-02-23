@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowLeft, Settings, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2 } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -7,6 +7,8 @@ import {
 import type { UserData } from "./WelcomeScreen";
 import { hasInvited } from "./communityData";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -34,11 +36,17 @@ const getProfileBadges = (user: UserData) => {
 type Appearance = "light" | "dark" | "horizon";
 
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
+  const { user: authUser } = useAuth();
   const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
   const badges = getProfileBadges(user);
+
+  // Avatar upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
 
   // Instagram handle editing
   const [igInput, setIgInput] = useState(user.instagramHandle || "");
@@ -48,6 +56,41 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const [phoneInput, setPhoneInput] = useState(user.phoneNumber || "");
   const [phoneSaved, setPhoneSaved] = useState(false);
   const [showPhone, setShowPhone] = useState(user.showPhoneNumber || false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !authUser) return;
+    setUploading(true);
+
+    const ext = file.name.split(".").pop();
+    const path = `${authUser.id}/avatar.${ext}`;
+
+    // Upload to storage
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      console.error("Avatar upload error:", uploadError);
+      setUploading(false);
+      return;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(path);
+
+    // Update profile
+    await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", authUser.id);
+
+    setAvatarUrl(publicUrl);
+    onUpdateUser?.({ ...user, avatarUrl: publicUrl });
+    setUploading(false);
+  };
 
   const sanitizeIgHandle = (value: string) => {
     return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
@@ -95,14 +138,34 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
 
       {/* Avatar & Name */}
       <div className="flex flex-col items-center pt-2 pb-2">
-        <div className="w-20 h-20 rounded-full bg-amber flex items-center justify-center shadow-amber mb-3 overflow-hidden">
-          {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <User size={34} className="text-primary-foreground" />
-          )}
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full bg-amber flex items-center justify-center shadow-amber overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <User size={34} className="text-primary-foreground" />
+            )}
+            {uploading && (
+              <div className="absolute inset-0 rounded-full bg-foreground/30 flex items-center justify-center">
+                <Loader2 size={20} className="animate-spin text-white" />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber flex items-center justify-center shadow-amber tap-active"
+          >
+            <Camera size={14} className="text-primary-foreground" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
         </div>
-        <h2 className="text-lg font-bold text-foreground">{user.firstName} {user.lastName}</h2>
+        <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {user.churchName}

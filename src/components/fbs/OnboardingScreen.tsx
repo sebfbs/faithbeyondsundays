@@ -251,7 +251,7 @@ export default function OnboardingScreen() {
       first_name: firstName.trim() || null,
       last_name: lastName.trim() || null,
       phone_number: phoneNumber.trim() || null,
-      avatar_url: user.user_metadata?.avatar_url || null,
+      avatar_url: null,
       onboarding_complete: true,
     });
 
