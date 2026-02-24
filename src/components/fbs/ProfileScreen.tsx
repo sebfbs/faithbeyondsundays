@@ -52,13 +52,10 @@ const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier) => {
   return badges;
 };
 
-type Appearance = "light" | "dark" | "horizon";
-
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const { isDemo } = useDemoMode();
-  const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
@@ -381,27 +378,6 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
       </section>
 
 
-      {/* Appearance */}
-      <section className="bg-card rounded-3xl p-5 shadow-card">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-          Appearance
-        </p>
-        <div className="flex gap-2">
-          {(["light", "dark", "horizon"] as Appearance[]).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setAppearance(mode)}
-              className={`flex-1 py-2.5 rounded-2xl text-xs font-semibold capitalize tap-active transition-colors ${
-                appearance === mode
-                  ? "bg-amber text-primary-foreground shadow-amber"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      </section>
 
       {/* Notifications */}
       <section className="bg-card rounded-3xl p-5 shadow-card">
