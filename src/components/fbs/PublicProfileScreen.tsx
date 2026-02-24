@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone, BookOpen } from "lucide-react";
-import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount } from "./communityData";
+import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { getBadgeTier } from "./badgeConfig";
 import FollowListSheet from "./FollowListSheet";
@@ -24,9 +24,9 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
   useEffect(() => {
     if (isDemo) {
       setFollowing(isFollowing(member.username));
-      // Demo hardcoded counts
-      setFollowerCount(Math.floor(Math.random() * 15) + 3);
-      setFollowingCount(Math.floor(Math.random() * 10) + 1);
+      // Demo counts must match FollowListSheet demo slices
+      setFollowerCount(Math.min(DEMO_MEMBERS.length, 5));
+      setFollowingCount(Math.min(DEMO_MEMBERS.length, 3));
       return;
     }
     if (!member.userId) return;
