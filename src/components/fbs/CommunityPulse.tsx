@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Award, UserPlus, BookText, LucideIcon } from "lucide-react";
+import { Users, Award, UserPlus, BookText, Heart, LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_COMMUNITY_PULSE } from "./demoData";
 import { getBadgeTier } from "./badgeConfig";
@@ -19,6 +19,7 @@ interface PulseDataV2 {
   recent_reflectors: { first_name: string; avatar_url: string | null; reflected_at: string }[];
   recent_milestones: { first_name: string; avatar_url: string | null; milestone: number; earned_at: string }[];
   recent_members: { first_name: string; avatar_url: string | null; joined_at: string }[];
+  recent_likes: { first_name: string; avatar_url: string | null; target_type: string; liked_at: string }[];
   active_avatars: { avatar_url: string | null; first_name: string }[];
 }
 
@@ -44,6 +45,9 @@ const LOCKED_PULSE: PulseDataV2 = {
   ],
   recent_members: [
     { first_name: "Emily", avatar_url: null, joined_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+  ],
+  recent_likes: [
+    { first_name: "James", avatar_url: null, target_type: "sermon", liked_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
   ],
   active_avatars: [
     { avatar_url: null, first_name: "Sarah" },
@@ -74,6 +78,15 @@ function buildStories(pulse: PulseDataV2): Story[] {
     stories.push({
       icon: UserPlus,
       message: `${n.first_name} just joined the community`,
+    });
+  }
+
+  for (const l of (pulse.recent_likes || [])) {
+    stories.push({
+      icon: Heart,
+      message: l.target_type === "takeaway"
+        ? `${l.first_name} liked a key takeaway`
+        : `${l.first_name} liked this week's sermon`,
     });
   }
 
