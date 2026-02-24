@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X } from "lucide-react";
 import { getAccentColors } from "./themeColors";
@@ -184,6 +184,7 @@ interface HomeTabProps {
 }
 
 export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo }: HomeTabProps) {
+  const reflectionCardRef = useRef<HTMLDivElement>(null);
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -290,7 +291,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
               <Skeleton className="h-4 w-2/3" />
             </div>
           ) : (
-            <div style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
+            <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
             <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
@@ -306,9 +307,9 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
               {!completed && !reflectionOpen && (
                 <button
-                  onClick={() => setReflectionOpen(true)}
-                  className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
-                  style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+                  onClick={() => { setReflectionOpen(true); setTimeout(() => { reflectionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
+                   className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+                   style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
                 >
                   <BookText size={16} />
                   Reflect
@@ -411,7 +412,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
       {/* Today's Reflection */}
       {sermon && (
-      <div style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
+      <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
       <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
@@ -430,7 +431,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
         {!completed && !reflectionOpen && (
           <button
-            onClick={() => setReflectionOpen(true)}
+            onClick={() => { setReflectionOpen(true); setTimeout(() => { reflectionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
             className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
             style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
           >
