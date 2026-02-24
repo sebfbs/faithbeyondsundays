@@ -458,14 +458,13 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       )}
 
       {/* Community Pulse */}
-      {hasChurch && (
-        <CommunityPulse
-          churchId={churchId}
-          userId={userId}
-          isDemo={isDemo}
-          onNavigate={onNavigate}
-        />
-      )}
+      <CommunityPulse
+        churchId={churchId}
+        userId={userId}
+        isDemo={isDemo}
+        locked={!hasChurch && !isDemo}
+        onNavigate={onNavigate}
+      />
 
       {/* Quick Links */}
       <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${quickLinks.length}, minmax(0, 1fr))` }}>
