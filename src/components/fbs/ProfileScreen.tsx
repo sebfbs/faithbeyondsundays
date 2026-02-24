@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Lock, Globe } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -114,7 +114,9 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   // Phone number editing
   const [phoneInput, setPhoneInput] = useState(user.phoneNumber || "");
   const [phoneSaved, setPhoneSaved] = useState(false);
-  const [showPhone, setShowPhone] = useState(user.showPhoneNumber || false);
+
+  // Privacy toggle
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -170,11 +172,28 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     setTimeout(() => setPhoneSaved(false), 2000);
   };
 
-  const handleToggleShowPhone = () => {
-    const newVal = !showPhone;
-    setShowPhone(newVal);
-    const updated = { ...user, showPhoneNumber: newVal };
-    onUpdateUser?.(updated);
+  // Load privacy setting from DB
+  useEffect(() => {
+    if (!authUser || isDemo) return;
+    supabase
+      .from("profiles")
+      .select("is_private")
+      .eq("user_id", authUser.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setIsPrivate((data as any).is_private ?? false);
+      });
+  }, [authUser, isDemo]);
+
+  const handleTogglePrivate = async () => {
+    const newVal = !isPrivate;
+    setIsPrivate(newVal);
+    if (authUser && !isDemo) {
+      await supabase
+        .from("profiles")
+        .update({ is_private: newVal } as any)
+        .eq("user_id", authUser.id);
+    }
   };
 
   // Show follow list overlay
@@ -329,7 +348,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           <p className="text-xs text-destructive mt-2 ml-1">Only letters, numbers, periods, and underscores</p>
         )}
 
-        {/* Phone Number */}
+        {/* Phone Number — collected for church team, not displayed on profile */}
         <div className="flex items-center gap-2 mt-3">
           <div className="flex items-center gap-2 flex-1 bg-muted/50 rounded-2xl px-3 py-3">
             <Phone size={16} className="text-muted-foreground shrink-0" />
@@ -337,7 +356,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
               type="tel"
               value={phoneInput}
               onChange={(e) => { setPhoneInput(e.target.value); setPhoneSaved(false); }}
-              placeholder="Phone number"
+              placeholder="Phone number (optional)"
               maxLength={20}
               className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
@@ -351,18 +370,31 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
             <Check size={16} className={phoneSaved ? "text-white" : "text-foreground"} />
           </button>
         </div>
+        <p className="text-xs text-muted-foreground mt-1.5 ml-1">Only visible to your church team — never shown on your profile</p>
+      </section>
 
-        {/* Show phone toggle */}
+      {/* Privacy */}
+      <section className="bg-card rounded-3xl p-5 shadow-card">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+          Privacy
+        </p>
         <button
-          onClick={handleToggleShowPhone}
-          className="w-full flex items-center justify-between mt-3 py-3 tap-active"
+          onClick={handleTogglePrivate}
+          className="w-full flex items-center justify-between py-1 tap-active"
         >
-          <div className="text-left">
-            <span className="text-sm font-medium text-foreground">Show phone on profile</span>
-            <p className="text-xs text-muted-foreground mt-0.5">Let others see your number for networking</p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted/50">
+              {isPrivate ? <Lock size={17} className="text-foreground" /> : <Globe size={17} className="text-foreground" />}
+            </div>
+            <div className="text-left">
+              <span className="text-sm font-medium text-foreground">{isPrivate ? "Private Account" : "Public Account"}</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPrivate ? "Only church members & followers can see your profile" : "Anyone on the platform can see your profile"}
+              </p>
+            </div>
           </div>
-          <div className={`w-11 h-6 rounded-full transition-colors relative ${showPhone ? "bg-amber" : "bg-border"}`}>
-            <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${showPhone ? "translate-x-5" : "translate-x-0.5"}`} />
+          <div className={`w-11 h-6 rounded-full transition-colors relative ${isPrivate ? "bg-amber" : "bg-border"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${isPrivate ? "translate-x-5" : "translate-x-0.5"}`} />
           </div>
         </button>
       </section>

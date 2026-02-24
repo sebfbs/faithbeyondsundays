@@ -533,6 +533,7 @@ export type Database = {
           id: string
           instagram_handle: string | null
           is_email_verified: boolean
+          is_private: boolean
           last_name: string | null
           onboarding_complete: boolean
           phone_number: string | null
@@ -553,6 +554,7 @@ export type Database = {
           id?: string
           instagram_handle?: string | null
           is_email_verified?: boolean
+          is_private?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
           phone_number?: string | null
@@ -573,6 +575,7 @@ export type Database = {
           id?: string
           instagram_handle?: string | null
           is_email_verified?: boolean
+          is_private?: boolean
           last_name?: string | null
           onboarding_complete?: boolean
           phone_number?: string | null
