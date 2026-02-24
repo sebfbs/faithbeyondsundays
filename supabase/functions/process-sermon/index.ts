@@ -12,6 +12,19 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Authenticate: require service role key or internal secret
+  const authHeader = req.headers.get("Authorization");
+  const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+  const token = authHeader?.replace("Bearer ", "") || "";
+  // Allow service role key OR anon key (for internal fire-and-forget calls from upload-sermon)
+  if (token !== expectedKey && token !== anonKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const elevenlabsKey = Deno.env.get("ELEVENLABS_API_KEY")!;
@@ -335,7 +348,7 @@ serve(async (req) => {
 
   } catch (e) {
     console.error("process-sermon error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An internal error occurred. Please try again later." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
