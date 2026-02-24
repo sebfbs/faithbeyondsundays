@@ -593,6 +593,30 @@ export type Database = {
           },
         ]
       }
+      reflection_badges: {
+        Row: {
+          church_id: string | null
+          earned_at: string
+          id: string
+          milestone: number
+          user_id: string
+        }
+        Insert: {
+          church_id?: string | null
+          earned_at?: string
+          id?: string
+          milestone: number
+          user_id: string
+        }
+        Update: {
+          church_id?: string | null
+          earned_at?: string
+          id?: string
+          milestone?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       sermon_content: {
         Row: {
           content: Json
@@ -849,6 +873,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_community_pulse: {
+        Args: { p_church_id: string; p_user_id: string }
+        Returns: Json
+      }
       get_user_church_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {

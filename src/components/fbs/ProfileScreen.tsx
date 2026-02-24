@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church } from "lucide-react";
 import {
   NotificationDaysModal,
@@ -10,6 +11,7 @@ import { hasInvited } from "./communityData";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
+import { getBadgeTier, type BadgeTier } from "./badgeConfig";
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -18,14 +20,23 @@ interface ProfileScreenProps {
   onUpdateUser?: (updated: UserData) => void;
 }
 
-const getProfileBadges = (user: UserData) => {
+const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier) => {
   const hasChurch = !!user.churchCode;
-  const badges: { icon: any; label: string; detail: string; color: string }[] = [
+  const badges: { icon: any; label: string; detail: string; color?: string; gradient?: string; animated?: boolean }[] = [
     { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
   ];
   if (hasChurch) {
     badges.push({ icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" });
-    badges.push({ icon: BookOpen, label: "First Reflection", detail: "Daily Journaler", color: "hsl(340 70% 55%)" });
+    if (reflectionBadge) {
+      badges.push({
+        icon: BookOpen,
+        label: reflectionBadge.label,
+        detail: reflectionBadge.detail,
+        color: reflectionBadge.color,
+        gradient: reflectionBadge.gradient,
+        animated: reflectionBadge.animated,
+      });
+    }
     badges.push({ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" });
   }
   if (hasInvited()) {
@@ -46,7 +57,23 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
-  const badges = getProfileBadges(user);
+  // Fetch highest reflection badge
+  const { data: highestBadge } = useQuery({
+    queryKey: ["reflection-badge", authUser?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reflection_badges" as any)
+        .select("milestone")
+        .eq("user_id", authUser!.id)
+        .order("milestone", { ascending: false })
+        .limit(1);
+      if (error || !data || data.length === 0) return null;
+      return getBadgeTier((data[0] as any).milestone);
+    },
+    enabled: !!authUser,
+  });
+
+  const badges = getProfileBadges(user, highestBadge || undefined);
 
   // Avatar upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -189,17 +216,21 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           Badges
         </p>
         <div className="grid grid-cols-2 gap-3">
-          {badges.map(({ icon: Icon, label, detail, color }) => (
+          {badges.map(({ icon: Icon, label, detail, color, gradient, animated }) => (
             <div
               key={label}
               className="rounded-2xl p-3.5"
               style={{ background: "hsl(40 25% 97%)" }}
             >
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center mb-2"
-                style={{ background: `${color}22` }}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${animated ? "animate-gradient-rotate" : ""}`}
+                style={
+                  gradient
+                    ? { background: gradient, backgroundSize: "200% 200%" }
+                    : { background: `${color}22` }
+                }
               >
-                <Icon size={17} style={{ color }} />
+                <Icon size={17} style={{ color: animated ? "white" : color }} />
               </div>
               <p className="text-xs font-bold text-foreground leading-tight">
                 {label}

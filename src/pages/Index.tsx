@@ -267,6 +267,9 @@ export default function Index() {
             churchName={userData.churchName}
             hasChurch={!!userData.churchCode}
             onNavigate={(screen) => navTo(`/${screen}`)}
+            churchId={profile?.church_id || undefined}
+            userId={authUser?.id}
+            isDemo={isDemo}
           />
         );
       }
@@ -301,6 +304,9 @@ export default function Index() {
             churchName={userData.churchName}
             hasChurch={!!userData.churchCode}
             onNavigate={(screen) => navTo(`/${screen}`)}
+            churchId={profile?.church_id || undefined}
+            userId={authUser?.id}
+            isDemo={isDemo}
           />
         );
     }

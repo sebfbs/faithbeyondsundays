@@ -44,6 +44,16 @@ export default function CommunityScreen({
       const roleMap = new Map<string, string>();
       roles?.forEach((r) => roleMap.set(r.user_id, r.role));
 
+      // Fetch highest reflection badge per user
+      const { data: badges } = await supabase
+        .from("reflection_badges" as any)
+        .select("user_id, milestone")
+        .order("milestone", { ascending: false });
+      const badgeMap = new Map<string, number>();
+      (badges || []).forEach((b: any) => {
+        if (!badgeMap.has(b.user_id)) badgeMap.set(b.user_id, b.milestone);
+      });
+
       return (profiles || [])
         .filter((p) => p.user_id !== authUser?.id) // exclude self
         .map((p) => ({
@@ -61,6 +71,7 @@ export default function CommunityScreen({
           isGroupMember: false,
           role: roleMap.get(p.user_id) === "pastor" ? ("pastor" as const) : undefined,
           instagramHandle: p.instagram_handle || undefined,
+          reflectionMilestone: badgeMap.get(p.user_id),
         })) as CommunityMember[];
     },
     enabled: !isDemo && !!userChurchCode,

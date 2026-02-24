@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone } from "lucide-react";
+import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone, BookOpen } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
 import { getAccentColors } from "./themeColors";
+import { getBadgeTier } from "./badgeConfig";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
 interface PublicProfileScreenProps {
-  member: CommunityMember & { hasInvited?: boolean; phoneNumber?: string; showPhoneNumber?: boolean };
+  member: CommunityMember & { hasInvited?: boolean; phoneNumber?: string; showPhoneNumber?: boolean; reflectionMilestone?: number };
   onBack: () => void;
 }
 
@@ -19,42 +20,28 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
     setFollowing((prev) => !prev);
   };
 
-  const badges = [
+  const reflectionBadge = member.reflectionMilestone ? getBadgeTier(member.reflectionMilestone) : undefined;
+
+  const badges: { icon: any; label: string; detail: string; color?: string; gradient?: string; animated?: boolean }[] = [
     ...(member.role === "pastor"
-      ? [
-          {
-            icon: ShieldCheck,
-            label: "Pastor",
-            detail: member.churchName,
-            color: "hsl(38, 100%, 47%)",
-          },
-        ]
+      ? [{ icon: ShieldCheck, label: "Pastor", detail: member.churchName, color: "hsl(38, 100%, 47%)" }]
       : []),
-    {
-      icon: Calendar,
-      label: "Member Since",
-      detail: member.memberSince,
-      color: "hsl(207, 65%, 55%)",
-    },
+    { icon: Calendar, label: "Member Since", detail: member.memberSince, color: "hsl(207, 65%, 55%)" },
+    ...(reflectionBadge
+      ? [{
+          icon: BookOpen,
+          label: reflectionBadge.label,
+          detail: reflectionBadge.detail,
+          color: reflectionBadge.color,
+          gradient: reflectionBadge.gradient,
+          animated: reflectionBadge.animated,
+        }]
+      : []),
     ...(member.isGroupMember
-      ? [
-          {
-            icon: Users,
-            label: "Group Member",
-            detail: "Community",
-            color: "hsl(150, 55%, 45%)",
-          },
-        ]
+      ? [{ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150, 55%, 45%)" }]
       : []),
     ...(member.hasInvited
-      ? [
-          {
-            icon: HeartHandshake,
-            label: "Community Builder",
-            detail: "Invited a friend",
-            color: "hsl(170, 55%, 45%)",
-          },
-        ]
+      ? [{ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170, 55%, 45%)" }]
       : []),
   ];
 
@@ -147,16 +134,20 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
           Badges
         </p>
         <div className="grid grid-cols-2 gap-3">
-          {badges.map(({ icon: Icon, label, detail, color }) => (
+          {badges.map(({ icon: Icon, label, detail, color, gradient, animated }) => (
             <div
               key={label}
               className="rounded-2xl p-3.5 bg-muted/50"
             >
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center mb-2"
-                style={{ background: `${color}22` }}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${animated ? "animate-gradient-rotate" : ""}`}
+                style={
+                  gradient
+                    ? { background: gradient, backgroundSize: "200% 200%" }
+                    : { background: `${color}22` }
+                }
               >
-                <Icon size={17} style={{ color }} />
+                <Icon size={17} style={{ color: animated ? "white" : color }} />
               </div>
               <p className="text-xs font-bold text-foreground leading-tight">
                 {label}
