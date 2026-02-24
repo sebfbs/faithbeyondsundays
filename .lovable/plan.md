@@ -1,47 +1,55 @@
 
 
-## Add "Daily Reflection" and "Personal" Journal Categories
+## Scan Handwritten Journal Entry Feature
 
-### What Changes
+### What You'll Get
 
-There are only two ways to create a journal entry:
-1. **Daily Reflection** -- from the guided reflection prompt on the Home screen
-2. **Personal** -- from the + button in the Reflection Journal
+A camera icon button centered below the "Write your thoughts..." text box in the journal compose screen. When tapped, it shows a guidance overlay with scanning tips, then opens your phone's camera. After capturing the photo, the app checks image quality (brightness/contrast) and warns you if it might not scan well. Finally, AI transcribes the handwriting into text you can edit and save.
 
-Currently everything is saved as type "sermon" with a "Sermon" tag. We'll introduce two distinct types and update the filters accordingly.
+### User Flow
 
-### Filter Options (new)
-- **All** -- shows everything
-- **Daily Reflection** -- entries from the Home screen prompt
-- **Personal** -- free-form entries from the + button
-- **Bookmarked** -- any bookmarked entry
-
-The "Sermon" filter goes away since reflections from the Home screen are tied to sermon content but are better described as "Daily Reflections."
-
-### Demo Entries (new)
-Add 2 Daily Reflection demo entries and 2 Personal demo entries so all categories are populated out of the box. Remove or re-tag the existing 3 "Sermon" entries as "Daily Reflection" since they were prompted by sermon content.
+1. Tap **+** to open the compose screen
+2. Below the text area, tap the camera button labeled "Scan handwriting"
+3. A guidance overlay appears with tips in this order:
+   - Hold phone directly above
+   - Center the text in the frame
+   - Use even lighting
+   - Avoid shadows
+   - Then a prominent "Open Camera" button
+4. Phone camera opens (native)
+5. After taking/selecting a photo, a client-side quality check runs:
+   - Too dark, too bright, or low contrast triggers a warning with "Retake" / "Use Anyway" options
+6. Image is sent to AI for transcription (or simulated in demo mode)
+7. Transcribed text populates the text area for review and editing
 
 ---
 
 ### Technical Details
 
-**`src/hooks/useJournalEntries.ts`**
-- Update `JournalEntry.type` union to `"reflection" | "personal" | "sermon" | "challenge"` (keep old values for backward compat)
-- Update `dbToUI` to map entry types to correct tags: `"reflection"` -> "Daily Reflection", `"personal"` -> "Personal"
+**New file: `supabase/functions/transcribe-journal/index.ts`**
+- Accepts `{ image: string }` (base64 image data)
+- Calls the Lovable AI Gateway (`https://ai.gateway.lovable.dev/v1/chat/completions`) with model `google/gemini-2.5-flash`
+- System prompt: "You are a handwriting transcription assistant. Transcribe the handwritten text in the provided image exactly as written. Return only the transcribed text, preserving paragraph breaks. Do not add commentary."
+- Returns `{ text: string }`
+- CORS headers and error handling for 429/402
 
-**`src/components/fbs/JournalTab.tsx`**
-- Change `FilterType` to `"all" | "reflection" | "personal" | "bookmarked"`
-- Update `filters` array with the new labels
-- Update filter logic to match on `entry.type`
-- In `handleSaveEntry` (the + button), set `type: "personal"` and `tag: "Personal"`
-- Update pill color logic: reflection gets blue pill, personal gets a neutral/green pill
+**File: `src/components/fbs/JournalTab.tsx`**
+- Add imports: `Camera`, `Loader2` from lucide-react; `useRef` to hooks
+- Add state: `scanning` (boolean), `showScanTips` (boolean), `scanWarning` (string | null), `pendingImage` (string | null)
+- Add a hidden `<input type="file" accept="image/*" capture="environment" ref={fileInputRef}>`
+- Below the textarea (after line 104), add centered scan button with Camera icon + "Scan handwriting" label
+- **Guidance overlay**: When scan button tapped, show a modal with the 4 tips in the specified order, plus an "Open Camera" button that triggers the file input
+- **Quality check function**: Load image into offscreen canvas, sample pixels, compute average brightness and standard deviation. Thresholds: brightness < 60 = too dark, > 240 = too bright, stddev < 30 = low contrast
+- **Warning UI**: If quality check fails, show the warning message with "Retake" and "Use Anyway" buttons
+- **Transcription call**: Convert image to base64, call the edge function (or simulate in demo mode), append result to `newBody`
+- Show spinner + "Scanning..." state on the button while processing
 
-**`src/components/fbs/HomeTab.tsx`**
-- Change `entryType` from `"sermon"` to `"reflection"` in both the sermon-linked and churchless reflection paths
+**File: `src/pages/Index.tsx`**
+- No changes needed for the scan feature itself -- the existing `onAddEntry` prop handles saving the final entry. Demo mode simulation will be handled inside JournalTab by checking the `isDemo` context.
 
-**`src/pages/Index.tsx`**
-- Update `addJournalEntry` demo handler to respect `entryType` field for setting the correct `type` and `tag`
+**File: `src/components/fbs/JournalTab.tsx` (props update)**
+- Add optional `isDemo?: boolean` prop so JournalTab can simulate transcription in demo mode
+- Pass `isDemo` from Index.tsx when rendering JournalTab
 
-**`src/components/fbs/demoData.ts`**
-- Re-tag existing 3 entries as type `"reflection"`, tag `"Daily Reflection"`
-- Add 2 new Personal entries (type `"personal"`, tag `"Personal"`) with free-form content like gratitude notes
+**Demo mode behavior**:
+- When `isDemo` is true, skip the edge function call and return simulated text: "Today I'm grateful for the small moments of peace I found during my morning walk. The sunrise reminded me that each day is a fresh start and that God's mercies are new every morning."
