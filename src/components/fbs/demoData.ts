@@ -44,7 +44,7 @@ export const DEMO_SERMON = {
     "Community is part of God's design for resilience. Don't face the storm alone.",
   ],
   reflectionQuestions: [
-    "Where in your life right now are you feeling like Peter — sinking and afraid? What does it look like to cry out, 'Lord, save me'?",
+    "What is one thing you're holding onto this week that you could trust God with instead?",
     "Think of a past storm that God brought you through. How did that season shape your faith?",
     "In what area of your life do you need to shift your focus from the waves to Jesus this week?",
     "How does knowing grace is a gift — not earned — change the way you approach God when you feel like you've failed?",
