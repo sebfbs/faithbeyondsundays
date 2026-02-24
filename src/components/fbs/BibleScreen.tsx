@@ -32,11 +32,12 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [bookSearch, setBookSearch] = useState("");
 
-  const otBooks = BIBLE_BOOKS.filter((b) => b.testament === "OT");
+  const isNtOnly = translation.id === "ylt";
+  const otBooks = isNtOnly ? [] : BIBLE_BOOKS.filter((b) => b.testament === "OT");
   const ntBooks = BIBLE_BOOKS.filter((b) => b.testament === "NT");
 
   const filteredOtBooks = useMemo(() => 
-    otBooks.filter((b) => b.name.toLowerCase().includes(bookSearch.toLowerCase())), [bookSearch]
+    otBooks.filter((b) => b.name.toLowerCase().includes(bookSearch.toLowerCase())), [bookSearch, isNtOnly]
   );
   const filteredNtBooks = useMemo(() => 
     ntBooks.filter((b) => b.name.toLowerCase().includes(bookSearch.toLowerCase())), [bookSearch]
