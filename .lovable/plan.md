@@ -1,25 +1,19 @@
 
 
-## Reorder Community Screen Layout
+## Auto-Scroll Accordion Sections into View on Open
 
-### Current Order
-1. Search bar
-2. Church card (e.g. "Grace Community Church")
-3. Invite a Friend button
-4. "Church Members" section label
-5. Member list
+### Problem
+When you tap Chapters, Scripture, or Takeaways at the top of the Sermon page, the content expands downward but gets cut off below the visible screen area. You have to manually scroll to see it.
 
-### New Order
-1. Search bar
-2. Invite a Friend button
-3. "Your church" section label (new)
-4. Church card
-5. "Church members" section label
-6. Member list
+### Solution
+When a dropdown opens, automatically scroll it into view (centered on screen) after the expand animation finishes.
 
 ### Changes
 
-**File: `src/components/fbs/CommunityScreen.tsx`**
+**File: `src/components/fbs/SermonTab.tsx` -- AccordionSection component (lines 24-60)**
 
-Rearrange the JSX blocks so "Invite a Friend" comes right after the search bar, then add a new "Your church" section label before the church card, and keep the existing "Church members" label before the member list. All styling will match the existing uppercase tracking-widest label style already used for "Church Members."
+1. Add a `useRef` on the accordion container div
+2. When `open` becomes `true`, wait for the 300ms animation to complete, then call `scrollIntoView({ behavior: 'smooth', block: 'center' })` to smoothly scroll the section to the center of the screen
+3. This keeps the closing behavior unchanged -- only scrolls on open
 
+This is a small change: just adding a ref and a `useEffect` that triggers the scroll after the animation delay.
