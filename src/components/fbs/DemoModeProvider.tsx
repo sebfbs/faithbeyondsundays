@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useCallback, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 
 const STORAGE_KEY = "fbs_demo_mode";
 
@@ -17,9 +17,10 @@ const DemoModeContext = createContext<DemoModeContextValue>({
 
 export function DemoModeProvider({ children }: { children: ReactNode }) {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const value = useMemo<Omit<DemoModeContextValue, "clearDemo">>(() => {
-    const urlDemo = searchParams.get("demo") === "true";
+    const urlDemo = searchParams.get("demo") === "true" || location.pathname.startsWith("/demo");
 
     if (urlDemo) {
       try { localStorage.setItem(STORAGE_KEY, "true"); } catch {}
