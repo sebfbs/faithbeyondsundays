@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share, Heart } from "lucide-react";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { toast } from "sonner";
@@ -12,8 +12,19 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 320);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   return (
-    <div className="border-t border-border">
+    <div ref={containerRef} className="border-t border-border">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-4 text-left tap-active"
@@ -23,12 +34,21 @@ function AccordionSection({
         </span>
         <ChevronDown
           size={16}
-          className={`text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`text-muted-foreground transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && (
-        <div className="pb-4 space-y-2 animate-fade-in">{children}</div>
-      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          opacity: open ? 1 : 0,
+        }}
+        className="transition-all duration-300 ease-in-out overflow-hidden"
+      >
+        <div className="min-h-0">
+          <div className="pb-4 space-y-2">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
