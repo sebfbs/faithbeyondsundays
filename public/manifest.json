@@ -2,7 +2,7 @@
   "name": "Faith Beyond Sundays",
   "short_name": "FBS",
   "description": "Grow your faith beyond Sunday services with guided reflections, sermon notes, and daily devotionals.",
-  "start_url": "/",
+  "start_url": "/?demo=true",
   "display": "standalone",
   "background_color": "#f7f5f0",
   "theme_color": "#6AADD4",
