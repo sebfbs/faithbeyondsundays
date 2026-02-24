@@ -3,7 +3,7 @@ import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Tras
 import type { JournalEntry } from "@/hooks/useJournalEntries";
 import { getAccentColors } from "./themeColors";
 
-type FilterType = "all" | "sermon" | "bookmarked";
+type FilterType = "all" | "reflection" | "personal" | "bookmarked";
 
 interface JournalTabProps {
   entries: JournalEntry[];
@@ -30,13 +30,15 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
-    { label: "Sermon", value: "sermon" },
+    { label: "Daily Reflection", value: "reflection" },
+    { label: "Personal", value: "personal" },
     { label: "Bookmarked", value: "bookmarked" },
   ];
 
   const filteredEntries = entries.filter((entry) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "bookmarked") return bookmarks[entry.id];
+    if (activeFilter === "reflection") return entry.type === "reflection" || entry.type === "sermon";
     return entry.type === activeFilter;
   });
 
@@ -51,7 +53,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     const entry: JournalEntry = {
       id: `personal-${Date.now()}`,
-      type: "sermon" as const,
+      type: "personal" as const,
       tag: "Personal",
       date: dateStr,
       sermonTitle: newTitle.trim() || "Personal Reflection",
@@ -212,9 +214,9 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
         <div className="bg-card rounded-3xl p-5 shadow-card">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={
-                selectedEntry.type === "sermon" ? "blue-pill" : "amber-pill"
-              }
+                    className={
+                      selectedEntry.type === "personal" ? "amber-pill" : "blue-pill"
+                    }
             >
               {selectedEntry.tag}
             </span>
@@ -323,7 +325,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
                 <div className="flex items-center gap-2 mb-2">
                   <span
                     className={
-                      entry.type === "sermon" ? "blue-pill" : "amber-pill"
+                      entry.type === "personal" ? "amber-pill" : "blue-pill"
                     }
                   >
                     {entry.tag}
