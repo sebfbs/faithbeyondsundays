@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone, BookOpen } from "lucide-react";
+import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, BookOpen } from "lucide-react";
 import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { getBadgeTier } from "./badgeConfig";
@@ -9,7 +9,7 @@ import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
 interface PublicProfileScreenProps {
-  member: CommunityMember & { hasInvited?: boolean; phoneNumber?: string; showPhoneNumber?: boolean; reflectionMilestone?: number };
+  member: CommunityMember & { hasInvited?: boolean; reflectionMilestone?: number };
   onBack: () => void;
   isDemo?: boolean;
 }
@@ -169,15 +169,6 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
             </button>
           )}
 
-          {member.showPhoneNumber && member.phoneNumber && (
-            <a
-              href={`tel:${member.phoneNumber}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 tap-active transition-colors hover:bg-muted"
-            >
-              <Phone size={14} className="text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{member.phoneNumber}</span>
-            </a>
-          )}
         </div>
 
         {/* Follow button */}
