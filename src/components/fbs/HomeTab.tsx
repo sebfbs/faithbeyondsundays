@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users } from "lucide-react";
+import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X } from "lucide-react";
 import { getAccentColors } from "./themeColors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -317,6 +317,11 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
               {!completed && reflectionOpen && (
                 <div className="mt-4 space-y-3">
+                  <div className="flex justify-end">
+                    <button onClick={() => { setReflectionOpen(false); setReflectionText(""); }} className="p-1 rounded-full tap-active transition-opacity hover:opacity-70" aria-label="Close reflection">
+                      <X size={18} className="text-muted-foreground" />
+                    </button>
+                  </div>
                   <textarea
                     value={reflectionText}
                     onChange={(e) => setReflectionText(e.target.value)}
@@ -436,6 +441,11 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
         {!completed && reflectionOpen && (
           <div className="mt-4 space-y-3">
+            <div className="flex justify-end">
+              <button onClick={() => { setReflectionOpen(false); setReflectionText(""); }} className="p-1 rounded-full tap-active transition-opacity hover:opacity-70" aria-label="Close reflection">
+                <X size={18} className="text-muted-foreground" />
+              </button>
+            </div>
             <textarea
               value={reflectionText}
               onChange={(e) => setReflectionText(e.target.value)}
