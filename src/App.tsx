@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DemoModeProvider } from "@/components/fbs/DemoModeProvider";
 import { AuthProvider } from "@/components/fbs/AuthProvider";
 import DemoModeBadge from "@/components/fbs/DemoModeBadge";
@@ -62,6 +62,8 @@ const App = () => {
               <Route path="/prayer" element={<Index />} />
               <Route path="/profile" element={<Index />} />
               <Route path="/previous-sermons" element={<Index />} />
+              <Route path="/demo" element={<Navigate to="/home?demo=true" replace />} />
+              <Route path="/demo/*" element={<Navigate to="/home?demo=true" replace />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 
