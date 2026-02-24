@@ -255,22 +255,18 @@ export const DEMO_JOURNAL_ENTRIES = [
 ];
 
 export const DEMO_COMMUNITY_PULSE = {
-  latest_reflector: {
-    first_name: "Marcus",
-    avatar_url: null as string | null,
-    reflected_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  milestone: {
-    first_name: "Sarah",
-    avatar_url: null as string | null,
-    milestone: 10,
-    earned_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-  },
-  newest_member: {
-    first_name: "David",
-    avatar_url: null as string | null,
-    joined_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
+  recent_reflectors: [
+    { first_name: "Marcus", avatar_url: null as string | null, reflected_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+    { first_name: "Rachel", avatar_url: null as string | null, reflected_at: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
+    { first_name: "David", avatar_url: null as string | null, reflected_at: new Date(Date.now() - 1000 * 60 * 120).toISOString() },
+  ],
+  recent_milestones: [
+    { first_name: "Sarah", avatar_url: null as string | null, milestone: 10, earned_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
+    { first_name: "James", avatar_url: null as string | null, milestone: 5, earned_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString() },
+  ],
+  recent_members: [
+    { first_name: "Emily", avatar_url: null as string | null, joined_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+  ],
   active_avatars: [
     { avatar_url: null as string | null, first_name: "Marcus" },
     { avatar_url: null as string | null, first_name: "Sarah" },
