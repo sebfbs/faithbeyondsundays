@@ -1,29 +1,30 @@
 
 
-## Fix: Demo Mode PWA Home Screen Shortcut
+## Fix: Demo PWA Home Screen Uses Wrong Start URL
 
 ### Problem
-iOS Safari strips query parameters when saving a page to the home screen. So `faithbeyondsundays.app?demo=true` gets saved as just `faithbeyondsundays.app`, and demo mode doesn't activate on launch.
+The `manifest.json` has `"start_url": "/"`. When you tap "Add to Home Screen" on iOS, Safari uses the manifest's `start_url` value — not the current browser URL. So even though you're on `/demo`, iOS saves `/` as the launch URL.
 
 ### Solution
-Make `/demo` a real route that renders the app directly (not a redirect), so iOS saves the clean `/demo` path with no query params to strip.
+Create a second manifest file for demo mode and dynamically swap which manifest the browser sees when you're on the `/demo` route.
 
 ### Changes
 
-**File: `src/components/fbs/DemoModeProvider.tsx`**
-- Import `useLocation` from react-router-dom
-- In the `useMemo`, also check if `location.pathname` starts with `/demo` as a demo trigger (in addition to the existing `?demo=true` query param)
-- This means opening `/demo` or `/demo/journal` etc. will activate demo mode and persist it to localStorage
+**New file: `public/manifest-demo.json`**
+- Copy of `manifest.json` but with `"start_url": "/demo"` and `"name": "FBS Demo"`
+- This tells iOS to save `/demo` as the launch URL
 
-**File: `src/App.tsx`**
-- Change the `/demo` route from `<Navigate to="/home?demo=true" replace />` to `<Index />` (render the app directly)
-- Change `/demo/*` similarly — render `<Index />` instead of redirecting
-- This gives iOS a clean URL path to save to the home screen
+**File: `src/components/fbs/DemoModeProvider.tsx`**
+- Add a `useEffect` that swaps the `<link rel="manifest">` tag's `href` attribute:
+  - When demo mode is active: set it to `/manifest-demo.json`
+  - When not in demo mode: set it to `/manifest.json`
+- This runs on mount, so by the time the user taps "Add to Home Screen", the correct manifest is already loaded
 
 ### How it works
-1. User visits `faithbeyondsundays.app/demo` in Safari
-2. The app renders directly at `/demo` (no redirect)
-3. `DemoModeProvider` sees the `/demo` path and activates demo mode, persisting to localStorage
-4. User taps "Add to Home Screen" — iOS saves `/demo` (clean path, nothing to strip)
-5. Future launches from the home screen open `/demo`, demo mode activates reliably
+1. User visits `faithbeyondsundays.app/demo`
+2. `DemoModeProvider` detects `/demo` path, activates demo mode
+3. The `useEffect` swaps the manifest link to `/manifest-demo.json`
+4. User taps Share -> Add to Home Screen
+5. iOS reads `start_url: "/demo"` from the demo manifest
+6. Home screen shortcut now launches `/demo` correctly
 
