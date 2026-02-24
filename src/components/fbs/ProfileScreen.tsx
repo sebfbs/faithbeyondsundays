@@ -7,7 +7,7 @@ import {
   NotificationTimeModal,
 } from "./NotificationModals";
 import type { UserData } from "./WelcomeScreen";
-import { hasInvited, getFollowerCount, getFollowingCount } from "./communityData";
+import { hasInvited, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
 import FollowListSheet from "./FollowListSheet";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,8 +67,9 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   // Fetch follower/following counts
   useEffect(() => {
     if (isDemo) {
-      setFollowerCount(12);
-      setFollowingCount(8);
+      // Must match FollowListSheet demo slices
+      setFollowerCount(Math.min(DEMO_MEMBERS.length, 5));
+      setFollowingCount(Math.min(DEMO_MEMBERS.length, 3));
       return;
     }
     if (!authUser) return;
