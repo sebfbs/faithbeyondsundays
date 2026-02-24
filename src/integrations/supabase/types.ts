@@ -727,6 +727,41 @@ export type Database = {
           },
         ]
       }
+      sermon_likes: {
+        Row: {
+          created_at: string
+          id: string
+          sermon_id: string
+          target_index: number | null
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sermon_id: string
+          target_index?: number | null
+          target_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sermon_id?: string
+          target_index?: number | null
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sermon_likes_sermon_id_fkey"
+            columns: ["sermon_id"]
+            isOneToOne: false
+            referencedRelation: "sermons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sermon_transcripts: {
         Row: {
           created_at: string
