@@ -217,52 +217,25 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           autoFocus
         />
 
-        {/* Scan handwriting button — bold & magical */}
+        {/* Scan handwriting — minimal text link */}
         <div className="flex justify-center">
-          <div className="relative">
-            {/* Pulsing glow ring behind button */}
-            <span
-              className="absolute inset-0 rounded-full animate-pulse"
-              style={{
-                background: colors.accent,
-                opacity: 0.15,
-                filter: "blur(16px)",
-                transform: "scale(1.3)",
-              }}
-            />
-            <button
-              onClick={() => setShowScanTips(true)}
-              disabled={scanning}
-              className="relative flex items-center gap-2.5 text-sm font-bold px-7 py-3.5 rounded-full tap-active transition-all duration-300 disabled:opacity-50 overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, ${colors.accent}, ${colors.buttonBg}cc)`,
-                color: "hsl(0 0% 100%)",
-                boxShadow: `0 4px 24px -2px ${colors.accent}80, 0 2px 8px ${colors.accent}40`,
-              }}
-            >
-              {/* Continuous shimmer sweep */}
-              <span
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `linear-gradient(105deg, transparent 35%, hsl(0 0% 100% / 0.35) 45%, hsl(0 0% 100% / 0.5) 50%, hsl(0 0% 100% / 0.35) 55%, transparent 65%)`,
-                  animation: "shimmer 2.5s ease-in-out infinite",
-                }}
-              />
-              {scanning ? (
-                <>
-                  <Loader2 size={18} className="animate-spin relative z-10" style={{ color: "hsl(0 0% 100%)" }} />
-                  <span className="relative z-10">Scanning...</span>
-                </>
-              ) : (
-                <>
-                  <span className="relative z-10 text-xs animate-sparkle-pulse">✦</span>
-                  <Camera size={18} className="relative z-10" style={{ color: "hsl(0 0% 100%)" }} />
-                  <span className="relative z-10 tracking-wide">Scan handwriting</span>
-                  <span className="relative z-10 text-xs animate-sparkle-pulse" style={{ animationDelay: "1s" }}>✦</span>
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowScanTips(true)}
+            disabled={scanning}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground tap-active transition-colors duration-200 disabled:opacity-50"
+          >
+            {scanning ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                <span>Scanning...</span>
+              </>
+            ) : (
+              <>
+                <Camera size={15} />
+                <span className="underline underline-offset-2 decoration-muted-foreground/40">Scan handwriting</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Hidden file input */}
