@@ -1,20 +1,47 @@
 
 
-## Apply Smooth Accordion to Previous Sermon Detail Screen
+## Add "Daily Reflection" and "Personal" Journal Categories
 
-### Problem
-The `PreviousSermonDetailScreen.tsx` has its own copy of `AccordionSection` that still uses the old `{open && ...}` conditional rendering -- no smooth close animation and no auto-scroll into view. So when you open a previous sermon and tap Chapters/Scripture/Takeaways, it still glitches on close and doesn't center on screen.
+### What Changes
 
-### Solution
-Update the `AccordionSection` in `PreviousSermonDetailScreen.tsx` to match the improved version already working in `SermonTab.tsx`:
+There are only two ways to create a journal entry:
+1. **Daily Reflection** -- from the guided reflection prompt on the Home screen
+2. **Personal** -- from the + button in the Reflection Journal
 
-**File: `src/components/fbs/PreviousSermonDetailScreen.tsx`**
+Currently everything is saved as type "sermon" with a "Sermon" tag. We'll introduce two distinct types and update the filters accordingly.
 
-1. Add `useRef` and `useEffect` imports
-2. Replace the `AccordionSection` component with the same smooth version:
-   - CSS grid-based height transition (`gridTemplateRows: 0fr/1fr`) instead of conditional rendering
-   - Opacity fade transition (300ms)
-   - `useRef` + `useEffect` to auto-scroll into center of screen after the animation completes
-   - Chevron rotation duration updated to 300ms
+### Filter Options (new)
+- **All** -- shows everything
+- **Daily Reflection** -- entries from the Home screen prompt
+- **Personal** -- free-form entries from the + button
+- **Bookmarked** -- any bookmarked entry
 
-The content and usage of `AccordionSection` in the JSX stays the same -- only the internal implementation of the component changes.
+The "Sermon" filter goes away since reflections from the Home screen are tied to sermon content but are better described as "Daily Reflections."
+
+### Demo Entries (new)
+Add 2 Daily Reflection demo entries and 2 Personal demo entries so all categories are populated out of the box. Remove or re-tag the existing 3 "Sermon" entries as "Daily Reflection" since they were prompted by sermon content.
+
+---
+
+### Technical Details
+
+**`src/hooks/useJournalEntries.ts`**
+- Update `JournalEntry.type` union to `"reflection" | "personal" | "sermon" | "challenge"` (keep old values for backward compat)
+- Update `dbToUI` to map entry types to correct tags: `"reflection"` -> "Daily Reflection", `"personal"` -> "Personal"
+
+**`src/components/fbs/JournalTab.tsx`**
+- Change `FilterType` to `"all" | "reflection" | "personal" | "bookmarked"`
+- Update `filters` array with the new labels
+- Update filter logic to match on `entry.type`
+- In `handleSaveEntry` (the + button), set `type: "personal"` and `tag: "Personal"`
+- Update pill color logic: reflection gets blue pill, personal gets a neutral/green pill
+
+**`src/components/fbs/HomeTab.tsx`**
+- Change `entryType` from `"sermon"` to `"reflection"` in both the sermon-linked and churchless reflection paths
+
+**`src/pages/Index.tsx`**
+- Update `addJournalEntry` demo handler to respect `entryType` field for setting the correct `type` and `tag`
+
+**`src/components/fbs/demoData.ts`**
+- Re-tag existing 3 entries as type `"reflection"`, tag `"Daily Reflection"`
+- Add 2 new Personal entries (type `"personal"`, tag `"Personal"`) with free-form content like gratitude notes
