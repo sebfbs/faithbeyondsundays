@@ -56,7 +56,9 @@ export default function Index() {
   const { data: currentSermon, isLoading: sermonLoading } = useCurrentSermon();
   const { data: previousSermons } = usePreviousSermons();
   const { entries: dbJournalEntries, addEntry, updateEntry, deleteEntry, toggleBookmark } = useJournalEntries();
-  const featureFlags = useFeatureFlags();
+  const dbFeatureFlags = useFeatureFlags();
+  // In demo mode, unlock all features regardless of church connection
+  const featureFlags = isDemo ? { community: true, prayer: true, giving: true } : dbFeatureFlags;
 
   // Demo mode data
   const [demoJournalEntries, setDemoJournalEntries] = useState<JournalEntry[]>(DEMO_JOURNAL_ENTRIES);
