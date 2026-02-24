@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -29,8 +29,19 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 320);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   return (
-    <div className="border-t border-border">
+    <div ref={containerRef} className="border-t border-border">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-4 text-left tap-active"
