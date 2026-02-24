@@ -217,49 +217,52 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           autoFocus
         />
 
-        {/* Scan handwriting button — ethereal style */}
+        {/* Scan handwriting button — bold & magical */}
         <div className="flex justify-center">
-          <button
-            onClick={() => setShowScanTips(true)}
-            disabled={scanning}
-            className="group relative flex items-center gap-2.5 text-sm font-semibold px-6 py-3 rounded-full tap-active transition-all duration-300 disabled:opacity-50 overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${colors.accentBg}, hsl(0 0% 100% / 0.9), ${colors.accentBg})`,
-              color: colors.accent,
-              boxShadow: `0 0 20px -4px ${colors.accent}40, 0 0 40px -8px ${colors.accent}20, inset 0 1px 1px hsl(0 0% 100% / 0.6)`,
-              border: `1px solid ${colors.accent}30`,
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            {/* Shimmer sweep */}
+          <div className="relative">
+            {/* Pulsing glow ring behind button */}
             <span
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              className="absolute inset-0 rounded-full animate-pulse"
               style={{
-                background: `linear-gradient(105deg, transparent 40%, ${colors.accent}15 45%, ${colors.accent}25 50%, ${colors.accent}15 55%, transparent 60%)`,
-                animation: "shimmer 2.5s ease-in-out infinite",
+                background: colors.accent,
+                opacity: 0.15,
+                filter: "blur(16px)",
+                transform: "scale(1.3)",
               }}
             />
-            {/* Glow dot */}
-            <span
-              className="absolute -top-1 -right-1 w-3 h-3 rounded-full opacity-60"
+            <button
+              onClick={() => setShowScanTips(true)}
+              disabled={scanning}
+              className="relative flex items-center gap-2.5 text-sm font-bold px-7 py-3.5 rounded-full tap-active transition-all duration-300 disabled:opacity-50 overflow-hidden"
               style={{
-                background: `radial-gradient(circle, ${colors.accent}80, transparent 70%)`,
-                animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                background: `linear-gradient(135deg, ${colors.accent}, ${colors.buttonBg}cc)`,
+                color: "hsl(0 0% 100%)",
+                boxShadow: `0 4px 24px -2px ${colors.accent}80, 0 2px 8px ${colors.accent}40`,
               }}
-            />
-            {scanning ? (
-              <>
-                <Loader2 size={16} className="animate-spin relative z-10" />
-                <span className="relative z-10">Scanning...</span>
-              </>
-            ) : (
-              <>
-                <Camera size={16} className="relative z-10" />
-                <span className="relative z-10">Scan handwriting</span>
-                <span className="relative z-10 text-xs opacity-50">✦</span>
-              </>
-            )}
-          </button>
+            >
+              {/* Continuous shimmer sweep */}
+              <span
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `linear-gradient(105deg, transparent 35%, hsl(0 0% 100% / 0.35) 45%, hsl(0 0% 100% / 0.5) 50%, hsl(0 0% 100% / 0.35) 55%, transparent 65%)`,
+                  animation: "shimmer 2.5s ease-in-out infinite",
+                }}
+              />
+              {scanning ? (
+                <>
+                  <Loader2 size={18} className="animate-spin relative z-10" style={{ color: "hsl(0 0% 100%)" }} />
+                  <span className="relative z-10">Scanning...</span>
+                </>
+              ) : (
+                <>
+                  <span className="relative z-10 text-xs animate-sparkle-pulse">✦</span>
+                  <Camera size={18} className="relative z-10" style={{ color: "hsl(0 0% 100%)" }} />
+                  <span className="relative z-10 tracking-wide">Scan handwriting</span>
+                  <span className="relative z-10 text-xs animate-sparkle-pulse" style={{ animationDelay: "1s" }}>✦</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Hidden file input */}
