@@ -40,14 +40,23 @@ function AccordionSection({
         </span>
         <ChevronDown
           size={16}
-          className={`text-muted-foreground transition-transform duration-200 ${
+          className={`text-muted-foreground transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
-      {open && (
-        <div className="pb-4 space-y-2 animate-fade-in">{children}</div>
-      )}
+      <div
+        className="transition-all duration-300 ease-in-out overflow-hidden"
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          opacity: open ? 1 : 0,
+        }}
+      >
+        <div className="min-h-0">
+          <div className="pb-4 space-y-2">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
