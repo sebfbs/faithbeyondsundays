@@ -1,25 +1,16 @@
 
 
-# Persist Demo Mode for PWA Home Screen
+## Match Top Status Bar to Bottom Nav Bar Style
 
-## Problem
-When you "Add to Home Screen" on Safari, the PWA launches using the manifest's `start_url: "/"`, which drops the `?demo=true` query parameter. The app then shows the sign-in screen instead of the demo.
+### Problem
+The top status bar backdrop has a different color/opacity than the bottom navigation bar, making it look inconsistent and "weird."
 
-## Solution
-Save a flag in localStorage when demo mode is first activated. On future launches (including PWA), check localStorage to restore demo mode even without the URL parameter. Tapping the "Demo x" badge to exit will clear the flag.
+### What Changes
+**One file: `src/pages/Index.tsx` (lines 331-337)**
 
-## Changes
+Update the status bar backdrop styling to match the bottom nav exactly:
+- Change background from `hsl(var(--background) / 0.8)` to `hsl(var(--card) / 0.95)` (matches `bg-card/95`)
+- Change blur from `blur(20px)` to `blur(12px)` (matches `backdrop-blur-md`)
 
-### File: `src/components/fbs/DemoModeProvider.tsx`
-
-- When URL contains `?demo=true`, write `fbs_demo_mode` = `"true"` to localStorage
-- When URL does NOT have the param, check localStorage for the flag -- if found, treat as demo mode
-- When exiting demo (via the badge), clear the localStorage flag
-- Add a `clearDemo` function to the context so the badge can properly clear it
-
-### File: `src/components/fbs/DemoModeBadge.tsx`
-
-- Use the new `clearDemo` function from the context instead of just navigating away, ensuring localStorage is cleared when exiting demo mode
-
-That's it -- two small file updates, and your PWA home screen shortcut will remember demo mode.
+That's it -- a simple CSS property swap to make top and bottom bars visually consistent, just like Instagram does.
 
