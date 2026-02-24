@@ -347,6 +347,9 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         {igInput && !/^[a-zA-Z0-9._]{1,30}$/.test(igInput) && (
           <p className="text-xs text-destructive mt-2 ml-1">Only letters, numbers, periods, and underscores</p>
         )}
+        {igInput && /^[a-zA-Z0-9._]{1,30}$/.test(igInput) && (
+          <p className="text-xs text-muted-foreground mt-1.5 ml-1">Shown on your profile when saved</p>
+        )}
 
         {/* Phone Number — collected for church team, not displayed on profile */}
         <div className="flex items-center gap-2 mt-3">
