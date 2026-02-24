@@ -165,6 +165,32 @@ export default function CommunityScreen({
         />
       </div>
 
+      {/* Invite a Friend */}
+      {!isSearching && (
+        <button
+          onClick={handleInvite}
+          className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow"
+        >
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "hsl(170 55% 45% / 0.12)" }}
+          >
+            <Share2 size={19} style={{ color: "hsl(170, 55%, 45%)" }} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-foreground">Invite a friend</p>
+            <p className="text-xs text-muted-foreground">Share your church code & earn a badge</p>
+          </div>
+        </button>
+      )}
+
+      {/* Your church label */}
+      {!isSearching && (
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+          Your Church
+        </p>
+      )}
+
       {/* Church header */}
       {!isSearching && (
         <div className="bg-card rounded-3xl p-5 shadow-card">
@@ -187,25 +213,6 @@ export default function CommunityScreen({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Invite a Friend */}
-      {!isSearching && (
-        <button
-          onClick={handleInvite}
-          className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow"
-        >
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: "hsl(170 55% 45% / 0.12)" }}
-          >
-            <Share2 size={19} style={{ color: "hsl(170, 55%, 45%)" }} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-foreground">Invite a friend</p>
-            <p className="text-xs text-muted-foreground">Share your church code & earn a badge</p>
-          </div>
-        </button>
       )}
 
       {/* Section label */}
