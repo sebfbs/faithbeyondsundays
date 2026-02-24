@@ -217,23 +217,46 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           autoFocus
         />
 
-        {/* Scan handwriting button */}
+        {/* Scan handwriting button — ethereal style */}
         <div className="flex justify-center">
           <button
             onClick={() => setShowScanTips(true)}
             disabled={scanning}
-            className="flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-full bg-card shadow-card tap-active transition-all disabled:opacity-50"
-            style={{ color: colors.accent }}
+            className="group relative flex items-center gap-2.5 text-sm font-semibold px-6 py-3 rounded-full tap-active transition-all duration-300 disabled:opacity-50 overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accentBg}, hsl(0 0% 100% / 0.9), ${colors.accentBg})`,
+              color: colors.accent,
+              boxShadow: `0 0 20px -4px ${colors.accent}40, 0 0 40px -8px ${colors.accent}20, inset 0 1px 1px hsl(0 0% 100% / 0.6)`,
+              border: `1px solid ${colors.accent}30`,
+              backdropFilter: "blur(12px)",
+            }}
           >
+            {/* Shimmer sweep */}
+            <span
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              style={{
+                background: `linear-gradient(105deg, transparent 40%, ${colors.accent}15 45%, ${colors.accent}25 50%, ${colors.accent}15 55%, transparent 60%)`,
+                animation: "shimmer 2.5s ease-in-out infinite",
+              }}
+            />
+            {/* Glow dot */}
+            <span
+              className="absolute -top-1 -right-1 w-3 h-3 rounded-full opacity-60"
+              style={{
+                background: `radial-gradient(circle, ${colors.accent}80, transparent 70%)`,
+                animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+              }}
+            />
             {scanning ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Scanning...
+                <Loader2 size={16} className="animate-spin relative z-10" />
+                <span className="relative z-10">Scanning...</span>
               </>
             ) : (
               <>
-                <Camera size={16} />
-                Scan handwriting
+                <Camera size={16} className="relative z-10" />
+                <span className="relative z-10">Scan handwriting</span>
+                <span className="relative z-10 text-xs opacity-50">✦</span>
               </>
             )}
           </button>
