@@ -146,18 +146,46 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- Authenticate the caller ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const callerId = claimsData.claims.sub as string;
+
     const {
+      church_id,
       user_ids,
       notification_type,
       title,
       body,
       data = {},
     }: {
+      church_id: string;
       user_ids: string[];
       notification_type: string;
       title: string;
@@ -165,9 +193,39 @@ Deno.serve(async (req) => {
       data?: Record<string, unknown>;
     } = await req.json();
 
-    if (!user_ids?.length || !notification_type || !title || !body) {
+    if (!church_id || !user_ids?.length || !notification_type || !title || !body) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: user_ids, notification_type, title, body" }),
+        JSON.stringify({ error: "Missing required fields: church_id, user_ids, notification_type, title, body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- Authorize: caller must be admin/pastor/owner in this church ---
+    const { data: callerRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId)
+      .eq("church_id", church_id)
+      .in("role", ["owner", "admin", "pastor"]);
+
+    if (!callerRoles || callerRoles.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: you must be an admin, pastor, or owner of this church" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- Verify all targeted users belong to this church ---
+    const { data: validProfiles } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id")
+      .eq("church_id", church_id)
+      .in("user_id", user_ids);
+
+    const validUserIds = (validProfiles || []).map((p) => p.user_id);
+    if (validUserIds.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No valid users found in this church" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -179,18 +237,18 @@ Deno.serve(async (req) => {
     const { data: prefs } = await supabaseAdmin
       .from("notification_preferences")
       .select("user_id, enabled")
-      .in("user_id", user_ids)
+      .in("user_id", validUserIds)
       .eq("notification_type", notification_type);
 
     const disabledUsers = new Set(
       (prefs || []).filter((p) => !p.enabled).map((p) => p.user_id)
     );
 
-    const eligibleUserIds = user_ids.filter((id) => !disabledUsers.has(id));
+    const eligibleUserIds = validUserIds.filter((id) => !disabledUsers.has(id));
 
     if (eligibleUserIds.length === 0) {
       return new Response(
-        JSON.stringify({ sent: 0, skipped: user_ids.length, message: "All users have this notification disabled" }),
+        JSON.stringify({ sent: 0, skipped: validUserIds.length, message: "All users have this notification disabled" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -242,7 +300,7 @@ Deno.serve(async (req) => {
     const failed = results.length - sent;
 
     return new Response(
-      JSON.stringify({ sent, failed, skipped: user_ids.length - eligibleUserIds.length }),
+      JSON.stringify({ sent, failed, skipped: validUserIds.length - eligibleUserIds.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

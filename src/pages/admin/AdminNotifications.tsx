@@ -75,6 +75,7 @@ export default function AdminNotifications() {
             Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
+            church_id: churchId,
             user_ids: members,
             notification_type: "new_sermon",
             title,
