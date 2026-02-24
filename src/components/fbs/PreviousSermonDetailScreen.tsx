@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share } from "lucide-react";
+import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share, Heart } from "lucide-react";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { toast } from "sonner";
+import { useSermonLikes } from "@/hooks/useSermonLikes";
 
 function AccordionSection({
   title,
@@ -41,6 +42,30 @@ export default function PreviousSermonDetailScreen({
   sermon,
   onBack,
 }: PreviousSermonDetailScreenProps) {
+  const {
+    sermonLikeCount,
+    hasLikedSermon,
+    getTakeawayLikes,
+    toggleSermonLike,
+    toggleTakeawayLike,
+    isAuthenticated,
+  } = useSermonLikes(sermon.id);
+
+  const handleLike = () => {
+    if (!isAuthenticated) {
+      toast("Sign in to like sermons");
+      return;
+    }
+    toggleSermonLike();
+  };
+
+  const handleTakeawayLike = (index: number) => {
+    if (!isAuthenticated) {
+      toast("Sign in to like takeaways");
+      return;
+    }
+    toggleTakeawayLike(index);
+  };
   const handleShare = async () => {
     const shareData = {
       title: sermon.title,
@@ -100,9 +125,23 @@ export default function PreviousSermonDetailScreen({
         <div className="bg-card rounded-3xl p-5 shadow-card">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-xl font-bold text-foreground leading-tight flex-1">{sermon.title}</h2>
-            <button onClick={handleShare} className="mt-1 tap-active p-1 -mr-1">
-              <Share size={18} className="text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLike}
+                className="tap-active p-1 flex items-center gap-1 transition-transform active:scale-125"
+              >
+                <Heart
+                  size={18}
+                  className={hasLikedSermon ? "text-red-500 fill-red-500" : "text-muted-foreground"}
+                />
+                {sermonLikeCount > 0 && (
+                  <span className="text-xs text-muted-foreground font-medium">{sermonLikeCount}</span>
+                )}
+              </button>
+              <button onClick={handleShare} className="tap-active p-1 -mr-1">
+                <Share size={18} className="text-muted-foreground" />
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-1.5 mt-2 mb-1">
             <Calendar size={13} className="text-muted-foreground" />
@@ -136,11 +175,28 @@ export default function PreviousSermonDetailScreen({
 
           {/* Takeaways */}
           <AccordionSection title="Takeaways">
-            {sermon.takeaways.map((t, i) => (
-              <div key={i} className="rounded-2xl p-4" style={{ background: "hsl(210 50% 95%)" }}>
-                <p className="text-sm text-foreground leading-relaxed">{t}</p>
-              </div>
-            ))}
+            {sermon.takeaways.map((t, i) => {
+              const info = getTakeawayLikes(i);
+              return (
+                <div key={i} className="rounded-2xl p-4" style={{ background: "hsl(210 50% 95%)" }}>
+                  <p className="text-sm text-foreground leading-relaxed">{t}</p>
+                  <div className="flex items-center justify-end gap-1 mt-2">
+                    <button
+                      onClick={() => handleTakeawayLike(i)}
+                      className="tap-active flex items-center gap-1 transition-transform active:scale-125"
+                    >
+                      <Heart
+                        size={14}
+                        className={info.hasLiked ? "text-red-500 fill-red-500" : "text-muted-foreground"}
+                      />
+                      {info.count > 0 && (
+                        <span className="text-xs text-muted-foreground">{info.count}</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </AccordionSection>
         </div>
 
