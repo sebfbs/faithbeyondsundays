@@ -1,34 +1,36 @@
 
 
-## Make the "Scan handwriting" Button Pop
+## Fix: Journal Plus Button Overlap and iOS Keyboard Gap
 
-The current button is too subtle -- it uses a nearly-white background with faint accent borders, making it blend into the page. Here's the plan to make it bold, vibrant, and unmissable.
+### Bug 1: Plus button tucked under the nav bar
 
-### Visual Design
+The floating "+" button uses `bottom-24` (96px fixed). The bottom nav is 68px tall plus the iOS safe area inset (typically 34px on newer iPhones), totaling around 102px. So the button sits behind the nav bar.
 
-The button will get a **solid gradient background** using the theme's accent color (amber during the day, blue in the evening), white text, and a pronounced glow. It will feel like a glowing, magical action button rather than a ghost button.
+**Fix in `src/components/fbs/JournalTab.tsx` (line 581)**:
+- Change the button's bottom positioning from a fixed Tailwind class (`bottom-24`) to a dynamic `style` that accounts for safe area: `bottom: calc(env(safe-area-inset-bottom, 0px) + 84px)` -- this places it comfortably above the nav bar on all devices.
 
-### Changes
+### Bug 2: Gap below nav bar after iOS keyboard dismisses
 
-**File: `src/components/fbs/JournalTab.tsx`** (lines 220-263)
+On iOS PWAs, when the software keyboard opens it resizes the visual viewport. When the keyboard closes (tapping "Done"), iOS sometimes doesn't fully restore the viewport, leaving a blank gap at the bottom and pushing the fixed nav bar up.
 
-Replace the current ethereal button with a bolder version:
+**Fix in `src/components/fbs/JournalTab.tsx`**:
+- Add a `useEffect` inside the composing view that listens to the `visualViewport` resize event.
+- On resize (which fires when the keyboard opens/closes), call `window.scrollTo(0, 0)` to force the browser to recalculate layout.
+- Also add `onBlur` handlers on the title input and textarea that trigger a small delayed `window.scrollTo(0, 0)` to nudge iOS into resetting the viewport when the keyboard dismisses.
 
-- **Background**: Solid accent-color gradient (e.g., `linear-gradient(135deg, accent, accent-lighter)`) instead of the current near-white wash
-- **Text color**: White for strong contrast against the gradient
-- **Glow**: Larger, more visible box-shadow using the accent color at higher opacity (e.g., `0 4px 24px accent/50`)
-- **Shimmer sweep**: Always visible (not just on hover), running continuously across the gradient surface so it catches the eye
-- **Sparkle decorations**: Two small `✦` characters flanking the text, with a gentle scale-pulse animation
-- **Border**: Remove the faint border -- the gradient and glow provide enough definition
-- **Camera icon**: Bump to size 18, white color to match text
-- **Pulsing glow ring**: A soft animated ring behind the button using a pseudo-element with `animate-pulse` for a breathing radiance effect
+### Technical Details
 
-### New CSS Animation (in `src/index.css`)
+**File: `src/components/fbs/JournalTab.tsx`**
 
-Add a `@keyframes sparkle-pulse` animation:
-- Alternates between `scale(1) opacity(0.5)` and `scale(1.3) opacity(1)` over 2 seconds
-- Applied to the `✦` characters so they twinkle
+1. In the composing view (around line 186), add a `useEffect`:
+   - Attach a `resize` listener to `window.visualViewport`
+   - On resize, scroll to `(0, document.documentElement.scrollTop)` to force layout recalculation
+   - Clean up listener on unmount
 
-### Result
+2. Add `onBlur` to the title `<input>` (line 207) and the `<textarea>` (line 213):
+   - On blur, `setTimeout(() => window.scrollTo(0, 0), 100)` to reset viewport after keyboard hides
 
-A vibrant, glowing pill button with a continuous shimmer and twinkling sparkles -- clearly visible and inviting to tap, while still fitting the app's spiritual/ethereal brand.
+3. Change the floating "+" button (line 581):
+   - Remove `bottom-24` from className
+   - Add to the existing `style` prop: `bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)"`
+
