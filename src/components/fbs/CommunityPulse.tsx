@@ -150,7 +150,7 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
           <Users size={14} style={{ color: colors.accent }} />
         </div>
         <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
-          Community Pulse
+          Community Activity
         </span>
       </div>
 
