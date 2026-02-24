@@ -1,27 +1,25 @@
 
 
-## Auto-Scroll Reflection Card into View on Open
+# Persist Demo Mode for PWA Home Screen
 
-When a user taps "Reflect," the reflection card will smoothly scroll to the center of the screen so it's fully visible regardless of current scroll position.
+## Problem
+When you "Add to Home Screen" on Safari, the PWA launches using the manifest's `start_url: "/"`, which drops the `?demo=true` query parameter. The app then shows the sign-in screen instead of the demo.
 
-### Approach
+## Solution
+Save a flag in localStorage when demo mode is first activated. On future launches (including PWA), check localStorage to restore demo mode even without the URL parameter. Tapping the "Demo x" badge to exit will clear the flag.
 
-Use a React `useRef` on the reflection card container and call `scrollIntoView({ behavior: 'smooth', block: 'center' })` after opening it. A small `setTimeout` (e.g., 100ms) ensures the expanded content has rendered before scrolling.
+## Changes
 
-### Technical Details
+### File: `src/components/fbs/DemoModeProvider.tsx`
 
-**File: `src/components/fbs/HomeTab.tsx`**
+- When URL contains `?demo=true`, write `fbs_demo_mode` = `"true"` to localStorage
+- When URL does NOT have the param, check localStorage for the flag -- if found, treat as demo mode
+- When exiting demo (via the badge), clear the localStorage flag
+- Add a `clearDemo` function to the context so the badge can properly clear it
 
-1. Add a ref: `const reflectionCardRef = useRef<HTMLDivElement>(null);`
-2. Attach the ref to both the churched and churchless reflection card wrapper divs
-3. Update both "Reflect" button `onClick` handlers to scroll after opening:
-   ```tsx
-   onClick={() => {
-     setReflectionOpen(true);
-     setTimeout(() => {
-       reflectionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-     }, 100);
-   }}
-   ```
-4. This works identically on mobile, tablet, and desktop viewports
+### File: `src/components/fbs/DemoModeBadge.tsx`
+
+- Use the new `clearDemo` function from the context instead of just navigating away, ensuring localStorage is cleared when exiting demo mode
+
+That's it -- two small file updates, and your PWA home screen shortcut will remember demo mode.
 
