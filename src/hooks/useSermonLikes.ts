@@ -16,19 +16,21 @@ interface TakeawayLikeInfo {
 export function useSermonLikes(sermonId: string | undefined) {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
+  const isDemo = !!sermonId && sermonId.startsWith("demo-");
 
   useEffect(() => {
+    if (isDemo) return;
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null);
     });
-  }, []);
+  }, [isDemo]);
 
   const queryKey = ["sermon-likes", sermonId];
 
   const { data: likes = [] } = useQuery({
     queryKey,
     queryFn: async () => {
-      if (!sermonId) return [];
+      if (!sermonId || isDemo) return [];
       const { data, error } = await supabase
         .from("sermon_likes" as any)
         .select("target_type, target_index, user_id")
@@ -36,7 +38,7 @@ export function useSermonLikes(sermonId: string | undefined) {
       if (error) throw error;
       return (data || []) as unknown as LikeData[];
     },
-    enabled: !!sermonId,
+    enabled: !!sermonId && !isDemo,
     staleTime: 30_000,
   });
 
@@ -68,7 +70,7 @@ export function useSermonLikes(sermonId: string | undefined) {
       targetType: "sermon" | "takeaway";
       targetIndex: number | null;
     }) => {
-      if (!sermonId || !userId) return;
+      if (!sermonId || !userId || isDemo) return;
 
       const isLiked =
         targetType === "sermon"
