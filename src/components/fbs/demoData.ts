@@ -267,6 +267,10 @@ export const DEMO_COMMUNITY_PULSE = {
   recent_members: [
     { first_name: "Emily", avatar_url: null as string | null, joined_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
   ],
+  recent_likes: [
+    { first_name: "David", avatar_url: null as string | null, target_type: "sermon", liked_at: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
+    { first_name: "Rachel", avatar_url: null as string | null, target_type: "takeaway", liked_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
+  ],
   active_avatars: [
     { avatar_url: null as string | null, first_name: "Marcus" },
     { avatar_url: null as string | null, first_name: "Sarah" },
