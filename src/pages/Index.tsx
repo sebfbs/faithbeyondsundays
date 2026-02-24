@@ -331,9 +331,9 @@ export default function Index() {
           className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
           style={{
             height: "env(safe-area-inset-top, 0px)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            background: "hsl(var(--background) / 0.8)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            background: "hsl(var(--card) / 0.95)",
           }}
         />
       )}
