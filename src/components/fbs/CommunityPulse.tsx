@@ -10,6 +10,7 @@ interface CommunityPulseProps {
   churchId?: string;
   userId?: string;
   isDemo?: boolean;
+  locked?: boolean;
   onNavigate?: (screen: string) => void;
 }
 
@@ -28,7 +29,18 @@ function timeAgo(dateStr: string) {
   }
 }
 
-export default function CommunityPulse({ churchId, userId, isDemo, onNavigate }: CommunityPulseProps) {
+const LOCKED_PULSE: PulseData = {
+  latest_reflector: null,
+  milestone: { first_name: "Sarah", avatar_url: null, milestone: 10, earned_at: new Date().toISOString() },
+  newest_member: null,
+  active_avatars: [
+    { avatar_url: null, first_name: "Sarah" },
+    { avatar_url: null, first_name: "James" },
+    { avatar_url: null, first_name: "Emily" },
+  ],
+};
+
+export default function CommunityPulse({ churchId, userId, isDemo, locked, onNavigate }: CommunityPulseProps) {
   const colors = getAccentColors();
 
   const { data: pulse } = useQuery<PulseData>({
@@ -41,11 +53,11 @@ export default function CommunityPulse({ churchId, userId, isDemo, onNavigate }:
       if (error) throw error;
       return data as unknown as PulseData;
     },
-    enabled: !isDemo && !!churchId && !!userId,
+    enabled: !isDemo && !locked && !!churchId && !!userId,
     staleTime: 1000 * 60 * 5,
   });
 
-  const pulseData: PulseData | undefined = isDemo ? DEMO_COMMUNITY_PULSE : pulse;
+  const pulseData: PulseData | undefined = locked ? LOCKED_PULSE : isDemo ? DEMO_COMMUNITY_PULSE : pulse;
 
   if (!pulseData) return null;
 
@@ -74,8 +86,8 @@ export default function CommunityPulse({ churchId, userId, isDemo, onNavigate }:
 
   return (
     <button
-      onClick={() => onNavigate?.("community")}
-      className="w-full rounded-3xl p-5 shadow-card text-left tap-active hover:opacity-90 transition-opacity"
+      onClick={() => !locked && onNavigate?.("community")}
+      className={`w-full rounded-3xl p-5 shadow-card text-left transition-opacity ${locked ? "opacity-50 grayscale pointer-events-none" : "tap-active hover:opacity-90"}`}
       style={{
         background: "hsl(0 0% 100% / 0.8)",
         backdropFilter: "blur(20px)",
@@ -118,6 +130,10 @@ export default function CommunityPulse({ churchId, userId, isDemo, onNavigate }:
           </div>
           <span className="text-xs text-muted-foreground ml-2">Active recently</span>
         </div>
+      )}
+
+      {locked && (
+        <p className="text-xs text-muted-foreground mt-3 italic">Join a church to see your community</p>
       )}
     </button>
   );
