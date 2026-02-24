@@ -271,8 +271,8 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
                   Today's Spark
                 </span>
               </div>
-              <p className="text-foreground font-medium text-base leading-relaxed italic">
-                "{dailyContent?.spark_message || FALLBACK_SPARK}"
+               <p className="text-foreground font-medium text-base leading-relaxed">
+                {dailyContent?.spark_message || FALLBACK_SPARK}
               </p>
             </div>
           )}
@@ -387,8 +387,8 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
             Today's Spark
           </span>
         </div>
-        <p className="text-foreground font-medium text-base leading-relaxed italic">
-          "{sermon.spark}"
+        <p className="text-foreground font-medium text-base leading-relaxed">
+          {sermon.spark}
         </p>
         <p className="text-muted-foreground text-xs mt-2 font-medium">
           From Sunday's sermon · {sermon.title}
