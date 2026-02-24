@@ -1,4 +1,4 @@
-import { useState, useRef, forwardRef } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2, Camera, Loader2 } from "lucide-react";
 import type { JournalEntry } from "@/hooks/useJournalEntries";
 import { getAccentColors } from "./themeColors";
@@ -181,6 +181,22 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     { icon: "🚫", text: "Avoid shadows" },
   ];
 
+  // iOS keyboard viewport fix
+  useEffect(() => {
+    if (!composing) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      window.scrollTo(0, 0);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, [composing]);
+
+  const handleInputBlur = () => {
+    setTimeout(() => window.scrollTo(0, 0), 100);
+  };
+
   if (composing) {
     return (
       <div className="px-5 pb-32 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -206,12 +222,14 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           placeholder="Title (optional)"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
+          onBlur={handleInputBlur}
           className="w-full bg-card rounded-2xl px-5 py-4 text-base font-semibold text-foreground placeholder:text-muted-foreground shadow-card outline-none"
         />
         <textarea
           placeholder="Write your thoughts..."
           value={newBody}
           onChange={(e) => setNewBody(e.target.value)}
+          onBlur={handleInputBlur}
           rows={8}
           className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
           autoFocus
@@ -578,8 +596,8 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     {/* Floating Add Button */}
     <button
       onClick={(e) => { e.stopPropagation(); setComposing(true); }}
-      className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
-      style={{ background: colors.buttonBg, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
+      className="fixed right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
+      style={{ background: colors.buttonBg, bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
     >
       <Plus size={24} />
     </button>
