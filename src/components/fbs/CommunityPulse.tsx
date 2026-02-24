@@ -101,9 +101,8 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
   const { data: pulse } = useQuery<PulseDataV2>({
     queryKey: ["community-pulse", churchId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_community_pulse_v2", {
+      const { data, error } = await supabase.rpc("get_community_pulse_v2" as any, {
         p_church_id: churchId!,
-        p_user_id: userId!,
       });
       if (error) throw error;
       return data as unknown as PulseDataV2;

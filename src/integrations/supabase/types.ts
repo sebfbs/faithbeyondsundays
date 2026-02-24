@@ -911,14 +911,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_community_pulse: {
-        Args: { p_church_id: string; p_user_id: string }
-        Returns: Json
-      }
-      get_community_pulse_v2: {
-        Args: { p_church_id: string; p_user_id: string }
-        Returns: Json
-      }
+      get_community_pulse:
+        | { Args: { p_church_id: string }; Returns: Json }
+        | { Args: { p_church_id: string; p_user_id: string }; Returns: Json }
+      get_community_pulse_v2:
+        | { Args: { p_church_id: string }; Returns: Json }
+        | { Args: { p_church_id: string; p_user_id: string }; Returns: Json }
       get_user_church_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
