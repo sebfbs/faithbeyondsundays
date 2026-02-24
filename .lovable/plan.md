@@ -1,70 +1,25 @@
 
 
-## Smooth Accordion Animations for Sermon Sections
+## Reorder Community Screen Layout
 
-### Problem
-The Chapters, Scripture, and Takeaways accordion sections use conditional rendering (`{open && <div>}`), so when closing, the content is instantly removed from the DOM with no exit animation. The opening has a basic fade-in, but closing just "glitches" away.
+### Current Order
+1. Search bar
+2. Church card (e.g. "Grace Community Church")
+3. Invite a Friend button
+4. "Church Members" section label
+5. Member list
 
-### Solution
-Replace the manual accordion with a CSS height + opacity transition using `grid` trick (or the Radix Collapsible), so both open and close animate smoothly.
+### New Order
+1. Search bar
+2. Invite a Friend button
+3. "Your church" section label (new)
+4. Church card
+5. "Church members" section label
+6. Member list
 
 ### Changes
 
-**File: `src/components/fbs/SermonTab.tsx` -- AccordionSection component (lines 24-53)**
+**File: `src/components/fbs/CommunityScreen.tsx`**
 
-Replace the current conditional render approach with a CSS-based animated collapse:
+Rearrange the JSX blocks so "Invite a Friend" comes right after the search bar, then add a new "Your church" section label before the church card, and keep the existing "Church members" label before the member list. All styling will match the existing uppercase tracking-widest label style already used for "Church Members."
 
-1. Always render the content div (don't conditionally remove it from DOM)
-2. Use CSS `grid-template-rows: 0fr` / `1fr` transition trick for smooth height animation
-3. Add opacity transition for a polished fade effect
-4. Keep the chevron rotation animation that already works
-
-The updated `AccordionSection` will look like:
-
-```tsx
-function AccordionSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-t border-border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-4 text-left tap-active"
-      >
-        <span className="text-sm font-semibold text-foreground uppercase tracking-widest">
-          {title}
-        </span>
-        <ChevronDown
-          size={16}
-          className={`text-muted-foreground transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      <div
-        className="transition-all duration-300 ease-in-out overflow-hidden"
-        style={{
-          display: "grid",
-          gridTemplateRows: open ? "1fr" : "0fr",
-          opacity: open ? 1 : 0,
-        }}
-      >
-        <div className="min-h-0">
-          <div className="pb-4 space-y-2">{children}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-This approach:
-- Animates height smoothly on both open AND close using the CSS grid row trick
-- Fades opacity in and out
-- No content "glitch" on close since the DOM element is always present
-- Chevron rotation duration bumped to 300ms to match the content animation
