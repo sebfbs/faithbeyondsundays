@@ -4,6 +4,7 @@ import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users } from "
 import { getAccentColors } from "./themeColors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import CommunityPulse from "./CommunityPulse";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -177,9 +178,12 @@ interface HomeTabProps {
   churchName?: string;
   hasChurch?: boolean;
   onNavigate?: (screen: string) => void;
+  churchId?: string;
+  userId?: string;
+  isDemo?: boolean;
 }
 
-export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate }: HomeTabProps) {
+export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo }: HomeTabProps) {
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -453,27 +457,14 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       </div>
       )}
 
-      {/* Scripture of the Day */}
-      {sermon && sermon.scriptures.length > 0 && (
-      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
-            <BookOpen size={14} style={{ color: colors.accent }} />
-          </div>
-          <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
-            Scripture of the Day
-          </span>
-        </div>
-        <p className="text-foreground font-semibold text-sm mb-1">
-          {sermon.scriptures[new Date().getDay() % sermon.scriptures.length].reference}
-        </p>
-        <p className="text-foreground text-base leading-relaxed italic">
-          "{sermon.scriptures[new Date().getDay() % sermon.scriptures.length].text}"
-        </p>
-        <p className="text-muted-foreground text-xs mt-3 font-medium">
-          From Sunday's sermon · {sermon.title}
-        </p>
-      </div>
+      {/* Community Pulse */}
+      {hasChurch && (
+        <CommunityPulse
+          churchId={churchId}
+          userId={userId}
+          isDemo={isDemo}
+          onNavigate={onNavigate}
+        />
       )}
 
       {/* Quick Links */}
