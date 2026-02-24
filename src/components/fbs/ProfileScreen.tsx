@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church } from "lucide-react";
@@ -7,11 +7,13 @@ import {
   NotificationTimeModal,
 } from "./NotificationModals";
 import type { UserData } from "./WelcomeScreen";
-import { hasInvited } from "./communityData";
+import { hasInvited, getFollowerCount, getFollowingCount } from "./communityData";
+import FollowListSheet from "./FollowListSheet";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { getBadgeTier, type BadgeTier } from "./badgeConfig";
+import { useDemoMode } from "./DemoModeProvider";
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -53,10 +55,34 @@ type Appearance = "light" | "dark" | "horizon";
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const { isDemo } = useDemoMode();
   const [appearance, setAppearance] = useState<Appearance>("horizon");
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
+  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // Fetch follower/following counts
+  useEffect(() => {
+    if (isDemo) {
+      setFollowerCount(12);
+      setFollowingCount(8);
+      return;
+    }
+    if (!authUser) return;
+    const load = async () => {
+      const [fc, fgc] = await Promise.all([
+        getFollowerCount(authUser.id),
+        getFollowingCount(authUser.id),
+      ]);
+      setFollowerCount(fc);
+      setFollowingCount(fgc);
+    };
+    load();
+  }, [authUser, isDemo]);
+
   // Fetch highest reflection badge
   const { data: highestBadge } = useQuery({
     queryKey: ["reflection-badge", authUser?.id],
@@ -150,6 +176,18 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     onUpdateUser?.(updated);
   };
 
+  // Show follow list overlay
+  if (followListMode) {
+    return (
+      <FollowListSheet
+        userId={authUser?.id || "demo"}
+        mode={followListMode}
+        onClose={() => setFollowListMode(null)}
+        isDemo={isDemo}
+      />
+    );
+  }
+
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
@@ -197,6 +235,20 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         </div>
         <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
+
+        {/* Follower / Following counts */}
+        <div className="flex items-center gap-4 mt-2">
+          <button onClick={() => setFollowListMode("followers")} className="text-center tap-active">
+            <span className="text-sm font-bold text-foreground">{followerCount}</span>
+            <span className="text-xs text-muted-foreground ml-1">Followers</span>
+          </button>
+          <div className="w-px h-4 bg-border" />
+          <button onClick={() => setFollowListMode("following")} className="text-center tap-active">
+            <span className="text-sm font-bold text-foreground">{followingCount}</span>
+            <span className="text-xs text-muted-foreground ml-1">Following</span>
+          </button>
+        </div>
+
         {user.churchName ? (
           <p className="text-xs text-muted-foreground mt-0.5">{user.churchName}</p>
         ) : (

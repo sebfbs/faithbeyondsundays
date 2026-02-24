@@ -221,7 +221,7 @@ export default function Index() {
     if (!userData) return null;
 
     if (subOverlay === "public-profile" && selectedMember) {
-      return <PublicProfileScreen member={selectedMember} onBack={() => { setSubOverlay(null); navTo("/community"); }} />;
+      return <PublicProfileScreen member={selectedMember} onBack={() => { setSubOverlay(null); navTo("/community"); }} isDemo={isDemo} />;
     }
     if (subOverlay === "previous-sermon-detail" && selectedSermon) {
       return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => { setSubOverlay(null); navTo("/previous-sermons"); }} />;

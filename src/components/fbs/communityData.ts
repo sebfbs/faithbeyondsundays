@@ -16,6 +16,7 @@ export interface CommunityMember {
   hasInvited?: boolean;
   role?: "pastor";
   instagramHandle?: string;
+  userId?: string;
 }
 
 export const DEMO_MEMBERS: CommunityMember[] = [
@@ -131,7 +132,7 @@ export function validateUsername(username: string): string | null {
   return null;
 }
 
-// --- Follow system (localStorage-backed) ---
+// --- Follow system (localStorage-backed, used for demo mode) ---
 
 const FOLLOWS_KEY = "fbs_follows";
 
@@ -159,6 +160,71 @@ export function toggleFollow(username: string): string[] {
 
 export function isFollowing(username: string): boolean {
   return getFollows().includes(username);
+}
+
+// --- DB-backed follow system (used in real/auth mode) ---
+
+import { supabase } from "@/integrations/supabase/client";
+
+export async function followUserDb(followingId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("follows").insert({ follower_id: user.id, following_id: followingId });
+}
+
+export async function unfollowUserDb(followingId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", followingId);
+}
+
+export async function isFollowingDb(followingId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { count } = await supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", user.id).eq("following_id", followingId);
+  return (count ?? 0) > 0;
+}
+
+export async function getFollowerCount(userId: string): Promise<number> {
+  const { count } = await supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", userId);
+  return count ?? 0;
+}
+
+export async function getFollowingCount(userId: string): Promise<number> {
+  const { count } = await supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", userId);
+  return count ?? 0;
+}
+
+export interface FollowListUser {
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+}
+
+export async function getFollowersList(userId: string): Promise<FollowListUser[]> {
+  const { data } = await supabase
+    .from("follows")
+    .select("follower_id, profiles!follows_follower_id_fkey(user_id, username, first_name, last_name, avatar_url)")
+    .eq("following_id", userId);
+
+  return (data || []).map((row: any) => {
+    const p = row.profiles;
+    return { userId: p?.user_id || row.follower_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined };
+  });
+}
+
+export async function getFollowingList(userId: string): Promise<FollowListUser[]> {
+  const { data } = await supabase
+    .from("follows")
+    .select("following_id, profiles!follows_following_id_fkey(user_id, username, first_name, last_name, avatar_url)")
+    .eq("follower_id", userId);
+
+  return (data || []).map((row: any) => {
+    const p = row.profiles;
+    return { userId: p?.user_id || row.following_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined };
+  });
 }
 
 // --- Invite system (localStorage-backed) ---
