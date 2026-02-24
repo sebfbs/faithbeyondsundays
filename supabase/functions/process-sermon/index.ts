@@ -366,7 +366,7 @@ function buildToolSchema(type: string) {
           type: "object",
           properties: {
             title: { type: "string", description: "A catchy title for the spark" },
-            summary: { type: "string", description: "A 2-3 sentence engaging summary of the sermon's core message" },
+            summary: { type: "string", description: "A 1-2 sentence short and to-the-point summary of the sermon's core message" },
           },
           required: ["title", "summary"],
           additionalProperties: false,
@@ -525,7 +525,7 @@ function buildToolSchema(type: string) {
 // --- Prompts ---
 
 function buildSparkPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nGenerate a "Spark" — a catchy title and a 2-3 sentence engaging summary that captures the core message. Make it inspiring and accessible.`;
+  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nGenerate a "Spark" — a catchy title and a 1-2 sentence short, to-the-point summary that captures the core message. Keep it concise and impactful — no more than two sentences.`;
 }
 
 function buildTakeawaysPrompt(title: string, transcript: string) {
