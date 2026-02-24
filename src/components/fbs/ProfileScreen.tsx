@@ -155,17 +155,30 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
   };
 
-  const handleSaveIg = () => {
+  const handleSaveIg = async () => {
     const clean = sanitizeIgHandle(igInput);
     const updated = { ...user, instagramHandle: clean || undefined };
     onUpdateUser?.(updated);
+    if (authUser) {
+      await supabase
+        .from("profiles")
+        .update({ instagram_handle: clean || null })
+        .eq("user_id", authUser.id);
+    }
     setIgSaved(true);
     setTimeout(() => setIgSaved(false), 2000);
   };
 
-  const handleSavePhone = () => {
-    const updated = { ...user, phoneNumber: phoneInput.trim() || undefined };
+  const handleSavePhone = async () => {
+    const trimmed = phoneInput.trim();
+    const updated = { ...user, phoneNumber: trimmed || undefined };
     onUpdateUser?.(updated);
+    if (authUser) {
+      await supabase
+        .from("profiles")
+        .update({ phone_number: trimmed || null })
+        .eq("user_id", authUser.id);
+    }
     setPhoneSaved(true);
     setTimeout(() => setPhoneSaved(false), 2000);
   };
