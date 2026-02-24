@@ -294,6 +294,7 @@ export default function Index() {
             onAddEntry={(entry) => addJournalEntry({ content: entry.fullText, title: entry.sermonTitle, entryType: entry.type })}
             onUpdateEntry={handleUpdateEntry}
             onDeleteEntry={handleDeleteEntry}
+            isDemo={isDemo}
           />
         );
       default:

@@ -1,7 +1,10 @@
-import { useState, forwardRef } from "react";
-import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2 } from "lucide-react";
+import { useState, useRef, forwardRef } from "react";
+import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2, Camera, Loader2 } from "lucide-react";
 import type { JournalEntry } from "@/hooks/useJournalEntries";
 import { getAccentColors } from "./themeColors";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type FilterType = "all" | "reflection" | "personal" | "bookmarked";
 
@@ -10,9 +13,37 @@ interface JournalTabProps {
   onAddEntry?: (entry: JournalEntry) => void;
   onUpdateEntry?: (entry: JournalEntry) => void;
   onDeleteEntry?: (id: string) => void;
+  isDemo?: boolean;
 }
 
-const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }, ref) {
+const DEMO_TRANSCRIPTION = "Today I'm grateful for the small moments of peace I found during my morning walk. The sunrise reminded me that each day is a fresh start and that God's mercies are new every morning.";
+
+function checkImageQuality(imageData: ImageData): string | null {
+  const { data, width, height } = imageData;
+  const totalPixels = width * height;
+  let sumBrightness = 0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const brightness = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+    sumBrightness += brightness;
+  }
+
+  const avgBrightness = sumBrightness / totalPixels;
+
+  let sumVariance = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const brightness = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+    sumVariance += (brightness - avgBrightness) ** 2;
+  }
+  const stddev = Math.sqrt(sumVariance / totalPixels);
+
+  if (avgBrightness < 60) return "Your photo looks too dark. Try better lighting.";
+  if (avgBrightness > 240) return "Your photo looks overexposed. Try reducing glare.";
+  if (stddev < 30) return "Hard to distinguish text. Try a flat, well-lit surface.";
+  return null;
+}
+
+const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry, isDemo }, ref) {
   const colors = getAccentColors();
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
@@ -27,6 +58,13 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Scan state
+  const [scanning, setScanning] = useState(false);
+  const [showScanTips, setShowScanTips] = useState(false);
+  const [scanWarning, setScanWarning] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filters: { label: string; value: FilterType }[] = [
     { label: "All", value: "all" },
@@ -67,6 +105,82 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     setComposing(false);
   };
 
+  const analyzeImage = (dataUrl: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxDim = 200; // sample at low res for speed
+        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        resolve(checkImageQuality(imageData));
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  };
+
+  const transcribeImage = async (dataUrl: string) => {
+    setScanning(true);
+    try {
+      if (isDemo) {
+        await new Promise((r) => setTimeout(r, 1500));
+        setNewBody((prev) => (prev ? prev + "\n\n" : "") + DEMO_TRANSCRIPTION);
+        toast({ title: "Scan complete", description: "Handwriting transcribed successfully." });
+      } else {
+        const { data, error } = await supabase.functions.invoke("transcribe-journal", {
+          body: { image: dataUrl },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        const text = data?.text || "";
+        if (!text.trim()) {
+          toast({ title: "No text found", description: "Could not detect handwriting in this image.", variant: "destructive" });
+        } else {
+          setNewBody((prev) => (prev ? prev + "\n\n" : "") + text);
+          toast({ title: "Scan complete", description: "Handwriting transcribed successfully." });
+        }
+      }
+    } catch (err: any) {
+      console.error("Transcription error:", err);
+      toast({ title: "Scan failed", description: err?.message || "Could not transcribe the image.", variant: "destructive" });
+    } finally {
+      setScanning(false);
+      setPendingImage(null);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const warning = await analyzeImage(dataUrl);
+      if (warning) {
+        setPendingImage(dataUrl);
+        setScanWarning(warning);
+      } else {
+        transcribeImage(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const scanTips = [
+    { icon: "📱", text: "Hold phone directly above" },
+    { icon: "🎯", text: "Center the text in the frame" },
+    { icon: "💡", text: "Use even lighting" },
+    { icon: "🚫", text: "Avoid shadows" },
+  ];
+
   if (composing) {
     return (
       <div className="px-5 pb-32 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
@@ -102,6 +216,102 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
           autoFocus
         />
+
+        {/* Scan handwriting button */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => setShowScanTips(true)}
+            disabled={scanning}
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-full bg-card shadow-card tap-active transition-all disabled:opacity-50"
+            style={{ color: colors.accent }}
+          >
+            {scanning ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <Camera size={16} />
+                Scan handwriting
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* Scan tips dialog */}
+        <Dialog open={showScanTips} onOpenChange={setShowScanTips}>
+          <DialogContent className="rounded-3xl max-w-sm mx-auto">
+            <DialogTitle className="text-center text-lg font-bold text-foreground">
+              Scanning Tips
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              For the best results, follow these tips before taking a photo.
+            </DialogDescription>
+            <div className="space-y-3 py-2">
+              {scanTips.map((tip, i) => (
+                <div key={i} className="flex items-center gap-3 px-2">
+                  <span className="text-xl">{tip.icon}</span>
+                  <span className="text-sm font-medium text-foreground">{tip.text}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                setShowScanTips(false);
+                fileInputRef.current?.click();
+              }}
+              className="w-full py-3 rounded-full text-white font-bold text-sm tap-active transition-opacity"
+              style={{ background: colors.buttonBg }}
+            >
+              Open Camera
+            </button>
+          </DialogContent>
+        </Dialog>
+
+        {/* Quality warning dialog */}
+        <Dialog open={!!scanWarning} onOpenChange={(open) => { if (!open) { setScanWarning(null); setPendingImage(null); } }}>
+          <DialogContent className="rounded-3xl max-w-sm mx-auto">
+            <DialogTitle className="text-center text-lg font-bold text-foreground">
+              Image Quality Warning
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              {scanWarning}
+            </DialogDescription>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setScanWarning(null);
+                  setPendingImage(null);
+                  fileInputRef.current?.click();
+                }}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold bg-muted text-foreground tap-active"
+              >
+                Retake
+              </button>
+              <button
+                onClick={() => {
+                  setScanWarning(null);
+                  if (pendingImage) transcribeImage(pendingImage);
+                }}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white tap-active"
+                style={{ background: colors.buttonBg }}
+              >
+                Use Anyway
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -366,7 +576,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
       <div className="h-2" />
     </div>
 
-    {/* Floating Add Button — outside animated container to prevent position glitching */}
+    {/* Floating Add Button */}
     <button
       onClick={(e) => { e.stopPropagation(); setComposing(true); }}
       className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
