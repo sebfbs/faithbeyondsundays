@@ -306,7 +306,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("send-push error:", err);
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: "An internal error occurred. Please try again later." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
