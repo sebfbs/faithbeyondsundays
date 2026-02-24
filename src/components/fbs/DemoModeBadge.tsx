@@ -14,19 +14,16 @@ export default function DemoModeBadge() {
   return (
     <button
       onClick={() => navigate(exitDemoUrl)}
-      className="fixed top-3 right-3 z-[9999] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest shadow-lg transition-all hover:scale-105 active:scale-95"
+      className="fixed top-2 right-2 z-[9999] flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider shadow-md transition-all hover:scale-105 active:scale-95 opacity-50 hover:opacity-100"
       style={{
-        background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
-        color: "hsl(var(--primary-foreground))",
-        border: "1px solid hsl(var(--primary) / 0.3)",
+        background: "hsl(0 0% 0% / 0.4)",
+        color: "hsl(0 0% 100%)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
       }}
     >
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/60" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-      </span>
-      Demo Mode
-      <span className="text-[9px] opacity-70 ml-0.5">✕</span>
+      Demo
+      <span className="text-[8px] ml-0.5">✕</span>
     </button>
   );
 }
