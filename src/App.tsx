@@ -62,8 +62,8 @@ const App = () => {
               <Route path="/prayer" element={<Index />} />
               <Route path="/profile" element={<Index />} />
               <Route path="/previous-sermons" element={<Index />} />
-              <Route path="/demo" element={<Navigate to="/home?demo=true" replace />} />
-              <Route path="/demo/*" element={<Navigate to="/home?demo=true" replace />} />
+              <Route path="/demo" element={<Index />} />
+              <Route path="/demo/*" element={<Index />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 
