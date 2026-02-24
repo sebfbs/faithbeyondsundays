@@ -19,6 +19,7 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
+  const [viewingMember, setViewingMember] = useState<CommunityMember | null>(null);
   const colors = getAccentColors();
 
   useEffect(() => {
@@ -86,13 +87,41 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
       : []),
   ];
 
+  // Show nested public profile
+  if (viewingMember) {
+    return (
+      <PublicProfileScreen
+        member={viewingMember}
+        onBack={() => setViewingMember(null)}
+        isDemo={isDemo}
+      />
+    );
+  }
+
   // Show follow list overlay
   if (followListMode) {
+    const handleViewProfile = (u: FollowListUser) => {
+      const asMember: CommunityMember = {
+        username: u.username,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        avatarUrl: u.avatarUrl,
+        userId: u.userId,
+        churchName: "",
+        churchCode: "",
+        memberSince: "",
+        challengesCompleted: 0,
+        isGroupMember: false,
+      };
+      setFollowListMode(null);
+      setViewingMember(asMember);
+    };
     return (
       <FollowListSheet
         userId={member.userId || member.username}
         mode={followListMode}
         onClose={() => setFollowListMode(null)}
+        onViewProfile={handleViewProfile}
         isDemo={isDemo}
       />
     );
