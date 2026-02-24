@@ -1,77 +1,108 @@
 
 
-# Expanded Community Pulse: Show Everyone's Activity
+# Follower & Following Counts on All Profiles
 
-## The Idea
+## What Changes
 
-Right now the backend returns just 1 reflector, 1 milestone, and 1 newest member. For a busy community where 30 people reflected today, 29 of them never get seen. We fix this by having the backend return **arrays** of recent activity, so the rotation can cycle through all of them -- giving every active member their moment in the spotlight.
+Add visible **follower count** and **following count** to every profile (your own profile, public profiles, community member cards). Tapping on either count opens a list of those users, where you can tap into their profile or follow/unfollow them directly -- enabling organic discovery through other people's networks.
 
-## How It Feels
+## How It Works
 
-A quiet community (1-2 stories) stays static and dignified. A busy community with 15+ stories becomes a lively ticker that makes you think "wow, everyone is on here" -- exactly the psychological nudge we want. Every person who does something gets their chance to appear.
+- Your own profile shows "12 Followers | 8 Following" below your name
+- Other people's public profiles show the same counts
+- Tapping "Followers" or "Following" opens a scrollable list of users
+- Each user in that list has a Follow/Following button and is tappable to view their profile
+- This creates a discovery loop: see someone interesting on a profile, follow them, their followers discover you
 
-## Strategy
+## Visual Layout
 
-- Backend returns up to **10 recent reflectors**, **5 recent milestones**, and **3 newest members** from the past 24-48 hours
-- Frontend builds a combined stories array from all of them
-- Threshold rules still apply: 0 = hide, 1-2 = static, 3+ = rotate
-- A busy community could have 10+ rotating stories -- that looks phenomenal
-- Locked/demo cards stay hardcoded with 3 stories (always rotating)
+```text
+Own Profile:
+  [Avatar]
+  Sarah Mitchell
+  @sarah_m
+  Cornerstone Community Church
+  [12 Followers]  [8 Following]    <-- tappable
+
+Public Profile:
+  [Avatar]
+  Marcus Johnson
+  @marcus_j
+  [24 Followers]  [15 Following]   <-- tappable
+  [Follow] button
+```
+
+Followers/Following List (opens as overlay):
+```text
+  [Back]  Followers (12)
+  ┌─────────────────────────────┐
+  │ [avatar] Sarah M.  [Following] │
+  │ [avatar] David C.  [Follow]    │
+  │ [avatar] Grace O.  [Following] │
+  └─────────────────────────────┘
+```
 
 ## Technical Details
 
-### 1. New Database Function: `get_community_pulse_v2`
+### 1. Migrate follows from localStorage to the database
 
-Create a new RPC that returns arrays instead of single objects:
+The `follows` table already exists in the database with `follower_id` and `following_id` columns and proper RLS. Currently the frontend uses localStorage via `communityData.ts`. We need to switch all follow actions to use the real DB table.
 
-```sql
--- Returns:
--- recent_reflectors: up to 10 people who reflected in the last 48 hours
--- recent_milestones: up to 5 badge milestones earned in the last 7 days
--- recent_members: up to 3 people who joined in the last 7 days
--- active_avatars: up to 5 distinct active user avatars (unchanged)
-```
+### 2. New component: `src/components/fbs/FollowListSheet.tsx`
 
-Key differences from current RPC:
-- `recent_reflectors` is an **array** (up to 10) instead of a single `latest_reflector`
-- `recent_milestones` is an **array** (up to 5) instead of a single `milestone`
-- `recent_members` is an **array** (up to 3) instead of a single `newest_member`
-- Each array is filtered to recent activity only (48h for reflections, 7 days for milestones/members) so stale events don't appear
-- Still excludes the current user from all results
+A bottom sheet or full-screen overlay that shows a list of followers or following for a given user. Props:
+- `userId`: whose list to show
+- `mode`: "followers" | "following"
+- `onClose`: close handler
+- `onViewProfile`: navigate to a user's profile
 
-### 2. Update `src/components/fbs/CommunityPulse.tsx`
+Fetches from the `follows` table joined with `profiles` to get names, avatars, and usernames. Each row shows avatar, name, username, and a Follow/Unfollow button.
 
-**New PulseData interface:**
-- Change from single objects to arrays: `recent_reflectors[]`, `recent_milestones[]`, `recent_members[]`
+### 3. Update `src/components/fbs/PublicProfileScreen.tsx`
 
-**Build stories array:**
-- Loop through all milestones and create a story for each
-- Loop through all reflectors and create a story for each
-- Loop through all new members and create a story for each
-- Each story has: `icon`, `message` string
+- Accept a `userId` prop (the profile owner's user_id) so we can query follows
+- Fetch follower count and following count from the `follows` table using two count queries
+- Display "X Followers | Y Following" as tappable text below the username
+- Tapping either opens `FollowListSheet` with the appropriate mode
+- Replace localStorage-based follow/unfollow with real DB inserts/deletes on the `follows` table
 
-**Threshold + rotation logic:**
-- `stories.length === 0`: hide card
-- `stories.length <= 2`: show first story statically
-- `stories.length >= 3`: rotate every 5 seconds with fade animation (300ms fade-out, swap, 300ms fade-in)
-- Pause rotation when browser tab is hidden
+### 4. Update `src/components/fbs/ProfileScreen.tsx` (own profile)
 
-**Locked state (`LOCKED_PULSE`):**
-- Update to use the new array format with 3 hardcoded stories (Sarah milestone, Marcus reflection, Emily joined)
-- Always rotates since it has 3 stories
+- Fetch follower count and following count for the current auth user
+- Display "X Followers | Y Following" below the username/church name
+- Tapping either opens `FollowListSheet`
 
-**Demo state (`DEMO_COMMUNITY_PULSE`):**
-- Update to use the new array format with multiple stories
+### 5. Update `src/components/fbs/communityData.ts`
 
-### 3. Update `src/components/fbs/demoData.ts`
+- Keep the localStorage helpers as fallback for demo mode only
+- Add new async functions that use the real `follows` table:
+  - `followUser(followingId)`: insert into follows table
+  - `unfollowUser(followingId)`: delete from follows table
+  - `getFollowerCount(userId)`: count query
+  - `getFollowingCount(userId)`: count query
+  - `isFollowingUser(followingId)`: check if current user follows them
 
-- Update `DEMO_COMMUNITY_PULSE` to use the new array-based format with several stories so the demo mode also shows an active-looking rotation
+### 6. Update `src/components/fbs/CommunityScreen.tsx` and `ChurchlessCommunity.tsx`
+
+- Pass the `user_id` through to `onViewProfile` so `PublicProfileScreen` can query follows (the `CommunityMember` type needs a `userId` field added)
+
+### 7. Demo mode handling
+
+- In demo mode, follower/following counts use hardcoded numbers from `DEMO_MEMBERS`
+- The follow list in demo mode shows other demo members
+- Real mode uses the database
 
 ### Files Modified
 
 | File | Change |
 |---|---|
-| Database migration | New `get_community_pulse_v2` RPC returning arrays of recent activity |
-| `src/components/fbs/CommunityPulse.tsx` | New data interface, stories builder, threshold logic, rotation with fade animation, updated locked data |
-| `src/components/fbs/demoData.ts` | Update `DEMO_COMMUNITY_PULSE` to array-based format |
+| `src/components/fbs/FollowListSheet.tsx` | New component -- scrollable list of followers/following with follow buttons |
+| `src/components/fbs/PublicProfileScreen.tsx` | Add follower/following counts, tappable to open list, DB-backed follow/unfollow |
+| `src/components/fbs/ProfileScreen.tsx` | Add follower/following counts below name, tappable to open list |
+| `src/components/fbs/communityData.ts` | Add DB-backed follow/unfollow functions, add userId to CommunityMember type |
+| `src/components/fbs/CommunityScreen.tsx` | Pass user_id through member objects to profile views |
+| `src/components/fbs/ChurchlessCommunity.tsx` | Pass user_id through member objects to profile views |
+| `src/components/fbs/demoData.ts` | Add demo follower/following counts |
+
+No database migration needed -- the `follows` table and RLS policies already exist.
 
