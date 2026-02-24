@@ -72,6 +72,7 @@ export default function CommunityScreen({
           role: roleMap.get(p.user_id) === "pastor" ? ("pastor" as const) : undefined,
           instagramHandle: p.instagram_handle || undefined,
           reflectionMilestone: badgeMap.get(p.user_id),
+          userId: p.user_id,
         })) as CommunityMember[];
     },
     enabled: !isDemo && !!userChurchCode,

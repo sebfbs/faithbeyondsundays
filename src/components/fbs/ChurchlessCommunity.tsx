@@ -28,7 +28,7 @@ export default function ChurchlessCommunity({ onBack, onViewProfile }: Churchles
       const q = userSearch.trim().toLowerCase();
       const { data, error } = await supabase
         .from("profiles")
-        .select("username, first_name, last_name, avatar_url, instagram_handle, created_at, churches(name, code)")
+        .select("user_id, username, first_name, last_name, avatar_url, instagram_handle, created_at, churches(name, code)")
         .neq("user_id", authUser?.id || "")
         .or(`username.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
         .limit(20);
@@ -44,6 +44,7 @@ export default function ChurchlessCommunity({ onBack, onViewProfile }: Churchles
         challengesCompleted: 0,
         isGroupMember: false,
         instagramHandle: p.instagram_handle || undefined,
+        userId: (p as any).user_id,
       })) as CommunityMember[];
     },
     enabled: userSearch.trim().length >= 2,

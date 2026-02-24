@@ -1,23 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, Phone, BookOpen } from "lucide-react";
-import { type CommunityMember, isFollowing, toggleFollow } from "./communityData";
+import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { getBadgeTier } from "./badgeConfig";
+import FollowListSheet from "./FollowListSheet";
+import type { FollowListUser } from "./communityData";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 
 interface PublicProfileScreenProps {
   member: CommunityMember & { hasInvited?: boolean; phoneNumber?: string; showPhoneNumber?: boolean; reflectionMilestone?: number };
   onBack: () => void;
+  isDemo?: boolean;
 }
 
-export default function PublicProfileScreen({ member, onBack }: PublicProfileScreenProps) {
-  const [following, setFollowing] = useState(() => isFollowing(member.username));
+export default function PublicProfileScreen({ member, onBack, isDemo }: PublicProfileScreenProps) {
+  const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const colors = getAccentColors();
 
-  const handleToggleFollow = () => {
-    toggleFollow(member.username);
-    setFollowing((prev) => !prev);
+  useEffect(() => {
+    if (isDemo) {
+      setFollowing(isFollowing(member.username));
+      // Demo hardcoded counts
+      setFollowerCount(Math.floor(Math.random() * 15) + 3);
+      setFollowingCount(Math.floor(Math.random() * 10) + 1);
+      return;
+    }
+    if (!member.userId) return;
+    const load = async () => {
+      const [isF, fc, fgc] = await Promise.all([
+        isFollowingDb(member.userId!),
+        getFollowerCount(member.userId!),
+        getFollowingCount(member.userId!),
+      ]);
+      setFollowing(isF);
+      setFollowerCount(fc);
+      setFollowingCount(fgc);
+    };
+    load();
+  }, [member.userId, member.username, isDemo]);
+
+  const handleToggleFollow = async () => {
+    if (isDemo) {
+      toggleFollow(member.username);
+      setFollowing((prev) => !prev);
+      setFollowerCount((prev) => following ? prev - 1 : prev + 1);
+      return;
+    }
+    if (!member.userId) return;
+    const wasFollowing = following;
+    setFollowing(!wasFollowing);
+    setFollowerCount((prev) => wasFollowing ? prev - 1 : prev + 1);
+    if (wasFollowing) {
+      await unfollowUserDb(member.userId);
+    } else {
+      await followUserDb(member.userId);
+    }
   };
 
   const reflectionBadge = member.reflectionMilestone ? getBadgeTier(member.reflectionMilestone) : undefined;
@@ -44,6 +85,18 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
       ? [{ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170, 55%, 45%)" }]
       : []),
   ];
+
+  // Show follow list overlay
+  if (followListMode) {
+    return (
+      <FollowListSheet
+        userId={member.userId || member.username}
+        mode={followListMode}
+        onClose={() => setFollowListMode(null)}
+        isDemo={isDemo}
+      />
+    );
+  }
 
   return (
     <div
@@ -79,6 +132,20 @@ export default function PublicProfileScreen({ member, onBack }: PublicProfileScr
         <h2 className="text-lg font-bold text-foreground">
           {member.firstName} {member.lastName}
         </h2>
+
+        {/* Follower / Following counts */}
+        <div className="flex items-center gap-4 mt-2">
+          <button onClick={() => setFollowListMode("followers")} className="text-center tap-active">
+            <span className="text-sm font-bold text-foreground">{followerCount}</span>
+            <span className="text-xs text-muted-foreground ml-1">Followers</span>
+          </button>
+          <div className="w-px h-4 bg-border" />
+          <button onClick={() => setFollowListMode("following")} className="text-center tap-active">
+            <span className="text-sm font-bold text-foreground">{followingCount}</span>
+            <span className="text-xs text-muted-foreground ml-1">Following</span>
+          </button>
+        </div>
+
         <div className="flex items-center flex-wrap gap-2 mt-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
             <span className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center relative">
