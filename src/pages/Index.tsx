@@ -173,11 +173,13 @@ export default function Index() {
     if (isDemo) {
       const now = new Date();
       const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const entryType = entry.entryType === "personal" ? "personal" : "reflection";
+      const tag = entryType === "personal" ? "Personal" : "Daily Reflection";
       setDemoJournalEntries((prev) => [{
         id: `demo-${Date.now()}`,
         date: dateStr,
-        type: "sermon" as const,
-        tag: "Sermon",
+        type: entryType as "reflection" | "personal",
+        tag,
         preview: (entry.content || "").slice(0, 120),
         sermonTitle: entry.title || "Reflection",
         bookmarked: false,
@@ -257,7 +259,7 @@ export default function Index() {
     switch (activeTab) {
       case "home": {
         const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        const reflectedToday = journalEntries.some((e) => e.tag === "Sermon" && e.date === today);
+        const reflectedToday = journalEntries.some((e) => (e.type === "reflection" || e.type === "sermon") && e.date === today);
         return (
           <HomeTab
             sermon={sermon}

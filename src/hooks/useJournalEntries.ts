@@ -6,7 +6,7 @@ import { useProfile } from "./useProfile";
 export interface JournalEntry {
   id: string;
   date: string;
-  type: "sermon" | "challenge";
+  type: "sermon" | "challenge" | "reflection" | "personal";
   tag: string;
   preview: string;
   sermonTitle: string;
@@ -27,8 +27,8 @@ function dbToUI(row: any): JournalEntry {
   return {
     id: row.id,
     date: formatDate(row.created_at),
-    type: row.entry_type === "challenge" ? "challenge" : "sermon",
-    tag: row.entry_type === "challenge" ? "Challenge" : row.title ? "Personal" : "Sermon",
+    type: (["reflection", "personal", "challenge"].includes(row.entry_type) ? row.entry_type : "sermon") as JournalEntry["type"],
+    tag: row.entry_type === "challenge" ? "Challenge" : row.entry_type === "reflection" ? "Daily Reflection" : row.entry_type === "personal" ? "Personal" : "Daily Reflection",
     preview: row.content.slice(0, 120) + (row.content.length > 120 ? "..." : ""),
     sermonTitle: row.title || "Reflection",
     bookmarked: row.is_bookmarked,

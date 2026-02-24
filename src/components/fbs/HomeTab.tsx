@@ -211,7 +211,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       onAddJournalEntry({
         content: reflectionText,
         title: sermon.title,
-        entryType: "sermon",
+        entryType: "reflection",
         sermonId: sermon.id,
       });
     } else {
@@ -219,7 +219,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       onAddJournalEntry({
         content: reflectionText,
         title: "Daily Reflection",
-        entryType: "sermon",
+        entryType: "reflection",
       });
     }
     setJustSaved(true);
