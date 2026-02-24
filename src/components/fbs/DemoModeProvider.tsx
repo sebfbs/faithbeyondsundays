@@ -1,22 +1,34 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useCallback, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
+
+const STORAGE_KEY = "fbs_demo_mode";
 
 interface DemoModeContextValue {
   isDemo: boolean;
-  /** URL without demo param (for toggling off) */
   exitDemoUrl: string;
+  clearDemo: () => void;
 }
 
 const DemoModeContext = createContext<DemoModeContextValue>({
   isDemo: false,
   exitDemoUrl: "/",
+  clearDemo: () => {},
 });
 
 export function DemoModeProvider({ children }: { children: ReactNode }) {
   const [searchParams] = useSearchParams();
 
-  const value = useMemo<DemoModeContextValue>(() => {
-    const isDemo = searchParams.get("demo") === "true";
+  const value = useMemo<Omit<DemoModeContextValue, "clearDemo">>(() => {
+    const urlDemo = searchParams.get("demo") === "true";
+
+    if (urlDemo) {
+      try { localStorage.setItem(STORAGE_KEY, "true"); } catch {}
+    }
+
+    const isDemo = urlDemo || (() => {
+      try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
+    })();
+
     const cleaned = new URLSearchParams(searchParams);
     cleaned.delete("demo");
     const qs = cleaned.toString();
@@ -26,8 +38,12 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
     };
   }, [searchParams]);
 
+  const clearDemo = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  }, []);
+
   return (
-    <DemoModeContext.Provider value={value}>
+    <DemoModeContext.Provider value={{ ...value, clearDemo }}>
       {children}
     </DemoModeContext.Provider>
   );
