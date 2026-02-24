@@ -260,6 +260,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
   }
 
   return (
+    <>
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -361,16 +362,17 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
       </div>
 
       <div className="h-2" />
-
-      {/* Floating Add Button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); setComposing(true); }}
-        className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
-        style={{ background: colors.buttonBg, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
-      >
-        <Plus size={24} />
-      </button>
     </div>
+
+    {/* Floating Add Button — outside animated container to prevent position glitching */}
+    <button
+      onClick={(e) => { e.stopPropagation(); setComposing(true); }}
+      className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center tap-active active:scale-95 transition-transform"
+      style={{ background: colors.buttonBg, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
+    >
+      <Plus size={24} />
+    </button>
+    </>
   );
 }); // forwardRef
 
