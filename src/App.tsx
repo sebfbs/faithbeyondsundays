@@ -29,6 +29,7 @@ const AdminPrayer = lazy(() => import("./pages/admin/AdminPrayer"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
+const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
 
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
@@ -80,6 +81,7 @@ const App = () => {
               <Route path="/admin/login" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminLogin /></Suspense>} />
               
               <Route path="/admin/setup" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminSetup /></Suspense>} />
+              <Route path="/admin/reset-password" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminResetPassword /></Suspense>} />
               <Route path="/admin" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="sermons" element={<AdminSermons />} />
