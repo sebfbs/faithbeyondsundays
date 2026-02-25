@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -7,6 +8,7 @@ import fbsLogo from "@/assets/FBS_Logo_white.png";
 type Mode = "welcome" | "signin" | "signup";
 
 export default function AuthScreen() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("welcome");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -118,6 +120,13 @@ export default function AuthScreen() {
             className="w-full text-center text-sm font-medium text-gray-600 tap-active py-2"
           >
             Already have an account? <span className="underline">Sign In</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/home?demo=true")}
+            className="w-full text-center text-xs text-gray-500 tap-active py-2"
+          >
+            Just exploring? <span className="underline">Try the Demo</span>
           </button>
         </div>
       </div>
