@@ -27,6 +27,7 @@ const AdminMembers = lazy(() => import("./pages/admin/AdminMembers"));
 const AdminGroups = lazy(() => import("./pages/admin/AdminGroups"));
 const AdminPrayer = lazy(() => import("./pages/admin/AdminPrayer"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const AdminTeam = lazy(() => import("./pages/admin/AdminTeam"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
 const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
@@ -89,6 +90,7 @@ const App = () => {
                 <Route path="groups" element={<AdminGroups />} />
                 <Route path="prayer" element={<AdminPrayer />} />
                 <Route path="notifications" element={<AdminNotifications />} />
+                <Route path="team" element={<AdminTeam />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 

@@ -16,6 +16,7 @@ import {
   Users2,
   Heart,
   Bell,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ const navItems = [
   { title: "Groups & Flags", url: "/admin/groups", icon: Users2 },
   { title: "Prayer", url: "/admin/prayer", icon: Heart },
   { title: "Notifications", url: "/admin/notifications", icon: Bell },
+  { title: "Team", url: "/admin/team", icon: UserCog },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
