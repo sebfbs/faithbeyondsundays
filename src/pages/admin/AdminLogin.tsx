@@ -19,6 +19,13 @@ export default function AdminLogin() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
 
+  // Track whether the current session was initiated from this login page
+  const [loginAttempted, setLoginAttempted] = useState(() => {
+    // If returning from OAuth redirect, the URL hash will contain access_token
+    const hash = window.location.hash;
+    return hash.includes("access_token");
+  });
+
   useEffect(() => {
     if (authLoading || !user) return;
 
@@ -29,8 +36,11 @@ export default function AdminLogin() {
       return;
     }
 
-    checkAccess(user.id);
-  }, [user, authLoading]);
+    // Only check access if the user explicitly logged in from this page
+    if (loginAttempted) {
+      checkAccess(user.id);
+    }
+  }, [user, authLoading, loginAttempted]);
 
   const checkAccess = async (userId: string) => {
     const { data: roles } = await supabase
@@ -78,6 +88,7 @@ export default function AdminLogin() {
     }
 
     if (data.user) {
+      setLoginAttempted(true);
       await checkAccess(data.user.id);
     }
     setSubmitting(false);
@@ -88,6 +99,8 @@ export default function AdminLogin() {
     setGoogleLoading(true);
     setAccessDenied(false);
 
+    setLoginAttempted(true);
+
     const { error: oauthError } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/admin/login",
     });
@@ -95,6 +108,7 @@ export default function AdminLogin() {
     if (oauthError) {
       setError(oauthError.message || "Google sign-in failed");
       setGoogleLoading(false);
+      setLoginAttempted(false);
     }
     // On success, the page will redirect and useEffect will handle access check
   };
