@@ -130,6 +130,20 @@
     background: hsl(var(--background));
   }
 
+  /* iOS PWA standalone: fix input focus + prevent auto-zoom */
+  @media (display-mode: standalone) {
+    #root {
+      display: block;
+      min-height: 100%;
+    }
+
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
   /* Platform pages break out of member app constraints */
   #root:has(.platform-root),
   #root:has(.admin-root) {
@@ -167,7 +181,6 @@
     max-width: 430px;
     min-height: 100dvh;
     position: relative;
-    overflow-x: clip;
     background: hsl(var(--background));
   }
 
