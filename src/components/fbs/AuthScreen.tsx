@@ -161,7 +161,6 @@ export default function AuthScreen() {
           placeholder="Email address"
           autoComplete="email"
           inputMode="email"
-          style={{ fontSize: '16px', touchAction: 'manipulation' }}
           className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 appearance-none"
         />
 
@@ -173,7 +172,6 @@ export default function AuthScreen() {
             placeholder="Password"
             autoComplete={isSignUp ? "new-password" : "current-password"}
             inputMode="text"
-            style={{ fontSize: '16px', touchAction: 'manipulation' }}
             className="w-full bg-card rounded-2xl px-4 py-4 pr-12 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 appearance-none"
           />
           <button
