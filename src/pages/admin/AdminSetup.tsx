@@ -56,7 +56,12 @@ export default function AdminSetup() {
       setSubmitting(true);
       const { error: pwError } = await supabase.auth.updateUser({ password });
       if (pwError) {
-        setError(pwError.message);
+        const msg = pwError.message.toLowerCase();
+        if (msg.includes("weak") || msg.includes("easy to guess") || msg.includes("leaked") || msg.includes("compromised")) {
+          setError("That password is too common — try adding a random word or number to make it more unique.");
+        } else {
+          setError(pwError.message);
+        }
         setSubmitting(false);
         return;
       }
