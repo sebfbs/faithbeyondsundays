@@ -1,0 +1,21 @@
+{
+  "name": "FBS Demo",
+  "short_name": "FBS Demo",
+  "description": "Grow your faith beyond Sunday services with guided reflections, sermon notes, and daily devotionals.",
+  "start_url": "/demo",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#6AADD4",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
