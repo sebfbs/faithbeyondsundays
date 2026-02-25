@@ -1,37 +1,36 @@
 
 
-## Fix: Platform Login White Page + Demo Badge Showing Everywhere
+## Fix: Disable Leaked Password Check + Add Friendly Error Message
 
-### Issue 1: White Page on Platform Login
+### The Recommendation
 
-**Root cause**: The Platform Login page is lazy-loaded with `Suspense fallback={null}`. While the component loads, the user sees the `#root` element's background, which is the member app's warm white color (`--background: 40 30% 97%`). If the lazy chunk takes any time to download (or if there's a loading delay from the auth check), the user stares at a blank white screen.
+Disable the HIBP (leaked password) check entirely. Your church admins are a small, trusted, invite-only group. The friction of having common passwords rejected is worse than the minimal security risk for this use case -- especially since the app already has role-based access, RLS policies, and invite-only onboarding.
 
-Additionally, if the user is already logged in (e.g., as a church admin), the `useEffect` in `PlatformLogin` calls `checkAccess()`, which queries `platform_admins`. If they're not a platform admin, it sets `accessDenied=true` -- but during the async database query, the page shows nothing meaningful.
+### Two Steps
 
-**Fix**: Replace `Suspense fallback={null}` with a proper dark loading state for the platform login route. This matches the page's `bg-slate-950` design so there's no jarring white flash.
+**Step 1: Backend Configuration (Manual)**
 
-**File: `src/App.tsx`**
-- Change the platform login Suspense fallback from `null` to a dark-background loading spinner that matches the platform's slate-950 design.
+You'll need to disable the leaked password protection in your backend auth settings. I'll open the backend panel for you so you can toggle this off under the authentication security settings.
 
----
+**Step 2: Friendlier Error Message (Code Change)**
 
-### Issue 2: Demo Badge Showing on Every Page
+As a safety net, update `src/pages/admin/AdminSetup.tsx` so that if a password rejection error still comes through, admins see a helpful message instead of the raw "known to be weak and easy to guess" text.
 
-**Root cause**: When a user visits the demo (`/demo` or `?demo=true`), the DemoModeProvider saves `fbs_demo_mode=true` to localStorage. From that point forward, the demo badge appears on every single page -- including the platform admin dashboard, the church admin panel, and the login screens -- because the DemoModeBadge component never checks what route the user is on.
+In `handleStep2`, replace the raw error display:
+```
+if (pwError) {
+  setError(pwError.message);
+```
 
-**Fix**: Update DemoModeBadge to hide itself on `/platform` and `/admin` routes. These are internal management tools that should never show the demo badge.
+With a check that catches HIBP-style rejections and shows:
+"That password is too common -- try adding a random word or number to make it more unique."
 
-**File: `src/components/fbs/DemoModeBadge.tsx`**
-- Add a `useLocation()` check: if the current path starts with `/platform` or `/admin`, return `null` (don't render the badge).
+This way even if the backend setting isn't toggled yet (or gets re-enabled later), admins get a clear, non-frustrating explanation.
 
----
-
-### Summary
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Add dark loading fallback for platform login Suspense |
-| `src/components/fbs/DemoModeBadge.tsx` | Hide badge on `/platform` and `/admin` routes |
-
-No new files or dependencies. Two small, targeted changes.
+| `src/pages/admin/AdminSetup.tsx` | Friendlier error message for password rejection in `handleStep2` |
+| Backend auth settings | Disable leaked password protection (manual toggle) |
 
