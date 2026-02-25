@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/fbs/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,14 @@ import confetti from "canvas-confetti";
 export default function AdminSetup() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // If arriving via a recovery link, redirect to reset-password page
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      navigate("/admin/reset-password", { replace: true });
+    }
+  }, [navigate]);
 
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState("");
