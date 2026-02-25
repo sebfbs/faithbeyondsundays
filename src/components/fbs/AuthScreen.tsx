@@ -138,7 +138,7 @@ export default function AuthScreen() {
 
   return (
     <div
-      className="mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+      className="mx-auto flex flex-col min-h-screen px-6"
       style={{ background: "hsl(var(--background))", maxWidth: 430, width: '100%', position: 'relative' }}
     >
       <div className="pt-14 pb-6">
