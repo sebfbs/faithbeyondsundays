@@ -21,6 +21,14 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (authLoading || !user) return;
+
+    // If the URL contains a recovery token, redirect to the reset-password page
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery") || hash.includes("type=magiclink")) {
+      navigate("/admin/reset-password", { replace: true });
+      return;
+    }
+
     checkAccess(user.id);
   }, [user, authLoading]);
 
