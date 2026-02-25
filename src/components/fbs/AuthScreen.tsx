@@ -138,8 +138,8 @@ export default function AuthScreen() {
 
   return (
     <div
-      className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
-      style={{ background: "hsl(var(--background))" }}
+      className="mx-auto flex flex-col min-h-screen px-6 animate-fade-in"
+      style={{ background: "hsl(var(--background))", maxWidth: 430, width: '100%', position: 'relative' }}
     >
       <div className="pt-14 pb-6">
         <button onClick={() => { setMode("welcome"); setError(null); }} className="mb-4 tap-active">
@@ -160,7 +160,9 @@ export default function AuthScreen() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email address"
           autoComplete="email"
-          className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+          inputMode="email"
+          style={{ fontSize: '16px', touchAction: 'manipulation' }}
+          className="w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 appearance-none"
         />
 
         <div className="relative">
@@ -170,7 +172,9 @@ export default function AuthScreen() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete={isSignUp ? "new-password" : "current-password"}
-            className="w-full bg-card rounded-2xl px-4 py-4 pr-12 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
+            inputMode="text"
+            style={{ fontSize: '16px', touchAction: 'manipulation' }}
+            className="w-full bg-card rounded-2xl px-4 py-4 pr-12 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 appearance-none"
           />
           <button
             type="button"
