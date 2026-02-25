@@ -69,7 +69,7 @@ const App = () => {
 
               {/* Platform Owner routes */}
               <Route path="/platform/login" element={<Suspense fallback={<div className="min-h-screen bg-slate-950" />}><PlatformLogin /></Suspense>} />
-              <Route path="/platform" element={<Suspense fallback={null}><PlatformLayout /></Suspense>}>
+              <Route path="/platform" element={<Suspense fallback={<div className="min-h-screen bg-slate-950" />}><PlatformLayout /></Suspense>}>
                 <Route index element={<PlatformDashboard />} />
                 <Route path="dashboard" element={<PlatformDashboard />} />
                 <Route path="churches" element={<PlatformChurches />} />
@@ -77,10 +77,10 @@ const App = () => {
               </Route>
 
               {/* Church Admin routes */}
-              <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
+              <Route path="/admin/login" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminLogin /></Suspense>} />
               
-              <Route path="/admin/setup" element={<Suspense fallback={null}><AdminSetup /></Suspense>} />
-              <Route path="/admin" element={<Suspense fallback={null}><AdminLayout /></Suspense>}>
+              <Route path="/admin/setup" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminSetup /></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={<div className="admin-root min-h-screen bg-background" />}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="sermons" element={<AdminSermons />} />
                 <Route path="members" element={<AdminMembers />} />
