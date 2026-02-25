@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User, Sparkles, Play, BookOpen, PenLine, Users, Bell, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User, Sparkles, BookOpen, PenLine, Users, Bell, Clock } from "lucide-react";
+import AnimatedLogo from "./AnimatedLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { useNotificationPreferences, NotificationType } from "@/hooks/useNotificationPreferences";
@@ -629,10 +630,10 @@ export default function OnboardingScreen() {
     return (
       <TourCard
         currentStep="tour1"
-        icon={<Play className="h-9 w-9 text-white" />}
-        iconGradient="bg-gradient-to-br from-amber-400 to-amber-600"
+        icon={<AnimatedLogo size={48} />}
+        iconGradient="bg-muted/50"
         headline="Sunday Doesn't End on Sunday"
-        description="Your pastor poured everything into that message. Now you can revisit it anytime — watch the sermon, unpack the key takeaways, and let it shape your whole week, not just your Sunday."
+        description="Revisit Sunday's message anytime — watch the sermon, unpack the key takeaways, and let it shape your whole week, not just your Sunday."
         buttonLabel="Next"
         onNext={() => setStep("tour2")}
       />
