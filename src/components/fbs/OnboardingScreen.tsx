@@ -645,30 +645,46 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ─── Tour 2: Daily Sparks ───
+  // ─── Tour 2: Daily Sparks (inlined to prevent remount on state change) ───
   if (step === "tour2") {
     return (
-      <TourCard
-        currentStep="tour2"
-        icon={<Sparkles className="h-9 w-9 text-white" />}
-        iconGradient="bg-gradient-to-br from-amber-400 to-sky-400"
-        headline="Daily Sparks"
-        description="Short, powerful nudges pulled straight from this week's sermon. A spark a day keeps the message close — and you don't have to get one every day. You choose."
-        buttonLabel="Next"
-        onNext={handleSaveSparkPrefs}
+      <div
+        className="app-container mx-auto flex flex-col min-h-screen px-6 !max-w-[430px]"
+        style={{ background: "hsl(var(--background))" }}
       >
-        <div className="w-full text-left">
-          <NotificationSetup
-            type="daily_spark"
-            enabled={sparkEnabled}
-            days={sparkDays}
-            time={sparkTime}
-            onToggle={setSparkEnabled}
-            onDaysChange={setSparkDays}
-            onTimeChange={setSparkTime}
-          />
+        <div className="pt-14 pb-4">
+          <ProgressDots current="tour2" />
         </div>
-      </TourCard>
+
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg mb-6 bg-gradient-to-br from-amber-400 to-sky-400">
+            <Sparkles className="h-9 w-9 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-3 leading-tight max-w-[300px]">Daily Sparks</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mb-6">Short, powerful nudges pulled straight from this week's sermon. A spark a day keeps the message close — and you don't have to get one every day. You choose.</p>
+          <div className="w-full text-left">
+            <NotificationSetup
+              type="daily_spark"
+              enabled={sparkEnabled}
+              days={sparkDays}
+              time={sparkTime}
+              onToggle={setSparkEnabled}
+              onDaysChange={setSparkDays}
+              onTimeChange={setSparkTime}
+            />
+          </div>
+        </div>
+
+        <div className="pb-12 pt-6">
+          <button
+            onClick={handleSaveSparkPrefs}
+            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+          >
+            Next
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </div>
     );
   }
 
