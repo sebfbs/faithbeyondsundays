@@ -1,37 +1,33 @@
 
 
-## Update Tour Card 1: Copy + Animated Logo
+## Fix Animated Logo to Match the Real FBS Logo
 
-### 1. Update the copy (tour1)
+### Problem
+The current `AnimatedLogo.tsx` creates thin-stroked, filled bezier petals that look nothing like your actual logo. Your logo has four **thick, hollow teardrop loops** arranged in a clover/cross pattern with an **X-shaped crossing** at the center, and a smooth vertical gradient from cornflower blue (top) to amber/gold (bottom).
 
-Replace the current description:
-> "Your pastor poured everything into that message. Now you can revisit it anytime -- watch the sermon, unpack the key takeaways, and let it shape your whole week, not just your Sunday."
+### What the real logo looks like (from your image)
+- Four large, rounded teardrop loops -- top, bottom, left, right
+- Each loop is a **thick band** (not a thin outline, not a filled shape) -- the inside of each loop is transparent/white
+- The loops **cross over each other** at the center, forming an X where the bands overlap
+- A vertical gradient flows from soft blue at the top through a warm neutral in the middle to rich amber/gold at the bottom
+- The overall shape resembles a four-leaf clover made of thick rounded bands
 
-With something like:
-> "Revisit Sunday's message anytime -- watch the sermon, unpack the key takeaways, and let it shape your whole week, not just your Sunday."
+### Solution -- Complete rewrite of `AnimatedLogo.tsx`
 
-This removes the pastor-centric opening while keeping the rest of the copy intact.
+**Path geometry**: Each of the four loops will be drawn as a single closed bezier path forming a teardrop/balloon shape. Key differences from current code:
+- Much larger loops (extending ~35 units from center in a 100x100 viewBox)
+- `fill="none"` with `stroke-width` of ~10-12 to create the thick hollow band look
+- Rounded teardrop shapes that pinch at the center and balloon outward
+- The paths will naturally overlap at the center, creating the X-crossing effect
 
-### 2. Animated logo draw-on effect
+**Gradient**: Change to a vertical gradient (`x1="50%" y1="0%" x2="50%" y2="100%"`) with:
+- Top: `#89B4D8` (soft cornflower blue)
+- Middle: `#D4B896` (warm neutral transition)
+- Bottom: `#F0A500` (amber gold)
 
-Replace the current Play icon inside the amber gradient box with a custom SVG animation of the Faith Beyond Sundays logo (the four-petal/figure-eight cross shape). The animation will use the SVG `stroke-dasharray` and `stroke-dashoffset` technique to simulate a "drawing" effect:
+**Stroke style**: `stroke-linecap="round"` and `stroke-linejoin="round"` for the smooth, soft appearance matching the logo.
 
-- The logo will be represented as an SVG path tracing four loops (right, left, top, bottom) from the center point
-- Using CSS `@keyframes`, the stroke will animate from fully hidden (`dashoffset` equal to path length) to fully visible (`dashoffset: 0`), creating the illusion of someone drawing the figure-eight cross
-- The animation will run once on mount, taking approximately 2-3 seconds total
-- After the stroke animation completes, a subtle fill fade-in will apply the gradient colors (blue-to-amber, matching the logo)
-- The icon container will keep its current rounded-3xl shape and shadow but the gradient background will be removed (replaced with a subtle neutral background or transparent) so the animated logo stands on its own
+**Animation**: Keep the sequential draw-on effect (stroke-dasharray/dashoffset), but remove the fill-opacity animation since the loops are hollow (`fill="none"`). Each loop draws from center outward and back: right, left, top, bottom.
 
-### Technical approach
-
-**New component**: `src/components/fbs/AnimatedLogo.tsx`
-- A self-contained SVG component with the four-petal path
-- CSS keyframes defined inline or via Tailwind for the draw-on animation
-- Props for `size` and optional `className`
-
-**Modified file**: `src/components/fbs/OnboardingScreen.tsx`
-- Import `AnimatedLogo`
-- Tour1 card: replace `icon={<Play ... />}` with `icon={<AnimatedLogo />}` and update `iconGradient` to a neutral/transparent background
-- Update description text
-- Modify the TourCard icon container for tour1 to not clip or constrain the animated logo (remove the fixed box if needed, or keep it but ensure the SVG is visible)
-
+### File changed
+- `src/components/fbs/AnimatedLogo.tsx` -- full rewrite of SVG paths, gradient, and stroke styling. No other files need changes.
