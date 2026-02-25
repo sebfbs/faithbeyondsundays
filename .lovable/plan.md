@@ -1,41 +1,21 @@
 
 
-## Fix: Dedicated Password Reset Page
+## Fix: Daily Sparks Card Flashing on Interaction
 
 ### Problem
-When an admin clicks "Forgot Password" from the login page, the reset link sends them to `/admin/setup` -- the full 3-step onboarding wizard. They have to re-enter their name, phone, and username just to reset their password.
+On the Daily Sparks onboarding card (tour2 step), pressing any button -- day pills, time of day, or the notification toggle -- causes the entire page to visually "flash" and smoothly re-animate. This happens because the `animate-fade-in` CSS class (which runs a 0.4s opacity + translateY animation) is applied to both the TourCard container and the NotificationSetup component, and is replaying during interactions.
+
+### Root Cause
+The `NotificationSetup` component wraps its content in a div with `animate-fade-in` (line 63). Additionally, the conditional `{enabled && (...)}` block inside it causes its children to unmount/remount when the notification toggle is flipped, re-triggering fade animations. The TourCard wrapper also has `animate-fade-in`, and React's reconciliation on state changes may cause animation replay in certain scenarios.
 
 ### Solution
-Create a dedicated `/admin/reset-password` page with a single card that only asks for a new password and confirmation. Update the login page to redirect there instead of `/admin/setup`.
+Remove the `animate-fade-in` class from the `NotificationSetup` component's wrapper div, and replace the conditional mount/unmount of the days/time content with a simple visibility/opacity approach so toggling the switch doesn't cause a jarring re-mount animation.
 
 ### Changes
 
-**1. New file: `src/pages/admin/AdminResetPassword.tsx`**
-- Single card matching the admin login page style (gradient background, church icon, card layout)
-- Two fields: New Password, Confirm Password
-- Calls `supabase.auth.updateUser({ password })` on submit
-- Includes the same friendly error handling for weak/common passwords
-- On success, shows a toast and redirects to `/admin/login`
+**1. `src/components/fbs/OnboardingScreen.tsx`**
 
-**2. Update: `src/pages/admin/AdminLogin.tsx`**
-- Change the `redirectTo` in `handleForgotPassword` from `/admin/setup` to `/admin/reset-password`
+- **NotificationSetup component (line 63):** Remove `animate-fade-in` from the outer div class, changing it from `"space-y-4 animate-fade-in"` to just `"space-y-4"`.
+- **Conditional content (line 73):** Keep the `{enabled && (...)}` pattern but remove any animation classes from the revealed content so day/time sections simply appear without a fade-in animation replay.
 
-**3. Update: `src/App.tsx`**
-- Add lazy import for `AdminResetPassword`
-- Add route `/admin/reset-password`
-
-### Technical Details
-
-The new `AdminResetPassword` component will:
-- Use the same `gradient-horizon` background and Card layout as AdminLogin for visual consistency
-- Check that the user is authenticated on mount (the recovery link auto-signs them in via the URL hash)
-- Validate password length (min 6 chars) and match before submitting
-- Handle weak password errors with the friendly message: "That password is too common -- try adding a random word or number to make it more unique."
-- After successful update, redirect to `/admin/login` so they can sign in with their new password
-
-| File | Change |
-|------|--------|
-| `src/pages/admin/AdminResetPassword.tsx` | New -- single-card password reset page |
-| `src/pages/admin/AdminLogin.tsx` | Change `redirectTo` to `/admin/reset-password` |
-| `src/App.tsx` | Add route + lazy import |
-
+These are minimal, targeted changes -- the initial fade-in when entering the tour2 step will still work (from the TourCard wrapper), but interacting with buttons within the card will no longer re-trigger animations.
