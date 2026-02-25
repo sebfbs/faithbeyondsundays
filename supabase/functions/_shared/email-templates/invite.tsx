@@ -22,7 +22,7 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL = 'https://imkpdqtjfgxblvzdlvjc.supabase.co/storage/v1/object/public/email-assets/FBS_Logo_white.png'
+const LOGO_URL = 'https://imkpdqtjfgxblvzdlvjc.supabase.co/storage/v1/object/public/email-assets/FBS_Logo_Horizon.png'
 
 export const InviteEmail = ({
   siteName,
@@ -63,7 +63,7 @@ export default InviteEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
 const container = { padding: '40px 32px' }
 const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
-const logo = { borderRadius: '14px', margin: '0 auto', backgroundColor: '#4A8AB5' }
+const logo = { margin: '0 auto' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,
