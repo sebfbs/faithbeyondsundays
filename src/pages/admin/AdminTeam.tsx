@@ -257,7 +257,7 @@ export default function AdminTeam() {
         {members.map((member) => {
           const config = roleBadgeConfig[member.role] || roleBadgeConfig.admin;
           const Icon = config.icon;
-          const displayName = [member.first_name, member.last_name].filter(Boolean).join(" ") || "Pending setup";
+          const displayName = [member.first_name, member.last_name].filter(Boolean).join(" ") || member.email || "Pending setup";
           const isCurrentUser = member.user_id === user?.id;
 
           return (
