@@ -35,9 +35,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const callerId = claimsData.claims.sub;
-    const { data: isAdmin } = await anonClient.rpc("is_platform_admin", { _user_id: callerId });
-    if (!isAdmin) {
+    const callerId = claimsData.claims.sub as string;
+
+    // Allow platform admins OR church admins/owners/pastors
+    const { data: isPlatformAdmin } = await anonClient.rpc("is_platform_admin", { _user_id: callerId });
+
+    let isChurchAdmin = false;
+    if (!isPlatformAdmin) {
+      // Check if caller has any admin-level church role
+      const { data: roles } = await anonClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .in("role", ["owner", "admin", "pastor"]);
+      isChurchAdmin = !!roles && roles.length > 0;
+    }
+
+    if (!isPlatformAdmin && !isChurchAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
