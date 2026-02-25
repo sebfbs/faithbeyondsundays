@@ -1,31 +1,28 @@
 
 
-## Add "Try Demo" Button to Welcome Screen
+## Fix: Inputs Not Focusable Across Entire iOS PWA
 
-A minimal, single-file change to `src/components/fbs/AuthScreen.tsx`.
+### The Problem
+On iOS PWA (home screen app), tapping into any text input or textarea across the app does nothing — the keyboard won't appear. This affects the Auth screen, Home reflection textarea, Journal entry form, and Prayer request form.
 
-### What changes
-- Import `useNavigate` from `react-router-dom`
-- Add a small text link below the "Already have an account? Sign In" button that says **"Just exploring? Try the Demo"**
-- On click, it navigates to `/home?demo=true`
+### Root Cause
+The entire app is wrapped in a container with the CSS class `app-container`, which includes `overflow-x: hidden`. This is a well-documented iOS WebKit bug: when a parent element has `overflow: hidden` (or `overflow-x: hidden`), input elements inside it cannot receive focus in standalone PWA mode (display: standalone).
 
-### Design
-The button will match the subtle style of the existing "Sign In" link -- small, understated text so it doesn't distract from the main sign-up flow. Easy to remove later by deleting a few lines.
+### The Fix
 
-### Technical detail
+**File: `src/index.css`** (1 line change)
 
-**File: `src/components/fbs/AuthScreen.tsx`**
-- Add `import { useNavigate } from "react-router-dom"` 
-- Add `const navigate = useNavigate()` inside the component
-- After the "Already have an account? Sign In" button (line ~121), add:
-```
-<button
-  onClick={() => navigate("/home?demo=true")}
-  className="w-full text-center text-xs text-gray-500 tap-active py-2"
->
-  Just exploring? <span className="underline">Try the Demo</span>
-</button>
-```
+Remove `overflow-x: hidden` from the `.app-container` class. This single change fixes all inputs app-wide — Auth, Home reflection, Journal, Prayer, and any future inputs.
 
-No other files are touched.
+To prevent any horizontal scroll issues that `overflow-x: hidden` was originally guarding against, we'll add `overflow-x: clip` instead, which prevents visible overflow without triggering the iOS focus bug. If `clip` isn't supported on older browsers, the fallback is no overflow rule at all (the app's `max-width: 430px` constraint already prevents horizontal overflow in practice).
+
+**File: `src/components/fbs/AuthScreen.tsx`** (minor cleanup)
+
+Remove the `animate-fade-in` class from the sign-in/sign-up form container (line 141) as an extra safety measure — CSS animations on containers are another known iOS PWA focus blocker.
+
+### Summary
+- 1 CSS property change in `index.css` (swap `overflow-x: hidden` for `overflow-x: clip`)
+- 1 class removal in `AuthScreen.tsx` (remove `animate-fade-in` from form view)
+- No new files, no new dependencies
+- Fixes inputs across the entire app in one shot
 
