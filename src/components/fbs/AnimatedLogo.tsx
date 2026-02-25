@@ -9,65 +9,48 @@ export default function AnimatedLogo({ size = 64, className = "" }: AnimatedLogo
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    // Trigger animation on mount by toggling a class
     const svg = svgRef.current;
     if (svg) {
       svg.classList.add("logo-animate");
     }
   }, []);
 
-  // The FBS logo: four petal loops forming a figure-eight cross
-  // Each petal is a cubic bezier loop from center, out, and back
+  // Four teardrop loops forming crossed figure-eights
+  // Each loop: starts at center, curves out into a rounded teardrop, returns to center
   const cx = 50, cy = 50;
-  const r = 22; // radius of each petal
-  const cp = 18; // control point spread
 
-  // Right petal: center → right loop → back to center
-  const rightPetal = `M ${cx},${cy} C ${cx + cp},${cy - cp} ${cx + r + cp},${cy - cp} ${cx + r},${cy} C ${cx + r + cp},${cy + cp} ${cx + cp},${cy + cp} ${cx},${cy}`;
-  // Left petal
-  const leftPetal = `M ${cx},${cy} C ${cx - cp},${cy + cp} ${cx - r - cp},${cy + cp} ${cx - r},${cy} C ${cx - r - cp},${cy - cp} ${cx - cp},${cy - cp} ${cx},${cy}`;
-  // Top petal
-  const topPetal = `M ${cx},${cy} C ${cx - cp},${cy - cp} ${cx - cp},${cy - r - cp} ${cx},${cy - r} C ${cx + cp},${cy - r - cp} ${cx + cp},${cy - cp} ${cx},${cy}`;
-  // Bottom petal
-  const bottomPetal = `M ${cx},${cy} C ${cx + cp},${cy + cp} ${cx + cp},${cy + r + cp} ${cx},${cy + r} C ${cx - cp},${cy + r + cp} ${cx - cp},${cy + cp} ${cx},${cy}`;
+  // Top loop — goes upward
+  const topLoop = `M ${cx},${cy} C ${cx - 18},${cy - 12} ${cx - 22},${cy - 38} ${cx},${cy - 42} C ${cx + 22},${cy - 38} ${cx + 18},${cy - 12} ${cx},${cy}`;
+  // Bottom loop — goes downward
+  const bottomLoop = `M ${cx},${cy} C ${cx + 18},${cy + 12} ${cx + 22},${cy + 38} ${cx},${cy + 42} C ${cx - 22},${cy + 38} ${cx - 18},${cy + 12} ${cx},${cy}`;
+  // Right loop — goes right
+  const rightLoop = `M ${cx},${cy} C ${cx + 12},${cy - 18} ${cx + 38},${cy - 22} ${cx + 42},${cy} C ${cx + 38},${cy + 22} ${cx + 12},${cy + 18} ${cx},${cy}`;
+  // Left loop — goes left
+  const leftLoop = `M ${cx},${cy} C ${cx - 12},${cy + 18} ${cx - 38},${cy + 22} ${cx - 42},${cy} C ${cx - 38},${cy - 22} ${cx - 12},${cy - 18} ${cx},${cy}`;
 
-  const petals = [
-    { d: rightPetal, delay: "0s" },
-    { d: leftPetal, delay: "0.5s" },
-    { d: topPetal, delay: "1s" },
-    { d: bottomPetal, delay: "1.5s" },
+  const loops = [
+    { d: topLoop, delay: 0 },
+    { d: rightLoop, delay: 0.4 },
+    { d: bottomLoop, delay: 0.8 },
+    { d: leftLoop, delay: 1.2 },
   ];
 
-  const pathLength = 200; // approximate
+  const pathLength = 300;
 
   return (
     <>
       <style>{`
-        .logo-animate .logo-petal {
+        .logo-animate .logo-loop {
           stroke-dasharray: ${pathLength};
           stroke-dashoffset: ${pathLength};
-          fill-opacity: 0;
         }
-        .logo-animate .logo-petal-0 {
-          animation: logo-draw 0.6s ease-out 0s forwards, logo-fill 0.4s ease-out 0.5s forwards;
-        }
-        .logo-animate .logo-petal-1 {
-          animation: logo-draw 0.6s ease-out 0.5s forwards, logo-fill 0.4s ease-out 1s forwards;
-        }
-        .logo-animate .logo-petal-2 {
-          animation: logo-draw 0.6s ease-out 1s forwards, logo-fill 0.4s ease-out 1.5s forwards;
-        }
-        .logo-animate .logo-petal-3 {
-          animation: logo-draw 0.6s ease-out 1.5s forwards, logo-fill 0.4s ease-out 2s forwards;
-        }
+        ${loops.map((_, i) => `
+        .logo-animate .logo-loop-${i} {
+          animation: logo-draw 0.7s ease-out ${loops[i].delay}s forwards;
+        }`).join("")}
         @keyframes logo-draw {
           to {
             stroke-dashoffset: 0;
-          }
-        }
-        @keyframes logo-fill {
-          to {
-            fill-opacity: 1;
           }
         }
       `}</style>
@@ -80,20 +63,22 @@ export default function AnimatedLogo({ size = 64, className = "" }: AnimatedLogo
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <linearGradient id="fbs-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(215, 65%, 55%)" />
-            <stop offset="100%" stopColor="hsl(38, 100%, 50%)" />
+          <linearGradient id="fbs-logo-gradient" x1="50%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stopColor="#89B4D8" />
+            <stop offset="45%" stopColor="#D4B896" />
+            <stop offset="100%" stopColor="#F0A500" />
           </linearGradient>
         </defs>
-        {petals.map((petal, i) => (
+        {loops.map((loop, i) => (
           <path
             key={i}
-            d={petal.d}
-            className={`logo-petal logo-petal-${i}`}
-            stroke="url(#fbs-gradient)"
-            strokeWidth="2.5"
+            d={loop.d}
+            className={`logo-loop logo-loop-${i}`}
+            stroke="url(#fbs-logo-gradient)"
+            strokeWidth="10"
             strokeLinecap="round"
-            fill="url(#fbs-gradient)"
+            strokeLinejoin="round"
+            fill="none"
           />
         ))}
       </svg>
