@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/fbs/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,16 +23,6 @@ export default function AdminSetup() {
   const [username, setUsername] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isRecoveryFlow, setIsRecoveryFlow] = useState(false);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecoveryFlow(true);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,30 +34,27 @@ export default function AdminSetup() {
     e.preventDefault();
     setError("");
 
-    if (isRecoveryFlow) {
-      if (password.length < 6) {
-        setError("Password must be at least 6 characters.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
-      setSubmitting(true);
-      const { error: pwError } = await supabase.auth.updateUser({ password });
-      if (pwError) {
-        const msg = pwError.message.toLowerCase();
-        if (msg.includes("weak") || msg.includes("easy to guess") || msg.includes("leaked") || msg.includes("compromised")) {
-          setError("That password is too common — try adding a random word or number to make it more unique.");
-        } else {
-          setError(pwError.message);
-        }
-        setSubmitting(false);
-        return;
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setSubmitting(true);
+    const { error: pwError } = await supabase.auth.updateUser({ password });
+    if (pwError) {
+      const msg = pwError.message.toLowerCase();
+      if (msg.includes("weak") || msg.includes("easy to guess") || msg.includes("leaked") || msg.includes("compromised")) {
+        setError("That password is too common — try adding a random word or number to make it more unique.");
+      } else {
+        setError(pwError.message);
       }
       setSubmitting(false);
+      return;
     }
-
+    setSubmitting(false);
     setStep(3);
   };
 
@@ -212,18 +199,14 @@ export default function AdminSetup() {
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" required maxLength={20} />
                 </div>
-                {isRecoveryFlow && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Create Password</Label>
-                      <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="password">Create Password</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required />
+                </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
