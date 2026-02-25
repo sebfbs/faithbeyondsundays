@@ -1,38 +1,37 @@
 
 
-## Fix: App-Wide Input Focus on iOS PWA + No Zoom
+## Fix: Platform Login White Page + Demo Badge Showing Everywhere
 
-### What's Happening
-Every text input and textarea across the app (auth, reflection, journal, prayer, profile) fails to receive focus when tapped in iOS PWA (home screen) mode. The keyboard simply doesn't appear. Additionally, inputs must not trigger iOS auto-zoom.
+### Issue 1: White Page on Platform Login
 
-### Why It's Happening
-Three CSS properties are combining to trigger a known iOS WebKit standalone-mode bug:
+**Root cause**: The Platform Login page is lazy-loaded with `Suspense fallback={null}`. While the component loads, the user sees the `#root` element's background, which is the member app's warm white color (`--background: 40 30% 97%`). If the lazy chunk takes any time to download (or if there's a loading delay from the auth check), the user stares at a blank white screen.
 
-1. **`#root` uses `display: flex` + `min-height: 100dvh`** -- iOS WebKit in standalone mode has trouble delivering focus events to inputs nested inside flex containers with viewport-height constraints
-2. **`.app-container` uses `overflow-x: clip`** -- on older iOS versions, `clip` behaves like `hidden` and creates the same focus-blocking behavior
-3. **`animate-fade-in` on many screen containers** -- CSS animations on parent elements prevent iOS from recognizing inputs as focusable during/after animation
+Additionally, if the user is already logged in (e.g., as a church admin), the `useEffect` in `PlatformLogin` calls `checkAccess()`, which queries `platform_admins`. If they're not a platform admin, it sets `accessDenied=true` -- but during the async database query, the page shows nothing meaningful.
 
-### The Fix (3 changes, 2 files)
+**Fix**: Replace `Suspense fallback={null}` with a proper dark loading state for the platform login route. This matches the page's `bg-slate-950` design so there's no jarring white flash.
 
-**File: `src/index.css`**
+**File: `src/App.tsx`**
+- Change the platform login Suspense fallback from `null` to a dark-background loading spinner that matches the platform's slate-950 design.
 
-1. Add a `@media (display-mode: standalone)` block that overrides `#root` to use `display: block` instead of `flex`, and sets `min-height: 100%` instead of `100dvh`. This eliminates the flex + viewport-height combo that blocks focus in PWA mode. The normal browser experience stays unchanged.
+---
 
-2. Remove `overflow-x: clip` from `.app-container` entirely. The `max-width: 430px` constraint already prevents horizontal overflow, so this property was just a safety net that's now causing harm.
+### Issue 2: Demo Badge Showing on Every Page
 
-3. Add a global rule ensuring all inputs and textareas have `font-size: 16px` in standalone mode. iOS auto-zooms on focus when font-size is below 16px -- this prevents that zoom without needing inline styles on every input. The viewport meta tag already has `maximum-scale=1.0, user-scalable=no` which helps, but the 16px rule is the definitive fix.
+**Root cause**: When a user visits the demo (`/demo` or `?demo=true`), the DemoModeProvider saves `fbs_demo_mode=true` to localStorage. From that point forward, the demo badge appears on every single page -- including the platform admin dashboard, the church admin panel, and the login screens -- because the DemoModeBadge component never checks what route the user is on.
 
-**File: `src/components/fbs/AuthScreen.tsx`**
+**Fix**: Update DemoModeBadge to hide itself on `/platform` and `/admin` routes. These are internal management tools that should never show the demo badge.
 
-4. Remove the inline `style={{ fontSize: '16px', touchAction: 'manipulation' }}` from the email and password inputs since the global CSS rule will handle this. Keeps the code clean.
+**File: `src/components/fbs/DemoModeBadge.tsx`**
+- Add a `useLocation()` check: if the current path starts with `/platform` or `/admin`, return `null` (don't render the badge).
 
-### What This Does NOT Change
-- No layout changes to the visible UI
-- No changes to animations on screens without inputs (welcome screen keeps its animation)
-- Normal Safari browser experience is untouched (fixes only apply inside `display-mode: standalone`)
-- No new dependencies
+---
 
-### Technical Summary
-- `src/index.css`: Add standalone media query for `#root`, remove `overflow-x: clip`, add global input font-size rule
-- `src/components/fbs/AuthScreen.tsx`: Clean up inline font-size styles (now handled globally)
+### Summary
+
+| File | Change |
+|------|--------|
+| `src/App.tsx` | Add dark loading fallback for platform login Suspense |
+| `src/components/fbs/DemoModeBadge.tsx` | Hide badge on `/platform` and `/admin` routes |
+
+No new files or dependencies. Two small, targeted changes.
 
