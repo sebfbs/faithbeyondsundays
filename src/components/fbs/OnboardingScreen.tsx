@@ -60,7 +60,7 @@ function NotificationSetup({ enabled, days, time, onToggle, onDaysChange, onTime
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4">
       {/* Toggle */}
       <div className="flex items-center justify-between bg-card rounded-2xl px-4 py-3 shadow-card">
         <div className="flex items-center gap-2.5">
