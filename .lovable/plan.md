@@ -1,28 +1,38 @@
 
 
-## Fix: Inputs Not Focusable Across Entire iOS PWA
+## Fix: App-Wide Input Focus on iOS PWA + No Zoom
 
-### The Problem
-On iOS PWA (home screen app), tapping into any text input or textarea across the app does nothing — the keyboard won't appear. This affects the Auth screen, Home reflection textarea, Journal entry form, and Prayer request form.
+### What's Happening
+Every text input and textarea across the app (auth, reflection, journal, prayer, profile) fails to receive focus when tapped in iOS PWA (home screen) mode. The keyboard simply doesn't appear. Additionally, inputs must not trigger iOS auto-zoom.
 
-### Root Cause
-The entire app is wrapped in a container with the CSS class `app-container`, which includes `overflow-x: hidden`. This is a well-documented iOS WebKit bug: when a parent element has `overflow: hidden` (or `overflow-x: hidden`), input elements inside it cannot receive focus in standalone PWA mode (display: standalone).
+### Why It's Happening
+Three CSS properties are combining to trigger a known iOS WebKit standalone-mode bug:
 
-### The Fix
+1. **`#root` uses `display: flex` + `min-height: 100dvh`** -- iOS WebKit in standalone mode has trouble delivering focus events to inputs nested inside flex containers with viewport-height constraints
+2. **`.app-container` uses `overflow-x: clip`** -- on older iOS versions, `clip` behaves like `hidden` and creates the same focus-blocking behavior
+3. **`animate-fade-in` on many screen containers** -- CSS animations on parent elements prevent iOS from recognizing inputs as focusable during/after animation
 
-**File: `src/index.css`** (1 line change)
+### The Fix (3 changes, 2 files)
 
-Remove `overflow-x: hidden` from the `.app-container` class. This single change fixes all inputs app-wide — Auth, Home reflection, Journal, Prayer, and any future inputs.
+**File: `src/index.css`**
 
-To prevent any horizontal scroll issues that `overflow-x: hidden` was originally guarding against, we'll add `overflow-x: clip` instead, which prevents visible overflow without triggering the iOS focus bug. If `clip` isn't supported on older browsers, the fallback is no overflow rule at all (the app's `max-width: 430px` constraint already prevents horizontal overflow in practice).
+1. Add a `@media (display-mode: standalone)` block that overrides `#root` to use `display: block` instead of `flex`, and sets `min-height: 100%` instead of `100dvh`. This eliminates the flex + viewport-height combo that blocks focus in PWA mode. The normal browser experience stays unchanged.
 
-**File: `src/components/fbs/AuthScreen.tsx`** (minor cleanup)
+2. Remove `overflow-x: clip` from `.app-container` entirely. The `max-width: 430px` constraint already prevents horizontal overflow, so this property was just a safety net that's now causing harm.
 
-Remove the `animate-fade-in` class from the sign-in/sign-up form container (line 141) as an extra safety measure — CSS animations on containers are another known iOS PWA focus blocker.
+3. Add a global rule ensuring all inputs and textareas have `font-size: 16px` in standalone mode. iOS auto-zooms on focus when font-size is below 16px -- this prevents that zoom without needing inline styles on every input. The viewport meta tag already has `maximum-scale=1.0, user-scalable=no` which helps, but the 16px rule is the definitive fix.
 
-### Summary
-- 1 CSS property change in `index.css` (swap `overflow-x: hidden` for `overflow-x: clip`)
-- 1 class removal in `AuthScreen.tsx` (remove `animate-fade-in` from form view)
-- No new files, no new dependencies
-- Fixes inputs across the entire app in one shot
+**File: `src/components/fbs/AuthScreen.tsx`**
+
+4. Remove the inline `style={{ fontSize: '16px', touchAction: 'manipulation' }}` from the email and password inputs since the global CSS rule will handle this. Keeps the code clean.
+
+### What This Does NOT Change
+- No layout changes to the visible UI
+- No changes to animations on screens without inputs (welcome screen keeps its animation)
+- Normal Safari browser experience is untouched (fixes only apply inside `display-mode: standalone`)
+- No new dependencies
+
+### Technical Summary
+- `src/index.css`: Add standalone media query for `#root`, remove `overflow-x: clip`, add global input font-size rule
+- `src/components/fbs/AuthScreen.tsx`: Clean up inline font-size styles (now handled globally)
 
