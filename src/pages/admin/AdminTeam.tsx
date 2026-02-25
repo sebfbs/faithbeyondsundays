@@ -88,7 +88,6 @@ export default function AdminTeam() {
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, first_name, last_name")
-      .eq("church_id", churchId)
       .in("user_id", userIds);
 
     const profileMap = new Map(
