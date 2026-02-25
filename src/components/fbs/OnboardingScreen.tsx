@@ -370,18 +370,23 @@ export default function OnboardingScreen() {
                     <button
                       key={church.id}
                       onClick={() => setSelectedChurch(church)}
-                      className={`w-full text-left bg-card rounded-2xl p-4 shadow-card tap-active transition-all ${
+                      className={`w-full text-left bg-card rounded-2xl p-4 shadow-card tap-active transition-all flex items-center ${
                         selectedChurch?.id === church.id ? "ring-2 ring-amber" : ""
                       }`}
                     >
-                      <p className="text-sm font-bold text-foreground">{church.name}</p>
-                      {(church.city || church.state) && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <MapPin size={12} className="text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">
-                            {[church.city, church.state].filter(Boolean).join(", ")}
-                          </p>
-                        </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-foreground">{church.name}</p>
+                        {(church.city || church.state) && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <MapPin size={12} className="text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">
+                              {[church.city, church.state].filter(Boolean).join(", ")}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {selectedChurch?.id === church.id && (
+                        <CheckCircle size={20} className="text-amber ml-2 flex-shrink-0" />
                       )}
                     </button>
                   ))
