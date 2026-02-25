@@ -1,11 +1,12 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDemoMode } from "./DemoModeProvider";
 
 export default function DemoModeBadge() {
   const { isDemo, exitDemoUrl, clearDemo } = useDemoMode();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
-  if (!isDemo) return null;
+  if (!isDemo || pathname.startsWith("/platform") || pathname.startsWith("/admin")) return null;
 
   return (
     <button

@@ -68,7 +68,7 @@ const App = () => {
               <Route path="/terms" element={<Terms />} />
 
               {/* Platform Owner routes */}
-              <Route path="/platform/login" element={<Suspense fallback={null}><PlatformLogin /></Suspense>} />
+              <Route path="/platform/login" element={<Suspense fallback={<div className="min-h-screen bg-slate-950" />}><PlatformLogin /></Suspense>} />
               <Route path="/platform" element={<Suspense fallback={null}><PlatformLayout /></Suspense>}>
                 <Route index element={<PlatformDashboard />} />
                 <Route path="dashboard" element={<PlatformDashboard />} />
