@@ -1,32 +1,45 @@
 
 
-## Show Church Association on Profiles
+## Lock Down Prayer Request Visibility
 
 ### Problem
-When viewing someone's public profile (e.g., Benjamin Kim), the church they belong to ("Faith Chapel") is visible in search results but disappears once you tap into their full profile. The church name should be displayed on both the public profile and the user's own profile.
+The current RLS policy "Members can view church prayer requests" allows any authenticated church member to SELECT prayer requests with `visibility = 'church'` in their church. While the app UI only shows users their own prayers, the database layer permits broader access. Prayer requests should be strictly private -- only visible to the person who submitted them and to church admins/owners/pastors.
 
 ### Changes
 
-**1. PublicProfileScreen -- Add church name below the user's name** (`src/components/fbs/PublicProfileScreen.tsx`)
+**1. Database migration: Replace the member-visible policy with an admin-only policy**
 
-Below the name heading (line 161-163), add a line showing the member's church name when available. This mirrors how the search result card already displays it.
+- **DROP** the existing policy "Members can view church prayer requests" on `prayer_requests` -- this is the one that lets any church member read `visibility = 'church'` prayers
+- **CREATE** a new policy "Church admins can view all prayer requests" that grants SELECT access only to users with `admin`, `owner`, or `pastor` roles in the prayer's church
+- The existing "Users can manage their own prayers" policy remains unchanged -- users can still see and manage their own prayer requests
 
+```sql
+-- Remove the policy that lets all church members see prayers
+DROP POLICY IF EXISTS "Members can view church prayer requests" ON public.prayer_requests;
+
+-- Allow church leadership to see all prayers in their church
+CREATE POLICY "Church admins can view all prayer requests"
+  ON public.prayer_requests FOR SELECT
+  USING (
+    has_role_in_church(auth.uid(), church_id, 'admin'::app_role) OR
+    has_role_in_church(auth.uid(), church_id, 'owner'::app_role) OR
+    has_role_in_church(auth.uid(), church_id, 'pastor'::app_role)
+  );
 ```
-{member.firstName} {member.lastName}
-Faith Chapel    <-- new line, styled as muted text with a small church icon
-```
 
-The `member.churchName` field is already populated from the `CommunityMember` type, so no data fetching changes are needed.
+**No frontend changes needed.** The PrayerScreen already filters by `user_id = authUser.id`, and AdminPrayer already queries by `church_id`. Once the RLS is updated, both will continue working correctly -- members see only their own, admins see all.
 
-**2. ProfileScreen -- Confirm own profile already shows church** (`src/components/fbs/ProfileScreen.tsx`)
+### Result after fix
 
-The user's own profile already displays `user.churchName` (line 288-289). No changes needed here -- just confirming it's already working.
+| Who | What they can see |
+|-----|-------------------|
+| Regular member | Only their own prayer requests |
+| Admin / Owner / Pastor | All prayer requests in their church |
+| Other churches | Nothing -- church_id scoping prevents cross-church access |
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/fbs/PublicProfileScreen.tsx` | Add church name display below the user's full name, using the existing `member.churchName` data |
+| Database migration | Drop member SELECT policy, add admin-only SELECT policy on `prayer_requests` |
 
-### No Backend Changes
-The `churchName` field is already part of the `CommunityMember` interface and is populated when navigating to a profile. This is purely a UI addition.
