@@ -1,27 +1,36 @@
 
 
-## Apply Colorful Initials Avatars Everywhere
+## Fix Group Detail Sheet Desktop Width + Add Demo Group
 
-Use the existing `getAvatarColor()` helper from `avatarColors.ts` across every remaining screen that shows a fallback initials avatar. This gives all users without a profile picture a consistent, colorful circle instead of plain gray.
+### Problem
+1. The group detail drawer stretches to full screen width on desktop/tablet, looking awkward (as shown in your screenshot)
+2. Demo mode has no groups visible because the groups section is conditionally hidden with `!isDemo`
 
-### Files to update
+### Changes
 
-| File | Where | Current | Change |
-|------|-------|---------|--------|
-| `CommunityPulse.tsx` | Active avatars on home screen | Gray `hsl(var(--muted))` background, gray text | Use `getAvatarColor(a.first_name)` background, white text |
-| `GroupChat.tsx` | Chat message avatars | Gray `bg-muted` background, gray text | Use `getAvatarColor(name)` background, white text |
-| `ChurchlessCommunity.tsx` | Member search results | Gray background, gray text | Use `getAvatarColor(member.username)` background, white text |
-| `FollowListSheet.tsx` | Follower/following list | Gray background, gray text | Use `getAvatarColor(u.username)` background, white text |
-| `PublicProfileScreen.tsx` | Large profile avatar | Uses `colors.accentBg` with accent-colored text | Use `getAvatarColor(member.username)` background, white text |
-| `AdminMembers.tsx` | Admin dashboard member list | Gray `bg-secondary` with foreground text | Use `getAvatarColor(member.displayName)` background, white text |
+**1. Constrain the drawer width on desktop**
 
-### Not changing
-- **ProfileScreen.tsx** (own profile) -- uses a `User` icon (not initials) for the fallback, which is a different pattern. This stays as-is since it's the user's own editable profile with the camera upload button.
-- **CommunityScreen.tsx** and **GroupDetailSheet.tsx** -- already updated in the previous change.
+File: `src/components/fbs/GroupDetailSheet.tsx`
+- Add `max-w-lg mx-auto` to the `DrawerContent` so it stays centered and capped at ~512px wide, matching the mobile-first design on larger screens
 
-### Technical approach
-- Import `getAvatarColor` from `./avatarColors` (or relative path for admin pages)
-- Replace static gray backgrounds with `getAvatarColor(name)` when no avatar image exists
-- Change fallback text color from `text-muted-foreground` to `text-white` for contrast
-- Each file gets ~3-5 lines changed
+**2. Add a "Women's Group" to demo data**
 
+File: `src/components/fbs/demoData.ts`
+- Add a `DEMO_GROUPS` export with one group: "Women's Group" (id, name, description, memberCount, isMember: true)
+
+**3. Show groups in demo mode**
+
+File: `src/components/fbs/CommunityScreen.tsx`
+- Import `DEMO_GROUPS` from demoData
+- Change the groups section condition from `!isSearching && !isDemo && groups.length > 0` to `!isSearching && displayGroups.length > 0` where `displayGroups` is `isDemo ? DEMO_GROUPS : groups`
+- When a demo group is selected, open the GroupDetailSheet with mock data (chat/members will show empty states since there's no real data, which is fine for preview)
+
+### Technical details
+
+| File | What changes |
+|------|-------------|
+| `src/components/fbs/GroupDetailSheet.tsx` | Add `max-w-lg mx-auto` to `DrawerContent` className |
+| `src/components/fbs/demoData.ts` | Add `DEMO_GROUPS` array with one "Women's Group" entry |
+| `src/components/fbs/CommunityScreen.tsx` | Import demo groups, merge into display logic so groups show in demo mode |
+
+The drawer width fix is the main visual improvement -- it will look properly contained on desktop/tablet instead of stretching edge-to-edge.
