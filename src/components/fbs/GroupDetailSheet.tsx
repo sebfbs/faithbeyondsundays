@@ -19,6 +19,7 @@ interface GroupDetailSheetProps {
   isMember: boolean;
   memberCount: number;
   isDemo?: boolean;
+  onMembershipChange?: (isMember: boolean) => void;
 }
 
 export default function GroupDetailSheet({
@@ -28,6 +29,7 @@ export default function GroupDetailSheet({
   isMember: initialIsMember,
   memberCount: initialMemberCount,
   isDemo,
+  onMembershipChange,
 }: GroupDetailSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -77,6 +79,7 @@ export default function GroupDetailSheet({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-members", group.id] });
       queryClient.invalidateQueries({ queryKey: ["community-groups"] });
+      onMembershipChange?.(true);
     },
   });
 
@@ -93,6 +96,7 @@ export default function GroupDetailSheet({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-members", group.id] });
       queryClient.invalidateQueries({ queryKey: ["community-groups"] });
+      onMembershipChange?.(false);
     },
   });
 
@@ -123,7 +127,9 @@ export default function GroupDetailSheet({
             <button
               onClick={() => {
                 if (isDemo) {
-                  setDemoMember(!demoMember);
+                  const next = !demoMember;
+                  setDemoMember(next);
+                  onMembershipChange?.(next);
                   return;
                 }
                 isMember ? leaveMutation.mutate() : joinMutation.mutate();
