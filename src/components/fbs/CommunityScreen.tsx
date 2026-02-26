@@ -42,6 +42,11 @@ export default function CommunityScreen({
   const follows = getFollows();
   const { user: authUser } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState<GroupInfo | null>(null);
+  const [demoMemberships, setDemoMemberships] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    DEMO_GROUPS.forEach((g) => { init[g.id] = g.isMember; });
+    return init;
+  });
 
   // Fetch community groups
   const { data: groups = [] } = useQuery({
@@ -285,7 +290,7 @@ export default function CommunityScreen({
             Groups
           </p>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
-            {(isDemo ? DEMO_GROUPS : groups).map((g) => (
+            {(isDemo ? DEMO_GROUPS.map(g => ({ ...g, isMember: demoMemberships[g.id] ?? g.isMember })) : groups).map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGroup(g)}
@@ -405,6 +410,12 @@ export default function CommunityScreen({
           isMember={selectedGroup.isMember}
           memberCount={selectedGroup.memberCount}
           isDemo={isDemo}
+          onMembershipChange={(isMember) => {
+            if (isDemo) {
+              setDemoMemberships((prev) => ({ ...prev, [selectedGroup.id]: isMember }));
+            }
+            setSelectedGroup((prev) => prev ? { ...prev, isMember } : null);
+          }}
         />
       )}
     </div>
