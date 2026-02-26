@@ -44,7 +44,7 @@ export default function GroupChat({ groupId, isMember }: GroupChatProps) {
       const userIds = [...new Set((data || []).map((m: any) => m.user_id))];
       const { data: profiles } = userIds.length
         ? await supabase
-            .from("profiles")
+            .from("profiles_safe")
             .select("user_id, first_name, last_name, avatar_url")
             .in("user_id", userIds)
         : { data: [] };

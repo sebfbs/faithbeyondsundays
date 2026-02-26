@@ -101,7 +101,7 @@ export default function CommunityScreen({
     queryKey: ["community-members", userChurchCode],
     queryFn: async () => {
       let profilesQuery = supabase
-        .from("profiles")
+        .from("profiles_safe")
         .select("*, churches(name, code)");
       if (userChurchId) profilesQuery = profilesQuery.eq("church_id", userChurchId);
       const { data: profiles, error } = await profilesQuery;

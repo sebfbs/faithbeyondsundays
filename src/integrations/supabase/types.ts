@@ -958,7 +958,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_safe: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          challenges_completed: number | null
+          church_id: string | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          instagram_handle: string | null
+          is_email_verified: boolean | null
+          is_private: boolean | null
+          last_name: string | null
+          onboarding_complete: boolean | null
+          phone_number: string | null
+          show_phone_number: boolean | null
+          streak_current: number | null
+          streak_longest: number | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          challenges_completed?: number | null
+          church_id?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          instagram_handle?: string | null
+          is_email_verified?: boolean | null
+          is_private?: boolean | null
+          last_name?: string | null
+          onboarding_complete?: boolean | null
+          phone_number?: never
+          show_phone_number?: boolean | null
+          streak_current?: number | null
+          streak_longest?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          challenges_completed?: number | null
+          church_id?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          instagram_handle?: string | null
+          is_email_verified?: boolean | null
+          is_private?: boolean | null
+          last_name?: string | null
+          onboarding_complete?: boolean | null
+          phone_number?: never
+          show_phone_number?: boolean | null
+          streak_current?: number | null
+          streak_longest?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_community_pulse:

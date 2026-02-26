@@ -27,7 +27,7 @@ export default function ChurchlessCommunity({ onBack, onViewProfile }: Churchles
     queryFn: async () => {
       const q = userSearch.trim().toLowerCase();
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles_safe")
         .select("user_id, username, first_name, last_name, avatar_url, instagram_handle, created_at, churches(name, code)")
         .neq("user_id", authUser?.id || "")
         .or(`username.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`)

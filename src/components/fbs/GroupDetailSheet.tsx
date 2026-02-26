@@ -44,7 +44,7 @@ export default function GroupDetailSheet({
       if (!userIds.length) return [];
 
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_safe")
         .select("user_id, first_name, last_name, avatar_url, username")
         .in("user_id", userIds);
 
