@@ -97,7 +97,7 @@ export default function GroupDetailSheet({
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-h-[92vh] flex flex-col">
+      <DrawerContent className="max-h-[92vh] flex flex-col max-w-lg mx-auto">
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-border">
           <div className="flex items-center justify-between mb-3">

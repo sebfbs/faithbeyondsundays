@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { ArrowLeft, Search, Church, Users, Share2, Loader2, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DEMO_MEMBERS, getFollows, markInviteSent, type CommunityMember } from "./communityData";
+import { DEMO_GROUPS } from "./demoData";
 import { getAccentColors } from "./themeColors";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -278,13 +279,13 @@ export default function CommunityScreen({
       )}
 
       {/* Groups section */}
-      {!isSearching && !isDemo && groups.length > 0 && (
+      {!isSearching && (isDemo ? DEMO_GROUPS : groups).length > 0 && (
         <>
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
             Groups
           </p>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
-            {groups.map((g) => (
+            {(isDemo ? DEMO_GROUPS : groups).map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGroup(g)}
