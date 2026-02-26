@@ -10,6 +10,7 @@ import { getAvatarColor } from "./avatarColors";
 interface GroupChatProps {
   groupId: string;
   isMember: boolean;
+  isDemo?: boolean;
 }
 
 interface Message {
@@ -20,7 +21,7 @@ interface Message {
   sender?: { first_name: string; last_name: string; avatar_url: string | null };
 }
 
-export default function GroupChat({ groupId, isMember }: GroupChatProps) {
+export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const colors = getAccentColors();
@@ -63,12 +64,12 @@ export default function GroupChat({ groupId, isMember }: GroupChatProps) {
         },
       })) as Message[];
     },
-    enabled: isMember,
+    enabled: isMember && !isDemo,
   });
 
   // Realtime subscription
   useEffect(() => {
-    if (!isMember) return;
+    if (!isMember || isDemo) return;
     const channel = supabase
       .channel(`group-chat-${groupId}`)
       .on(
