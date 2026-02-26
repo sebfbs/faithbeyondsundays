@@ -242,6 +242,7 @@ export default function Index() {
           onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); }}
           userChurchCode={userData.churchCode}
           userChurchName={userData.churchName}
+          userChurchId={profile?.church_id || undefined}
           isDemo={isDemo}
         />
       );
