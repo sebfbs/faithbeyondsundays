@@ -298,3 +298,14 @@ export const DEMO_COMMUNITY_PULSE = {
     { avatar_url: null as string | null, first_name: "David" },
   ],
 };
+
+export const DEMO_GROUPS = [
+  {
+    id: "demo-group-womens",
+    name: "Women's Group",
+    description: "A space for women to connect, share, and grow in faith together.",
+    memberCount: 12,
+    isMember: true,
+    hasUnread: false,
+  },
+];
