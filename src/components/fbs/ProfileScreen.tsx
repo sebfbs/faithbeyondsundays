@@ -44,7 +44,7 @@ const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier) => {
     badges.push({ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" });
   }
   if (hasInvited()) {
-    badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", color: "hsl(170 55% 45%)" });
+    badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", gradient: "linear-gradient(135deg, hsl(170, 70%, 45%), hsl(145, 65%, 50%), hsl(170, 70%, 45%))", animated: true });
   }
   if (user.role === "pastor") {
     badges.unshift({ icon: ShieldCheck, label: "Pastor", detail: user.churchName, color: "hsl(38 100% 47%)" });

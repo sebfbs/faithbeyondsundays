@@ -179,7 +179,7 @@ export default function CommunityScreen({
   const handleInvite = async () => {
     const shareData = {
       title: "Join Faith Beyond Sundays",
-      text: `Join me on Faith Beyond Sundays! Use church code '${userChurchCode}' to connect with ${userChurchName}.`,
+      text: "Join me on Faith Beyond Sundays! Download the app and start growing in your faith.",
       url: "https://faithbeyondsundays.lovable.app",
     };
     try {
@@ -242,7 +242,7 @@ export default function CommunityScreen({
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-semibold text-foreground">Invite a friend</p>
-            <p className="text-xs text-muted-foreground">Share your church code & earn a badge</p>
+            <p className="text-xs text-muted-foreground">Invite a friend & earn a badge</p>
           </div>
         </button>
       )}
