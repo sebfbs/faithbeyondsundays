@@ -19,6 +19,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -39,6 +40,20 @@ export default function AdminLayout() {
   const [churchName, setChurchName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
+
+  const { data: prayerCount = 0 } = useQuery({
+    queryKey: ["admin-unanswered-prayers", churchId],
+    enabled: !!churchId,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("prayer_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("church_id", churchId!)
+        .eq("is_answered", false);
+      return count ?? 0;
+    },
+  });
 
   // Check if admin has completed profile setup
   useEffect(() => {
@@ -141,6 +156,11 @@ export default function AdminLayout() {
             >
               <item.icon className="h-4 w-4" />
               <span>{item.title}</span>
+              {item.title === "Prayer" && prayerCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center ml-auto">
+                  {prayerCount > 99 ? "99+" : prayerCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

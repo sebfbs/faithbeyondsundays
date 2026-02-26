@@ -1,13 +1,16 @@
 import { useOutletContext } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Loader2, Heart, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function AdminPrayer() {
   const { churchId } = useOutletContext<{ churchId: string }>();
+  const queryClient = useQueryClient();
 
   const { data: prayers, isLoading } = useQuery({
     queryKey: ["admin", "prayers", churchId],
@@ -32,6 +35,24 @@ export default function AdminPrayer() {
       (profiles ?? []).forEach(p => { profileMap[p.user_id] = p; });
 
       return prayers.map(p => ({ ...p, profile: profileMap[p.user_id] || null }));
+    },
+  });
+
+  const markAsPrayed = useMutation({
+    mutationFn: async (prayerId: string) => {
+      const { error } = await supabase
+        .from("prayer_requests")
+        .update({ is_answered: true, answered_at: new Date().toISOString() })
+        .eq("id", prayerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "prayers", churchId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-unanswered-prayers", churchId] });
+      toast.success("Marked as prayed for");
+    },
+    onError: () => {
+      toast.error("Failed to update prayer request");
     },
   });
 
@@ -82,13 +103,25 @@ export default function AdminPrayer() {
                         <span className="text-xs text-muted-foreground">
                           🙏 {prayer.prayer_count} prayer{prayer.prayer_count !== 1 ? "s" : ""}
                         </span>
-                        {prayer.is_answered && (
+                      {prayer.is_answered && (
                           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-[10px] gap-1">
                             <CheckCircle2 className="h-3 w-3" /> Answered
                           </Badge>
                         )}
                       </div>
                     </div>
+                    {!prayer.is_answered && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 text-xs gap-1.5"
+                        disabled={markAsPrayed.isPending}
+                        onClick={() => markAsPrayed.mutate(prayer.id)}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Mark as Prayed
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
