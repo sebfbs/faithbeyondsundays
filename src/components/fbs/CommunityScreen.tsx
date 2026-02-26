@@ -404,6 +404,7 @@ export default function CommunityScreen({
           group={selectedGroup}
           isMember={selectedGroup.isMember}
           memberCount={selectedGroup.memberCount}
+          isDemo={isDemo}
         />
       )}
     </div>

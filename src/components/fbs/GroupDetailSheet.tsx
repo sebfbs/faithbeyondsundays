@@ -18,6 +18,7 @@ interface GroupDetailSheetProps {
   };
   isMember: boolean;
   memberCount: number;
+  isDemo?: boolean;
 }
 
 export default function GroupDetailSheet({
@@ -26,6 +27,7 @@ export default function GroupDetailSheet({
   group,
   isMember: initialIsMember,
   memberCount: initialMemberCount,
+  isDemo,
 }: GroupDetailSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -57,7 +59,7 @@ export default function GroupDetailSheet({
         avatarUrl: p.avatar_url,
       }));
     },
-    enabled: open,
+    enabled: open && !isDemo,
   });
 
   const isMember = members.some((m) => m.userId === user?.id) || initialIsMember;
@@ -118,7 +120,13 @@ export default function GroupDetailSheet({
               {memberCount} member{memberCount !== 1 ? "s" : ""}
             </p>
             <button
-              onClick={() => (isMember ? leaveMutation.mutate() : joinMutation.mutate())}
+              onClick={() => {
+                if (isDemo) {
+                  onClose();
+                  return;
+                }
+                isMember ? leaveMutation.mutate() : joinMutation.mutate();
+              }}
               disabled={isActing}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={
@@ -163,7 +171,7 @@ export default function GroupDetailSheet({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {tab === "chat" ? (
-            <GroupChat groupId={group.id} isMember={isMember} />
+            <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} />
           ) : (
             <div className="overflow-y-auto px-4 py-3 space-y-1">
               {membersLoading && (
