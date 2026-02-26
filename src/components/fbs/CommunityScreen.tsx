@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Search, Church, Users, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Church, Users, Share2, Loader2, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DEMO_MEMBERS, getFollows, markInviteSent, type CommunityMember } from "./communityData";
 import { getAccentColors } from "./themeColors";
@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import ChurchlessCommunity from "./ChurchlessCommunity";
+import GroupDetailSheet from "./GroupDetailSheet";
 
 interface CommunityScreenProps {
   onBack: () => void;
@@ -14,6 +15,15 @@ interface CommunityScreenProps {
   userChurchCode: string;
   userChurchName: string;
   isDemo?: boolean;
+}
+
+interface GroupInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  isMember: boolean;
+  hasUnread: boolean;
 }
 
 export default function CommunityScreen({
@@ -27,6 +37,60 @@ export default function CommunityScreen({
   const colors = getAccentColors();
   const follows = getFollows();
   const { user: authUser } = useAuth();
+  const [selectedGroup, setSelectedGroup] = useState<GroupInfo | null>(null);
+
+  // Fetch community groups
+  const { data: groups = [] } = useQuery({
+    queryKey: ["community-groups", userChurchCode],
+    queryFn: async () => {
+      // Fetch active groups for user's church
+      const { data: groupRows, error } = await supabase
+        .from("community_groups")
+        .select("id, name, description")
+        .eq("is_active", true);
+      if (error) throw error;
+      if (!groupRows?.length) return [] as GroupInfo[];
+
+      const groupIds = groupRows.map((g) => g.id);
+
+      // Fetch all memberships for these groups
+      const { data: memberships } = await supabase
+        .from("community_group_members")
+        .select("group_id, user_id")
+        .in("group_id", groupIds);
+
+      // Fetch latest message per group for unread indicator
+      const { data: latestMessages } = await supabase
+        .from("group_messages" as any)
+        .select("group_id, created_at")
+        .in("group_id", groupIds)
+        .order("created_at", { ascending: false });
+
+      // Build a map of group_id -> latest message time
+      const latestMsgMap = new Map<string, string>();
+      (latestMessages || []).forEach((m: any) => {
+        if (!latestMsgMap.has(m.group_id)) latestMsgMap.set(m.group_id, m.created_at);
+      });
+
+      return groupRows.map((g) => {
+        const members = (memberships || []).filter((m) => m.group_id === g.id);
+        const isMember = members.some((m) => m.user_id === authUser?.id);
+        const lastMsg = latestMsgMap.get(g.id);
+        const lastRead = localStorage.getItem(`group-chat-read-${g.id}`);
+        const hasUnread = isMember && !!lastMsg && (!lastRead || lastMsg > lastRead);
+
+        return {
+          id: g.id,
+          name: g.name,
+          description: g.description,
+          memberCount: members.length,
+          isMember,
+          hasUnread,
+        } as GroupInfo;
+      });
+    },
+    enabled: !isDemo && !!userChurchCode,
+  });
 
   // Fetch real community members from DB
   const { data: realMembers = [], isLoading } = useQuery({
@@ -37,14 +101,12 @@ export default function CommunityScreen({
         .select("*, churches(name, code)");
       if (error) throw error;
 
-      // Fetch roles visible in this church (RLS filters to same church)
       const { data: roles } = await supabase
         .from("user_roles")
         .select("user_id, role");
       const roleMap = new Map<string, string>();
       roles?.forEach((r) => roleMap.set(r.user_id, r.role));
 
-      // Fetch highest reflection badge per user
       const { data: badges } = await supabase
         .from("reflection_badges" as any)
         .select("user_id, milestone")
@@ -55,7 +117,7 @@ export default function CommunityScreen({
       });
 
       return (profiles || [])
-        .filter((p) => p.user_id !== authUser?.id) // exclude self
+        .filter((p) => p.user_id !== authUser?.id)
         .map((p) => ({
           username: p.username,
           firstName: p.first_name || "",
@@ -80,19 +142,16 @@ export default function CommunityScreen({
 
   const allMembers = isDemo ? DEMO_MEMBERS : realMembers;
 
-  const churchMembers = useMemo(
-    () => {
-      const filtered = isDemo
-        ? allMembers.filter((m) => m.churchCode === userChurchCode)
-        : allMembers; // Real data already filtered by RLS
-      return filtered.sort((a, b) => {
-        if (a.role === "pastor") return -1;
-        if (b.role === "pastor") return 1;
-        return 0;
-      });
-    },
-    [allMembers, userChurchCode, isDemo]
-  );
+  const churchMembers = useMemo(() => {
+    const filtered = isDemo
+      ? allMembers.filter((m) => m.churchCode === userChurchCode)
+      : allMembers;
+    return filtered.sort((a, b) => {
+      if (a.role === "pastor") return -1;
+      if (b.role === "pastor") return 1;
+      return 0;
+    });
+  }, [allMembers, userChurchCode, isDemo]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
@@ -129,7 +188,6 @@ export default function CommunityScreen({
     }
   };
 
-  // Churchless experience — full search UI
   if (!userChurchCode) {
     return <ChurchlessCommunity onBack={onBack} onViewProfile={onViewProfile} />;
   }
@@ -152,10 +210,7 @@ export default function CommunityScreen({
 
       {/* Search */}
       <div className="relative">
-        <Search
-          size={16}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-        />
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           value={search}
@@ -202,9 +257,7 @@ export default function CommunityScreen({
               <Church size={22} style={{ color: colors.accent }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">
-                {userChurchName}
-              </p>
+              <p className="text-sm font-bold text-foreground truncate">{userChurchName}</p>
               <p className="text-xs text-muted-foreground">
                 {churchMembers.length >= 15
                   ? `${churchMembers.length} member${churchMembers.length !== 1 ? "s" : ""}`
@@ -213,6 +266,49 @@ export default function CommunityScreen({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Groups section */}
+      {!isSearching && !isDemo && groups.length > 0 && (
+        <>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Groups
+          </p>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGroup(g)}
+                className="min-w-[160px] max-w-[200px] bg-card rounded-2xl p-4 shadow-card tap-active hover:shadow-card-hover transition-shadow text-left shrink-0 relative"
+              >
+                {g.hasUnread && (
+                  <div
+                    className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full"
+                    style={{ background: colors.accent }}
+                  />
+                )}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2.5"
+                  style={{ background: colors.accentBg }}
+                >
+                  <MessageCircle size={18} style={{ color: colors.accent }} />
+                </div>
+                <p className="text-sm font-semibold text-foreground truncate">{g.name}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {g.memberCount} member{g.memberCount !== 1 ? "s" : ""}
+                </p>
+                {g.isMember && (
+                  <div
+                    className="mt-2 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{ background: colors.accentBg, color: colors.accent }}
+                  >
+                    Joined
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Section label */}
@@ -243,25 +339,18 @@ export default function CommunityScreen({
               onClick={() => onViewProfile(member)}
               className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow text-left"
             >
-              {/* Avatar */}
               <div
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
                 style={{ background: "hsl(var(--muted))" }}
               >
                 {member.avatarUrl ? (
-                  <img
-                    src={member.avatarUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-sm font-bold text-muted-foreground">
-                    {member.firstName[0]}
-                    {member.lastName[0]}
+                    {member.firstName[0]}{member.lastName[0]}
                   </span>
                 )}
               </div>
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">
                   {member.firstName} {member.lastName}
@@ -280,13 +369,10 @@ export default function CommunityScreen({
                     </span>
                   )}
                   {isSearching && isDemo && (
-                    <span className="ml-1.5 text-muted-foreground/70">
-                      · {member.churchName}
-                    </span>
+                    <span className="ml-1.5 text-muted-foreground/70">· {member.churchName}</span>
                   )}
                 </p>
               </div>
-              {/* Following indicator */}
               {follows.includes(member.username) && (
                 <div
                   className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
@@ -298,6 +384,17 @@ export default function CommunityScreen({
             </button>
           ))}
         </div>
+      )}
+
+      {/* Group detail sheet */}
+      {selectedGroup && (
+        <GroupDetailSheet
+          open={!!selectedGroup}
+          onClose={() => setSelectedGroup(null)}
+          group={selectedGroup}
+          isMember={selectedGroup.isMember}
+          memberCount={selectedGroup.memberCount}
+        />
       )}
     </div>
   );
