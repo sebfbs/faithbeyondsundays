@@ -7,6 +7,7 @@ import { useAuth } from "./AuthProvider";
 import { getAccentColors } from "./themeColors";
 import GroupChat from "./GroupChat";
 import { getAvatarColor } from "./avatarColors";
+import { DEMO_GROUP_MEMBERS } from "./demoData";
 
 interface GroupDetailSheetProps {
   open: boolean;
@@ -65,8 +66,10 @@ export default function GroupDetailSheet({
     enabled: open && !isDemo,
   });
 
+  const demoMembers = isDemo ? (DEMO_GROUP_MEMBERS[group.id] || []) : [];
   const isMember = isDemo ? demoMember : (members.some((m) => m.userId === user?.id) || initialIsMember);
-  const memberCount = isDemo ? initialMemberCount : (members.length || initialMemberCount);
+  const displayMembers = isDemo ? demoMembers : members;
+  const memberCount = isDemo ? demoMembers.length : (members.length || initialMemberCount);
 
   // Join mutation
   const joinMutation = useMutation({
@@ -183,17 +186,17 @@ export default function GroupDetailSheet({
             <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} />
           ) : (
             <div className="overflow-y-auto px-4 py-3 space-y-1">
-              {membersLoading && (
+              {membersLoading && !isDemo && (
                 <div className="flex justify-center py-8">
                   <Loader2 size={20} className="animate-spin text-muted-foreground" />
                 </div>
               )}
-              {!membersLoading && members.length === 0 && (
+              {!membersLoading && displayMembers.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">
                   No members yet — be the first to join!
                 </p>
               )}
-              {members.map((m) => (
+              {displayMembers.map((m) => (
                 <div
                   key={m.userId}
                   className="flex items-center gap-3 p-3 rounded-xl"
