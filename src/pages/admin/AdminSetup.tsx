@@ -259,7 +259,7 @@ export default function AdminSetup() {
                     <Input
                       id="username"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                       placeholder="yourname"
                       required
                       maxLength={30}
