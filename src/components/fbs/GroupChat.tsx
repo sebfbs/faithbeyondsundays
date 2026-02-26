@@ -242,7 +242,7 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
       </div>
 
       {/* Input */}
-      <div className="border-t border-border px-4 py-3 flex gap-2 items-end">
+      <div className="border-t border-border px-4 py-3 flex gap-2 items-end" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
