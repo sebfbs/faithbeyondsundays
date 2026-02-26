@@ -1,85 +1,44 @@
 
 
-## Community Groups with Group Chat
+## Fix: Church Data Compartmentalization on Community Page
 
-### Overview
-Connect the admin-created groups (like "Men's Group", "Married Couples") to the member-facing Community page. Members can browse groups, join/leave them, see other members, and chat within groups. Group chat will NOT send push notifications -- only in-app unread indicators.
+### Problem
+The Community page currently shows members, roles, and groups from ALL churches instead of only the logged-in user's church. This is a data isolation bug -- church data must stay within each church.
 
-### What Members Will See
+### What Changes
 
-**On the Community page** (between the Church card and Church Members list):
-- A "Groups" section showing cards for each active group
-- Each card shows: group name, description snippet, member count, and a "Join" or "Joined" badge
-- Tapping a group opens a Group Detail screen
+**1. Pass `userChurchId` (UUID) from Index.tsx to CommunityScreen**
 
-**Group Detail screen:**
-- Group name, description, member count
-- Join/Leave button
-- Member list (avatars + names)
-- Group Chat tab -- a simple message feed within the group
-- Community guidelines reminder popup shown once when a user first sends a message
+The parent component already has the user's profile with `church_id`. We'll thread it through as a new prop so the Community page can filter queries properly.
 
-**Group Chat behavior:**
-- No push notifications by default -- just an unread dot/badge on the group card
-- Simple message feed: text messages with sender name, avatar, timestamp
-- A gentle community guidelines reminder the first time a user sends a message in any group chat
-- Messages are only visible to group members
+**2. Filter profiles query by `church_id`**
 
-### Database Changes
+Currently fetches all profiles. Will add `.eq("church_id", userChurchId)` so only same-church members appear in the Church Members list.
 
-**1. New table: `group_messages`**
-- `id` (uuid, PK)
-- `group_id` (uuid, FK to community_groups)
-- `user_id` (uuid, not null)
-- `content` (text, not null)
-- `created_at` (timestamptz, default now())
+**3. Filter user_roles query by `church_id`**
 
-**2. RLS policies on `group_messages`:**
-- SELECT: User must be a member of the group (`EXISTS` check on `community_group_members`)
-- INSERT: User must be a member of the group AND `user_id = auth.uid()`
-- DELETE: `user_id = auth.uid()` (users can delete their own messages)
+Currently fetches all roles across all churches. Will add `.eq("church_id", userChurchId)` so role badges (Pastor, Staff, etc.) only reflect the user's church.
 
-**3. Enable realtime** on `group_messages` so chat updates live
+**4. Add explicit `church_id` filter to community_groups query**
 
-**4. New table: `group_chat_acknowledgements`** (tracks if user has seen the guidelines popup)
-- `id` (uuid, PK)
-- `user_id` (uuid, not null)
-- `acknowledged_at` (timestamptz, default now())
-- Unique on `user_id`
-- RLS: users can read/insert their own row
+RLS already handles this, but adding `.eq("church_id", userChurchId)` as defense-in-depth.
 
-### Frontend Changes
+**5. Clean up `churchMembers` memo**
 
-**1. Update `CommunityScreen.tsx`**
-- Add query for `community_groups` (filtered to user's church, `is_active = true`)
-- Add query for `community_group_members` to get user's memberships and member counts
-- Render a "Groups" section with horizontal scrollable group cards between Church card and Church Members
-- Each card shows name, member count, and Joined/Join indicator
+The memo currently only filters by `churchCode` in demo mode and passes everything through in real mode. Once the query is properly filtered, this becomes simpler.
 
-**2. New component: `GroupDetailSheet.tsx`**
-- Bottom drawer that opens when tapping a group
-- Two sections: "Members" tab and "Chat" tab
-- Members tab: list of group members with avatars, names
-- Chat tab: scrollable message feed with text input at bottom
-- Join/Leave button in the header
-- If user is not a member, show a "Join to chat" prompt instead of the chat input
+### Result
+- Cornerstone members only see Cornerstone members, groups, and roles
+- Pennhurst members only see Pennhurst members, groups, and roles
+- Cross-church profile discovery remains available ONLY in the search/follow bar (intentional)
 
-**3. New component: `GroupChat.tsx`**
-- Message feed using realtime subscription on `group_messages`
-- Text input with send button
-- Messages show sender avatar, name, timestamp
-- Auto-scroll to bottom on new messages
-- On first message attempt, check `group_chat_acknowledgements` -- if no row exists, show a friendly guidelines dialog before sending
+### Files Changed
 
-**4. New component: `CommunityGuidelinesDialog.tsx`**
-- Friendly popup: "Welcome to group chat! This is a place to connect, encourage, and support each other. Please keep conversations uplifting and respectful."
-- Single "I Agree" button that inserts into `group_chat_acknowledgements` and then sends the message
+| File | Change |
+|------|--------|
+| `src/components/fbs/CommunityScreen.tsx` | Add `userChurchId` prop; add `.eq("church_id", ...)` to profiles, user_roles, and community_groups queries |
+| `src/pages/Index.tsx` | Pass `userChurchId` from the user's profile to CommunityScreen |
 
-### Admin Side
-- No changes needed to `AdminGroups.tsx` -- it already creates/manages groups
-- Admins will see member counts update as people join
-
-### No Push Notifications
-- Group chat messages will NOT trigger any push notifications
-- Unread state will be tracked client-side only (simple: compare last message timestamp vs last time user opened that group chat, stored in localStorage)
+### No Database Changes Needed
+The RLS policies are correct as-is. This is purely an application-level query filtering fix.
 
