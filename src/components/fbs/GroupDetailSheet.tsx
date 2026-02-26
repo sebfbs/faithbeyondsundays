@@ -156,28 +156,30 @@ export default function GroupDetailSheet({
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 mt-3 bg-muted rounded-xl p-1">
-            {(["chat", "members"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  tab === t
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {t === "chat" ? <MessageCircle size={13} /> : <Users size={13} />}
-                {t === "chat" ? "Chat" : "Members"}
-              </button>
-            ))}
-          </div>
+          {/* Tabs - only show if member */}
+          {isMember && (
+            <div className="flex gap-1 mt-3 bg-muted rounded-xl p-1">
+              {(["chat", "members"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    tab === t
+                      ? "bg-card shadow-sm text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {t === "chat" ? <MessageCircle size={13} /> : <Users size={13} />}
+                  {t === "chat" ? "Chat" : "Members"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          {tab === "chat" ? (
+          {isMember && tab === "chat" ? (
             <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} />
           ) : (
             <div className="overflow-y-auto px-4 py-3 space-y-1">
