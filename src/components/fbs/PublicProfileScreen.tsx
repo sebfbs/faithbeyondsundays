@@ -161,6 +161,9 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
         <h2 className="text-lg font-bold text-foreground">
           {member.firstName} {member.lastName}
         </h2>
+        {member.churchName && (
+          <p className="text-sm text-muted-foreground mt-0.5">{member.churchName}</p>
+        )}
 
         {/* Follower / Following counts */}
         <div className="flex items-center gap-4 mt-2">
