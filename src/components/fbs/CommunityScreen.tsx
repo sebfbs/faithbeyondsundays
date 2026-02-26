@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import ChurchlessCommunity from "./ChurchlessCommunity";
 import GroupDetailSheet from "./GroupDetailSheet";
+import { getAvatarColor } from "./avatarColors";
 
 interface CommunityScreenProps {
   onBack: () => void;
@@ -349,12 +350,12 @@ export default function CommunityScreen({
             >
               <div
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-                style={{ background: "hsl(var(--muted))" }}
+                style={{ background: member.avatarUrl ? "hsl(var(--muted))" : getAvatarColor(member.username) }}
               >
                 {member.avatarUrl ? (
                   <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-sm font-bold text-muted-foreground">
+                  <span className="text-sm font-bold text-white">
                     {member.firstName[0]}{member.lastName[0]}
                   </span>
                 )}

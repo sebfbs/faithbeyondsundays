@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { getAccentColors } from "./themeColors";
 import GroupChat from "./GroupChat";
+import { getAvatarColor } from "./avatarColors";
 
 interface GroupDetailSheetProps {
   open: boolean;
@@ -180,11 +181,14 @@ export default function GroupDetailSheet({
                   key={m.userId}
                   className="flex items-center gap-3 p-3 rounded-xl"
                 >
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+                    style={{ background: m.avatarUrl ? "hsl(var(--muted))" : getAvatarColor(m.username || "") }}
+                  >
                     {m.avatarUrl ? (
                       <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-bold text-muted-foreground">
+                      <span className="text-xs font-bold text-white">
                         {m.firstName[0]}{m.lastName[0]}
                       </span>
                     )}
