@@ -6,6 +6,7 @@ import { DEMO_COMMUNITY_PULSE } from "./demoData";
 import { getBadgeTier } from "./badgeConfig";
 import { getAccentColors } from "./themeColors";
 import { formatDistanceToNow } from "date-fns";
+import { getAvatarColor } from "./avatarColors";
 
 interface CommunityPulseProps {
   churchId?: string;
@@ -183,12 +184,12 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
               <div
                 key={i}
                 className="w-7 h-7 rounded-full border-2 border-white overflow-hidden flex items-center justify-center"
-                style={{ background: "hsl(var(--muted))" }}
+                style={{ background: a.avatar_url ? "hsl(var(--muted))" : getAvatarColor(a.first_name || "?") }}
               >
                 {a.avatar_url ? (
                   <img src={a.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[9px] font-bold text-muted-foreground">
+                  <span className="text-[9px] font-bold text-white">
                     {a.first_name?.[0] || "?"}
                   </span>
                 )}

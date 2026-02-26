@@ -12,6 +12,7 @@ import {
   getFollows,
   toggleFollow,
 } from "./communityData";
+import { getAvatarColor } from "./avatarColors";
 
 interface FollowListSheetProps {
   userId: string;
@@ -121,12 +122,12 @@ export default function FollowListSheet({ userId, mode, onClose, onViewProfile, 
               >
                 <div
                   className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-                  style={{ background: "hsl(var(--muted))" }}
+                  style={{ background: u.avatarUrl ? "hsl(var(--muted))" : getAvatarColor(u.username) }}
                 >
                   {u.avatarUrl ? (
                     <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-sm font-bold text-muted-foreground">
+                    <span className="text-sm font-bold text-white">
                       {u.firstName?.[0] || ""}
                       {u.lastName?.[0] || ""}
                     </span>

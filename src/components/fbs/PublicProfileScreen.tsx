@@ -7,6 +7,7 @@ import FollowListSheet from "./FollowListSheet";
 import type { FollowListUser } from "./communityData";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
+import { getAvatarColor } from "./avatarColors";
 
 interface PublicProfileScreenProps {
   member: CommunityMember & { hasInvited?: boolean; reflectionMilestone?: number };
@@ -147,12 +148,12 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
       <div className="flex flex-col items-center pt-2 pb-2">
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-card mb-3 overflow-hidden"
-          style={{ background: colors.accentBg }}
+          style={{ background: member.avatarUrl ? colors.accentBg : getAvatarColor(member.username) }}
         >
           {member.avatarUrl ? (
             <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-2xl font-bold" style={{ color: colors.accent }}>
+            <span className="text-2xl font-bold text-white">
               {member.firstName[0]}
               {member.lastName[0]}
             </span>
