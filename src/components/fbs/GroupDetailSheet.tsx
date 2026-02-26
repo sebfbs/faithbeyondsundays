@@ -181,7 +181,7 @@ export default function GroupDetailSheet({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
           {isMember && tab === "chat" ? (
             <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} />
           ) : (

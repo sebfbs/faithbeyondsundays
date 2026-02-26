@@ -181,9 +181,9 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 px-4 py-3 space-y-3" style={{ overflowY: "auto", minHeight: 0, WebkitOverflowScrolling: "touch" }}>
         {isLoading && (
           <div className="flex justify-center py-8">
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
