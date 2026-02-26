@@ -14,6 +14,7 @@ interface CommunityScreenProps {
   onViewProfile: (member: CommunityMember) => void;
   userChurchCode: string;
   userChurchName: string;
+  userChurchId?: string;
   isDemo?: boolean;
 }
 
@@ -31,6 +32,7 @@ export default function CommunityScreen({
   onViewProfile,
   userChurchCode,
   userChurchName,
+  userChurchId,
   isDemo,
 }: CommunityScreenProps) {
   const [search, setSearch] = useState("");
@@ -44,10 +46,12 @@ export default function CommunityScreen({
     queryKey: ["community-groups", userChurchCode],
     queryFn: async () => {
       // Fetch active groups for user's church
-      const { data: groupRows, error } = await supabase
+      let query = supabase
         .from("community_groups")
         .select("id, name, description")
         .eq("is_active", true);
+      if (userChurchId) query = query.eq("church_id", userChurchId);
+      const { data: groupRows, error } = await query;
       if (error) throw error;
       if (!groupRows?.length) return [] as GroupInfo[];
 
@@ -96,14 +100,18 @@ export default function CommunityScreen({
   const { data: realMembers = [], isLoading } = useQuery({
     queryKey: ["community-members", userChurchCode],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
+      let profilesQuery = supabase
         .from("profiles")
         .select("*, churches(name, code)");
+      if (userChurchId) profilesQuery = profilesQuery.eq("church_id", userChurchId);
+      const { data: profiles, error } = await profilesQuery;
       if (error) throw error;
 
-      const { data: roles } = await supabase
+      let rolesQuery = supabase
         .from("user_roles")
         .select("user_id, role");
+      if (userChurchId) rolesQuery = rolesQuery.eq("church_id", userChurchId);
+      const { data: roles } = await rolesQuery;
       const roleMap = new Map<string, string>();
       roles?.forEach((r) => roleMap.set(r.user_id, r.role));
 
