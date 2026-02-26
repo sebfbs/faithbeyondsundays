@@ -53,6 +53,7 @@ export const DEMO_MEMBERS: CommunityMember[] = [
     memberSince: "Jan 2025",
     challengesCompleted: 7,
     isGroupMember: false,
+    hasInvited: true,
   },
   {
     username: "grace_obi",
