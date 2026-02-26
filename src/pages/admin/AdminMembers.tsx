@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/components/fbs/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,30 @@ const roleColors: Record<string, string> = {
 
 export default function AdminMembers() {
   const { churchId } = useOutletContext<{ churchId: string }>();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+
+  // Fetch current user's role in this church
+  const { data: currentUserRole } = useQuery({
+    queryKey: ["admin", "my-role", churchId],
+    enabled: !!churchId && !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("church_id", churchId);
+      if (!data || data.length === 0) return "member";
+      const priority = ["owner", "admin", "pastor", "leader", "member"];
+      const sorted = [...data].sort(
+        (a, b) => priority.indexOf(a.role) - priority.indexOf(b.role)
+      );
+      return sorted[0].role;
+    },
+  });
+
+  const isOwner = currentUserRole === "owner";
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["admin", "members", churchId],
@@ -40,7 +63,6 @@ export default function AdminMembers() {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Fetch roles for all members
       const userIds = profiles.map((p) => p.user_id);
       const { data: roles } = await supabase
         .from("user_roles")
@@ -50,7 +72,6 @@ export default function AdminMembers() {
 
       const roleMap: Record<string, string> = {};
       (roles ?? []).forEach((r) => {
-        // Keep highest priority role
         const priority = ["owner", "admin", "pastor", "leader", "member"];
         if (!roleMap[r.user_id] || priority.indexOf(r.role) < priority.indexOf(roleMap[r.user_id])) {
           roleMap[r.user_id] = r.role;
@@ -67,7 +88,8 @@ export default function AdminMembers() {
 
   const updateRole = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
-      // Delete existing role for this church, then insert new one
+      // Use upsert pattern: delete then insert in a single flow
+      // The DB triggers enforce server-side validation
       await supabase
         .from("user_roles")
         .delete()
@@ -83,9 +105,17 @@ export default function AdminMembers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "my-role"] });
       toast.success("Role updated");
     },
-    onError: () => toast.error("Failed to update role"),
+    onError: (err: any) => {
+      const msg = err?.message || "";
+      if (msg.includes("owner")) {
+        toast.error(msg);
+      } else {
+        toast.error("Failed to update role");
+      }
+    },
   });
 
   const filtered = (members ?? []).filter(
@@ -93,6 +123,18 @@ export default function AdminMembers() {
       m.displayName.toLowerCase().includes(search.toLowerCase()) ||
       m.username.toLowerCase().includes(search.toLowerCase())
   );
+
+  const isDropdownDisabled = (member: { user_id: string; role: string }) => {
+    // Can't change your own role
+    if (member.user_id === user?.id) return true;
+    // Only owner can change another owner's role
+    if (member.role === "owner" && !isOwner) return true;
+    return false;
+  };
+
+  const availableRoles = isOwner
+    ? ["owner", "admin", "pastor", "leader", "member"]
+    : ["admin", "pastor", "leader", "member"];
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
@@ -128,36 +170,50 @@ export default function AdminMembers() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filtered.map((member) => (
-            <Card key={member.id} className="shadow-card">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground shrink-0">
-                  {member.displayName.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{member.displayName}</p>
-                  <p className="text-xs text-muted-foreground">@{member.username}</p>
-                </div>
-                <Select
-                  value={member.role}
-                  onValueChange={(val) =>
-                    updateRole.mutate({ userId: member.user_id, newRole: val })
-                  }
-                >
-                  <SelectTrigger className="w-28 h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="owner">Owner</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="pastor">Pastor</SelectItem>
-                    <SelectItem value="leader">Leader</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          ))}
+          {filtered.map((member) => {
+            const disabled = isDropdownDisabled(member);
+            return (
+              <Card key={member.id} className="shadow-card">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground shrink-0">
+                    {member.displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {member.displayName}
+                      {member.user_id === user?.id && (
+                        <span className="text-xs text-muted-foreground ml-1">(you)</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">@{member.username}</p>
+                  </div>
+                  {disabled ? (
+                    <Badge variant="outline" className={`text-xs ${roleColors[member.role] || ""}`}>
+                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                    </Badge>
+                  ) : (
+                    <Select
+                      value={member.role}
+                      onValueChange={(val) =>
+                        updateRole.mutate({ userId: member.user_id, newRole: val })
+                      }
+                    >
+                      <SelectTrigger className="w-28 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableRoles.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r.charAt(0).toUpperCase() + r.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
