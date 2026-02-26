@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
 import { getAccentColors } from "./themeColors";
+import { getAvatarColor } from "./avatarColors";
 
 interface GroupChatProps {
   groupId: string;
@@ -196,11 +197,14 @@ export default function GroupChat({ groupId, isMember }: GroupChatProps) {
               className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : ""}`}
             >
               {/* Avatar */}
-              <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+              <div
+                className="w-8 h-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
+                style={{ background: msg.sender?.avatar_url ? "hsl(var(--muted))" : getAvatarColor(msg.sender?.first_name || "U") }}
+              >
                 {msg.sender?.avatar_url ? (
                   <img src={msg.sender.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[10px] font-bold text-muted-foreground">
+                  <span className="text-[10px] font-bold text-white">
                     {msg.sender?.first_name?.[0]}{msg.sender?.last_name?.[0]}
                   </span>
                 )}

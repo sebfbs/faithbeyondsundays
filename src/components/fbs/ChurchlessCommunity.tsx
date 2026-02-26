@@ -7,6 +7,7 @@ import { useAuth } from "./AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
 import type { CommunityMember } from "./communityData";
+import { getAvatarColor } from "./avatarColors";
 
 interface ChurchlessCommunityProps {
   onBack: () => void;
@@ -235,12 +236,12 @@ export default function ChurchlessCommunity({ onBack, onViewProfile }: Churchles
               >
                 <div
                   className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-                  style={{ background: "hsl(var(--muted))" }}
+                  style={{ background: member.avatarUrl ? "hsl(var(--muted))" : getAvatarColor(member.username) }}
                 >
                   {member.avatarUrl ? (
                     <img src={member.avatarUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-sm font-bold text-muted-foreground">
+                    <span className="text-sm font-bold text-white">
                       {member.firstName?.[0] || ""}
                       {member.lastName?.[0] || ""}
                     </span>

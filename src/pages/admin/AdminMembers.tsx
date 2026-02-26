@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Search, Users } from "lucide-react";
 import { toast } from "sonner";
+import { getAvatarColor } from "@/components/fbs/avatarColors";
 
 const roleColors: Record<string, string> = {
   owner: "bg-primary/10 text-primary",
@@ -175,8 +176,15 @@ export default function AdminMembers() {
             return (
               <Card key={member.id} className="shadow-card">
                 <CardContent className="p-4 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground shrink-0">
-                    {member.displayName.charAt(0).toUpperCase()}
+                  <div
+                    className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold text-white shrink-0"
+                    style={{ background: member.avatar_url ? "hsl(var(--muted))" : getAvatarColor(member.displayName) }}
+                  >
+                    {member.avatar_url ? (
+                      <img src={member.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      member.displayName.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">
