@@ -83,7 +83,7 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
       ? [{ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150, 55%, 45%)" }]
       : []),
     ...(member.hasInvited
-      ? [{ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", gradient: "linear-gradient(135deg, hsl(170, 70%, 45%), hsl(145, 65%, 50%), hsl(170, 70%, 45%))", animated: true }]
+      ? [{ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", gradient: "linear-gradient(135deg, hsl(170, 80%, 40%), hsl(45, 95%, 55%), hsl(280, 60%, 55%), hsl(170, 80%, 40%))", animated: true }]
       : []),
   ];
 
