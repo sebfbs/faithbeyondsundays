@@ -6,6 +6,7 @@ import { useAuth } from "./AuthProvider";
 import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
 import { getAccentColors } from "./themeColors";
 import { getAvatarColor } from "./avatarColors";
+import { DEMO_GROUP_MESSAGES } from "./demoData";
 
 interface GroupChatProps {
   groupId: string;
@@ -66,6 +67,9 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
     },
     enabled: isMember && !isDemo,
   });
+
+  const demoMessages = isDemo ? (DEMO_GROUP_MESSAGES[groupId] || []) : [];
+  const displayMessages = isDemo ? demoMessages : messages;
 
   // Realtime subscription
   useEffect(() => {
@@ -185,12 +189,12 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
           </div>
         )}
-        {!isLoading && messages.length === 0 && (
+        {!isLoading && displayMessages.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-12">
             No messages yet — start the conversation!
           </p>
         )}
-        {messages.map((msg) => {
+        {displayMessages.map((msg) => {
           const isMe = msg.user_id === user?.id;
           return (
             <div

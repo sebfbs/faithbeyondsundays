@@ -368,3 +368,46 @@ export const DEMO_GROUP_MEMBERS: Record<string, { userId: string; firstName: str
     { userId: "demo-aaron", firstName: "Aaron", lastName: "Robinson", username: "aaron_r", avatarUrl: null },
   ],
 };
+
+/** Demo chat messages keyed by group id */
+export const DEMO_GROUP_MESSAGES: Record<string, { id: string; user_id: string; content: string; created_at: string; sender: { first_name: string; last_name: string; avatar_url: string | null } }[]> = {
+  "demo-group-womens": [
+    { id: "wm1", user_id: "demo-sarah", content: "Good morning everyone! 🌸 Hope you all had a restful weekend.", created_at: "2026-02-25T09:14:00Z", sender: { first_name: "Sarah", last_name: "Mitchell", avatar_url: null } },
+    { id: "wm2", user_id: "demo-grace", content: "Morning Sarah! It was so good. We finally tried that new brunch spot after church 😄", created_at: "2026-02-25T09:18:00Z", sender: { first_name: "Grace", last_name: "Obi", avatar_url: null } },
+    { id: "wm3", user_id: "demo-rachel", content: "Oh which one?? I've been wanting to try somewhere new", created_at: "2026-02-25T09:20:00Z", sender: { first_name: "Rachel", last_name: "Henderson", avatar_url: null } },
+    { id: "wm4", user_id: "demo-grace", content: "The Fig & Olive on Main St! The avocado toast is 🔥", created_at: "2026-02-25T09:22:00Z", sender: { first_name: "Grace", last_name: "Obi", avatar_url: null } },
+    { id: "wm5", user_id: "demo-faith", content: "Ladies, did anyone else get hit hard by Sunday's sermon? I keep going back to that part about grace meeting us in the storm.", created_at: "2026-02-25T10:05:00Z", sender: { first_name: "Faith", last_name: "Nwosu", avatar_url: null } },
+    { id: "wm6", user_id: "demo-naomi", content: "YES. I literally wrote that whole section down in my journal. So needed.", created_at: "2026-02-25T10:12:00Z", sender: { first_name: "Naomi", last_name: "Williams", avatar_url: null } },
+    { id: "wm7", user_id: "demo-sarah", content: "Same here. I've been going through a tough season at work and it just felt like God was speaking directly to me.", created_at: "2026-02-25T10:18:00Z", sender: { first_name: "Sarah", last_name: "Mitchell", avatar_url: null } },
+    { id: "wm8", user_id: "demo-maya", content: "Praying for you Sarah 💛 You're not alone in this!", created_at: "2026-02-25T10:22:00Z", sender: { first_name: "Maya", last_name: "Thompson", avatar_url: null } },
+    { id: "wm9", user_id: "demo-olivia", content: "Are we still doing coffee this Thursday? I can book the back room at Blue Door.", created_at: "2026-02-25T14:30:00Z", sender: { first_name: "Olivia", last_name: "Jackson", avatar_url: null } },
+    { id: "wm10", user_id: "demo-abigail", content: "I'm in! 🙋‍♀️", created_at: "2026-02-25T14:35:00Z", sender: { first_name: "Abigail", last_name: "Clark", avatar_url: null } },
+    { id: "wm11", user_id: "demo-grace", content: "Count me in too!", created_at: "2026-02-25T14:38:00Z", sender: { first_name: "Grace", last_name: "Obi", avatar_url: null } },
+    { id: "wm12", user_id: "demo-hannah", content: "Same! What time works for everyone?", created_at: "2026-02-25T14:45:00Z", sender: { first_name: "Hannah", last_name: "Lopez", avatar_url: null } },
+    { id: "wm13", user_id: "demo-olivia", content: "How about 7pm? After the kids are settled 😅", created_at: "2026-02-25T14:50:00Z", sender: { first_name: "Olivia", last_name: "Jackson", avatar_url: null } },
+    { id: "wm14", user_id: "demo-zoe", content: "Perfect. See you all there! 🫶", created_at: "2026-02-25T15:02:00Z", sender: { first_name: "Zoe", last_name: "Foster", avatar_url: null } },
+  ],
+  "demo-group-mens": [
+    { id: "mm1", user_id: "demo-james", content: "Hey men, just wanted to check in. How's everyone doing this week?", created_at: "2026-02-25T07:30:00Z", sender: { first_name: "James", last_name: "Whitfield", avatar_url: null } },
+    { id: "mm2", user_id: "demo-marcus", content: "Honestly been a tough week at work. Appreciate you asking, Pastor.", created_at: "2026-02-25T07:45:00Z", sender: { first_name: "Marcus", last_name: "Johnson", avatar_url: null } },
+    { id: "mm3", user_id: "demo-david", content: "Praying for you Marcus. Anything specific we can lift up?", created_at: "2026-02-25T07:52:00Z", sender: { first_name: "David", last_name: "Chen", avatar_url: null } },
+    { id: "mm4", user_id: "demo-marcus", content: "Just wisdom and patience. Boss is making some changes that affect my whole team. Trying to lead well through it.", created_at: "2026-02-25T08:01:00Z", sender: { first_name: "Marcus", last_name: "Johnson", avatar_url: null } },
+    { id: "mm5", user_id: "demo-joshua", content: "Been there man. Romans 8:28 got me through a similar season last year.", created_at: "2026-02-25T08:10:00Z", sender: { first_name: "Joshua", last_name: "Brooks", avatar_url: null } },
+    { id: "mm6", user_id: "demo-james", content: "Good word Joshua. Marcus, let's grab coffee this week — I'd love to hear more and pray with you.", created_at: "2026-02-25T08:15:00Z", sender: { first_name: "James", last_name: "Whitfield", avatar_url: null } },
+    { id: "mm7", user_id: "demo-marcus", content: "Would love that. Thanks guys 🙏", created_at: "2026-02-25T08:20:00Z", sender: { first_name: "Marcus", last_name: "Johnson", avatar_url: null } },
+    { id: "mm8", user_id: "demo-caleb", content: "Reminder: basketball this Saturday at 9am at the rec center! Who's coming?", created_at: "2026-02-25T12:00:00Z", sender: { first_name: "Caleb", last_name: "Stewart", avatar_url: null } },
+    { id: "mm9", user_id: "demo-ethan", content: "I'll be there 🏀", created_at: "2026-02-25T12:15:00Z", sender: { first_name: "Ethan", last_name: "Lewis", avatar_url: null } },
+    { id: "mm10", user_id: "demo-noah", content: "Same! Bringing my brother this time if that's cool", created_at: "2026-02-25T12:22:00Z", sender: { first_name: "Noah", last_name: "Anderson", avatar_url: null } },
+    { id: "mm11", user_id: "demo-caleb", content: "The more the merrier! 💪", created_at: "2026-02-25T12:25:00Z", sender: { first_name: "Caleb", last_name: "Stewart", avatar_url: null } },
+  ],
+  "demo-group-couples": [
+    { id: "cm1", user_id: "demo-ruth", content: "Hey couples! Anyone interested in a double date night this Friday?", created_at: "2026-02-24T18:00:00Z", sender: { first_name: "Ruth", last_name: "Phillips", avatar_url: null } },
+    { id: "cm2", user_id: "demo-rachel", content: "Yes!! We've been looking for an excuse to get out of the house 😂", created_at: "2026-02-24T18:15:00Z", sender: { first_name: "Rachel", last_name: "Henderson", avatar_url: null } },
+    { id: "cm3", user_id: "demo-mike", content: "We're in! Any restaurant suggestions?", created_at: "2026-02-24T18:30:00Z", sender: { first_name: "Michael", last_name: "Patterson", avatar_url: null } },
+    { id: "cm4", user_id: "demo-miriam", content: "How about that Italian place downtown? They have great family-style dishes.", created_at: "2026-02-24T18:45:00Z", sender: { first_name: "Miriam", last_name: "Davis", avatar_url: null } },
+    { id: "cm5", user_id: "demo-samuel", content: "Seconded! Miriam and I went last month and it was amazing.", created_at: "2026-02-24T19:00:00Z", sender: { first_name: "Samuel", last_name: "Nguyen", avatar_url: null } },
+    { id: "cm6", user_id: "demo-sarah", content: "Also — has anyone started the couples devotional Pastor James recommended? David and I just started chapter 2.", created_at: "2026-02-25T09:30:00Z", sender: { first_name: "Sarah", last_name: "Mitchell", avatar_url: null } },
+    { id: "cm7", user_id: "demo-aaron", content: "We're on chapter 3! It's really opened up some great conversations for us.", created_at: "2026-02-25T10:00:00Z", sender: { first_name: "Aaron", last_name: "Robinson", avatar_url: null } },
+    { id: "cm8", user_id: "demo-ruth", content: "Love hearing that! We should discuss it at the next meetup 📖", created_at: "2026-02-25T10:15:00Z", sender: { first_name: "Ruth", last_name: "Phillips", avatar_url: null } },
+  ],
+};
