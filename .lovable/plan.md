@@ -1,49 +1,85 @@
 
 
-## Add "Team" Page to Church Admin Dashboard
+## Community Groups with Group Chat
 
 ### Overview
-A new "Team" tab in the church admin sidebar lets existing owners/admins invite additional team members (admin or pastor roles) by email. Invited people receive a branded email and go through the existing admin onboarding flow at `/admin/setup`.
+Connect the admin-created groups (like "Men's Group", "Married Couples") to the member-facing Community page. Members can browse groups, join/leave them, see other members, and chat within groups. Group chat will NOT send push notifications -- only in-app unread indicators.
 
-### What you'll see
-- A new "Team" item in the admin sidebar (between Notifications and Settings)
-- A page showing all current team members (owners, admins, pastors) with their name, email, role, and join date
-- An "Invite Team Member" button that opens a dialog where you enter an email and pick a role (Admin or Pastor)
-- The invited person gets a branded email saying they've been invited to help manage the church, with a "Get Started" button
-- Clicking the link takes them through the existing admin setup flow (name, password, username)
+### What Members Will See
 
-### Changes
+**On the Community page** (between the Church card and Church Members list):
+- A "Groups" section showing cards for each active group
+- Each card shows: group name, description snippet, member count, and a "Join" or "Joined" badge
+- Tapping a group opens a Group Detail screen
 
-**1. New backend function: `supabase/functions/invite-church-admin/index.ts`**
-- Accepts `church_id`, `email`, and `role` (admin or pastor)
-- Verifies the caller has owner or admin role in that specific church (not platform admin -- church-level authorization)
-- Uses service role to find or create the user account
-- Assigns the chosen role + creates a profile row (with `onboarding_complete: false`)
-- Generates a recovery link pointing to `/admin/setup`
-- Sends a branded invite email via Resend with the church name, matching the existing email style (gradient background, white card, amber CTA button)
-- Registered in `supabase/config.toml` with `verify_jwt = false`
+**Group Detail screen:**
+- Group name, description, member count
+- Join/Leave button
+- Member list (avatars + names)
+- Group Chat tab -- a simple message feed within the group
+- Community guidelines reminder popup shown once when a user first sends a message
 
-**2. New page: `src/pages/admin/AdminTeam.tsx`**
-- Lists all users with owner/admin/pastor roles for this church
-- Each row shows: name (from profiles), role badge (color-coded), and join date
-- Email is fetched via the existing `get-user-email` edge function (same pattern used in platform church detail)
-- "Invite Team Member" button opens a dialog with email input and role selector (Admin / Pastor)
-- Only owners and admins can invite; the invite button is visible to both
-- Owners can remove admins/pastors (delete their role row); nobody can remove an owner
+**Group Chat behavior:**
+- No push notifications by default -- just an unread dot/badge on the group card
+- Simple message feed: text messages with sender name, avatar, timestamp
+- A gentle community guidelines reminder the first time a user sends a message in any group chat
+- Messages are only visible to group members
 
-**3. Update sidebar: `src/pages/admin/AdminLayout.tsx`**
-- Add `{ title: "Team", url: "/admin/team", icon: UserCog }` to the nav items array, placed after Notifications
+### Database Changes
 
-**4. Add route: `src/App.tsx`**
-- Lazy-load `AdminTeam` and add `<Route path="team" element={<AdminTeam />} />` inside the admin layout routes
+**1. New table: `group_messages`**
+- `id` (uuid, PK)
+- `group_id` (uuid, FK to community_groups)
+- `user_id` (uuid, not null)
+- `content` (text, not null)
+- `created_at` (timestamptz, default now())
 
-### Security
-- The edge function validates the caller's role server-side using `has_role_in_church` before proceeding
-- Only owners and admins can invite (pastors cannot invite others)
-- Only owners can remove team members
-- Uses existing RLS policies on `user_roles` (admins can manage roles in their church)
-- No new database tables needed -- uses existing `user_roles` and `profiles` tables
+**2. RLS policies on `group_messages`:**
+- SELECT: User must be a member of the group (`EXISTS` check on `community_group_members`)
+- INSERT: User must be a member of the group AND `user_id = auth.uid()`
+- DELETE: `user_id = auth.uid()` (users can delete their own messages)
 
-### No database migration needed
-All required tables (`user_roles`, `profiles`) and the `app_role` enum (which already includes admin and pastor) exist. The existing RLS policy "Admins can manage roles in their church" already allows owners/admins to insert/delete role rows.
+**3. Enable realtime** on `group_messages` so chat updates live
+
+**4. New table: `group_chat_acknowledgements`** (tracks if user has seen the guidelines popup)
+- `id` (uuid, PK)
+- `user_id` (uuid, not null)
+- `acknowledged_at` (timestamptz, default now())
+- Unique on `user_id`
+- RLS: users can read/insert their own row
+
+### Frontend Changes
+
+**1. Update `CommunityScreen.tsx`**
+- Add query for `community_groups` (filtered to user's church, `is_active = true`)
+- Add query for `community_group_members` to get user's memberships and member counts
+- Render a "Groups" section with horizontal scrollable group cards between Church card and Church Members
+- Each card shows name, member count, and Joined/Join indicator
+
+**2. New component: `GroupDetailSheet.tsx`**
+- Bottom drawer that opens when tapping a group
+- Two sections: "Members" tab and "Chat" tab
+- Members tab: list of group members with avatars, names
+- Chat tab: scrollable message feed with text input at bottom
+- Join/Leave button in the header
+- If user is not a member, show a "Join to chat" prompt instead of the chat input
+
+**3. New component: `GroupChat.tsx`**
+- Message feed using realtime subscription on `group_messages`
+- Text input with send button
+- Messages show sender avatar, name, timestamp
+- Auto-scroll to bottom on new messages
+- On first message attempt, check `group_chat_acknowledgements` -- if no row exists, show a friendly guidelines dialog before sending
+
+**4. New component: `CommunityGuidelinesDialog.tsx`**
+- Friendly popup: "Welcome to group chat! This is a place to connect, encourage, and support each other. Please keep conversations uplifting and respectful."
+- Single "I Agree" button that inserts into `group_chat_acknowledgements` and then sends the message
+
+### Admin Side
+- No changes needed to `AdminGroups.tsx` -- it already creates/manages groups
+- Admins will see member counts update as people join
+
+### No Push Notifications
+- Group chat messages will NOT trigger any push notifications
+- Unread state will be tracked client-side only (simple: compare last message timestamp vs last time user opened that group chat, stored in localStorage)
 
