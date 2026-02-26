@@ -33,6 +33,7 @@ export default function GroupDetailSheet({
   const queryClient = useQueryClient();
   const colors = getAccentColors();
   const [tab, setTab] = useState<"members" | "chat">("chat");
+  const [demoMember, setDemoMember] = useState(initialIsMember);
 
   // Fetch group members with profiles
   const { data: members = [], isLoading: membersLoading } = useQuery({
@@ -62,8 +63,8 @@ export default function GroupDetailSheet({
     enabled: open && !isDemo,
   });
 
-  const isMember = members.some((m) => m.userId === user?.id) || initialIsMember;
-  const memberCount = members.length || initialMemberCount;
+  const isMember = isDemo ? demoMember : (members.some((m) => m.userId === user?.id) || initialIsMember);
+  const memberCount = isDemo ? initialMemberCount : (members.length || initialMemberCount);
 
   // Join mutation
   const joinMutation = useMutation({
@@ -122,7 +123,7 @@ export default function GroupDetailSheet({
             <button
               onClick={() => {
                 if (isDemo) {
-                  onClose();
+                  setDemoMember(!demoMember);
                   return;
                 }
                 isMember ? leaveMutation.mutate() : joinMutation.mutate();
