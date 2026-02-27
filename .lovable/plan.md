@@ -1,41 +1,54 @@
 
 
-## Fix: iOS Keyboard Dismiss Gap on Journal Compose Screen
+## Fix: iOS Swipe-Back Gesture on Overlay Screens
 
 ### Problem
-When composing a personal journal entry on iOS PWA, tapping "Done" on the keyboard dismisses it but leaves a visible gap below the bottom navigation bar. The current fix (`window.scrollTo(0, 0)` with a 100ms delay) isn't sufficient for iOS's keyboard dismiss animation timing.
+On iOS, swiping from the left edge of the screen triggers the browser's native "back" gesture, which navigates through browser history rather than the app's internal state. Since sub-overlay screens (like Public Profile and Previous Sermon Detail) are managed via React state without corresponding browser history entries, the swipe causes glitches -- blank screens, wrong profiles, or no navigation at all.
 
 ### Solution
-Strengthen the keyboard dismiss handling in the Journal compose view with two changes:
+Push browser history entries when opening sub-overlay screens, and listen for the browser's `popstate` event to properly close them. This makes the iOS swipe-back gesture work naturally with the app's navigation.
 
-**File: `src/components/fbs/JournalTab.tsx`**
+### What Changes
 
-1. **Improve `handleInputBlur`** -- fire `window.scrollTo(0, 0)` at multiple intervals (0ms, 100ms, 300ms) to catch the iOS keyboard dismiss animation at different stages. Also reset `document.documentElement.scrollTop` and `document.body.scrollTop` directly as a fallback.
+**File: `src/pages/Index.tsx`**
 
-2. **Improve the `visualViewport` resize listener** (lines 185-194) -- instead of only calling `window.scrollTo(0, 0)`, also force `document.body.style.height = '100%'` temporarily and reset it, which forces iOS Safari to recalculate layout and close the gap. Add a small delayed secondary scroll reset (300ms) to handle the tail end of the keyboard animation.
+1. When opening a public profile (from Community member list), push a history state entry so the browser knows there's a "page" to go back from.
+
+2. When opening a previous sermon detail, do the same.
+
+3. Add a `popstate` event listener that detects when the user swipes back (or taps the browser back button) and properly closes the sub-overlay by resetting state, rather than letting the browser navigate away.
+
+4. Clean up the listener on unmount.
 
 ### Technical Detail
 
 ```typescript
-const handleInputBlur = () => {
-  // iOS needs multiple attempts as keyboard dismiss animates
-  window.scrollTo(0, 0);
-  setTimeout(() => window.scrollTo(0, 0), 100);
-  setTimeout(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, 300);
+// When opening a sub-overlay, push history state
+const openPublicProfile = (member: CommunityMember) => {
+  setSelectedMember(member);
+  setSubOverlay("public-profile");
+  window.history.pushState({ subOverlay: "public-profile" }, "");
 };
+
+const openSermonDetail = (s: SermonUIData) => {
+  setSelectedSermon(s);
+  setSubOverlay("previous-sermon-detail");
+  window.history.pushState({ subOverlay: "previous-sermon-detail" }, "");
+};
+
+// Listen for popstate (iOS swipe-back / browser back)
+useEffect(() => {
+  const handlePopState = () => {
+    if (subOverlay) {
+      setSubOverlay(null);
+      // Prevent further default navigation
+    }
+  };
+  window.addEventListener("popstate", handlePopState);
+  return () => window.removeEventListener("popstate", handlePopState);
+}, [subOverlay]);
 ```
 
-For the `visualViewport` resize listener:
-```typescript
-const onResize = () => {
-  window.scrollTo(0, 0);
-  setTimeout(() => window.scrollTo(0, 0), 150);
-};
-```
+The existing "back arrow" buttons will also be updated to call `window.history.back()` instead of directly setting state, so both the arrow and the swipe gesture use the same code path. This prevents the history stack from getting out of sync.
 
 No other files need to change.
-
