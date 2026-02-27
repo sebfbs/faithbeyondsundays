@@ -280,7 +280,12 @@ function UploadSermonForm({
         setFriendlyMessage(getUploadMessage("uploading", 0));
 
         const timestamp = Date.now();
-        const storagePath = `${churchId}/${timestamp}-${file.name}`;
+        const safeFileName = file.name
+          .normalize("NFKD")
+          .replace(/[^a-zA-Z0-9._-]+/g, "_");
+        const storageFileName = `${timestamp}-${safeFileName}`;
+        const storagePath = `${churchId}/${storageFileName}`;
+        const encodedStoragePath = `${encodeURIComponent(churchId)}/${encodeURIComponent(storageFileName)}`;
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) throw new Error("Not authenticated");
@@ -308,7 +313,7 @@ function UploadSermonForm({
 
           xhr.onerror = () => reject(new Error("File upload failed"));
 
-          xhr.open("POST", `${supabaseUrl}/storage/v1/object/sermon-media/${storagePath}`);
+          xhr.open("POST", `${supabaseUrl}/storage/v1/object/sermon-media/${encodedStoragePath}`);
           xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
           xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
           xhr.setRequestHeader("x-upsert", "false");
