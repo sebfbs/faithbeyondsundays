@@ -90,7 +90,7 @@ export default function PreviousSermonDetailScreen({
     const shareData = {
       title: sermon.title,
       text: `Check out this sermon: "${sermon.title}" by ${sermon.speaker}`,
-      url: "https://faithbeyondsundays.lovable.app",
+      url: "https://faithbeyondsundays.app",
     };
     try {
       if (navigator.share) {
