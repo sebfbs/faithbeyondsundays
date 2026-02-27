@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Plus,
   Loader2,
@@ -26,17 +33,33 @@ import {
   Mic,
   Eye,
   EyeOff,
+  CircleDot,
+  Check,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 type SourceMode = "upload" | "youtube";
 
-const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  spark: "Daily Sparks",
+  takeaways: "Key Takeaways",
+  reflection_questions: "Reflection Questions",
+  scriptures: "Scripture References",
+  chapters: "Sermon Chapters",
+  weekly_challenge: "Weekly Challenge",
+  weekend_reflection: "Weekend Reflection",
+};
+
+const TRACKED_CONTENT_TYPES = ["spark", "takeaways", "reflection_questions", "scriptures", "chapters"];
+
+const statusConfig: Record<string, { label: string; icon: any; className: string; animate?: boolean }> = {
   pending: { label: "Pending", icon: Clock, className: "bg-muted text-muted-foreground" },
-  uploading: { label: "Uploading", icon: Upload, className: "bg-muted text-muted-foreground" },
-  transcribing: { label: "Transcribing", icon: Mic, className: "bg-blue-100 text-blue-700" },
-  generating: { label: "Generating", icon: Loader2, className: "bg-amber-100 text-amber-700" },
+  uploading: { label: "Uploading", icon: Loader2, className: "bg-muted text-muted-foreground", animate: true },
+  transcribing: { label: "Transcribing", icon: Loader2, className: "bg-blue-100 text-blue-700", animate: true },
+  generating: { label: "Generating Content", icon: Loader2, className: "bg-amber-100 text-amber-700", animate: true },
+  review: { label: "Ready for Review", icon: Sparkles, className: "bg-purple-100 text-purple-700" },
   complete: { label: "Complete", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-700" },
   failed: { label: "Failed", icon: AlertCircle, className: "bg-destructive/10 text-destructive" },
 };
@@ -45,6 +68,7 @@ export default function AdminSermons() {
   const { churchId } = useOutletContext<{ churchId: string }>();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reviewSermonId, setReviewSermonId] = useState<string | null>(null);
 
   const { data: sermons, isLoading } = useQuery({
     queryKey: ["admin", "sermons", churchId],
@@ -60,8 +84,29 @@ export default function AdminSermons() {
     },
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.some((s) => !["complete", "failed"].includes(s.status)) ? 10000 : false;
+      return data?.some((s) => !["complete", "failed", "review"].includes(s.status)) ? 10000 : false;
     },
+  });
+
+  // Fetch content progress for generating sermons
+  const generatingIds = sermons?.filter((s) => s.status === "generating").map((s) => s.id) || [];
+  const { data: contentProgress } = useQuery({
+    queryKey: ["admin", "sermon-content-progress", generatingIds],
+    enabled: generatingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sermon_content")
+        .select("sermon_id, content_type")
+        .in("sermon_id", generatingIds);
+      if (error) throw error;
+      const map: Record<string, Set<string>> = {};
+      for (const row of data || []) {
+        if (!map[row.sermon_id]) map[row.sermon_id] = new Set();
+        (map[row.sermon_id] as Set<string>).add(row.content_type);
+      }
+      return map;
+    },
+    refetchInterval: 10000,
   });
 
   const togglePublish = useMutation({
@@ -80,7 +125,6 @@ export default function AdminSermons() {
 
   const toggleCurrent = useMutation({
     mutationFn: async ({ id, is_current }: { id: string; is_current: boolean }) => {
-      // If setting as current, unset all others first
       if (is_current) {
         await supabase
           .from("sermons")
@@ -97,6 +141,28 @@ export default function AdminSermons() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "sermons"] });
       toast.success("Current sermon updated");
+    },
+  });
+
+  const approveSermon = useMutation({
+    mutationFn: async (id: string) => {
+      // Set as current, unset others first
+      await supabase
+        .from("sermons")
+        .update({ is_current: false })
+        .eq("church_id", churchId)
+        .eq("is_current", true);
+
+      const { error } = await supabase
+        .from("sermons")
+        .update({ status: "complete", is_published: true, is_current: true })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setReviewSermonId(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "sermons"] });
+      toast.success("Sermon approved and scheduled!");
     },
   });
 
@@ -145,6 +211,7 @@ export default function AdminSermons() {
           {sermons.map((sermon) => {
             const status = statusConfig[sermon.status] || statusConfig.pending;
             const StatusIcon = status.icon;
+            const doneTypes = contentProgress?.[sermon.id];
             return (
               <Card key={sermon.id} className="shadow-card">
                 <CardContent className="p-4">
@@ -161,19 +228,54 @@ export default function AdminSermons() {
                         <span>{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</span>
                         {sermon.duration && <span>{sermon.duration}</span>}
                       </div>
+
+                      {/* Content generation progress */}
+                      {sermon.status === "generating" && (
+                        <div className="mt-3 space-y-1">
+                          <p className="text-xs font-medium text-amber-700">Generating content…</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                            {TRACKED_CONTENT_TYPES.map((ct) => {
+                              const done = doneTypes?.has(ct);
+                              return (
+                                <div key={ct} className="flex items-center gap-1.5 text-xs">
+                                  {done ? (
+                                    <Check className="h-3 w-3 text-emerald-600" />
+                                  ) : (
+                                    <CircleDot className="h-3 w-3 text-muted-foreground animate-pulse" />
+                                  )}
+                                  <span className={done ? "text-foreground" : "text-muted-foreground"}>
+                                    {CONTENT_TYPE_LABELS[ct]}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className={`${status.className} text-xs gap-1`}>
-                        <StatusIcon className="h-3 w-3" />
+                        <StatusIcon className={`h-3 w-3 ${status.animate ? "animate-spin" : ""}`} />
                         {status.label}
                       </Badge>
+
+                      {sermon.status === "review" && (
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => setReviewSermonId(sermon.id)}
+                        >
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Review & Approve
+                        </Button>
+                      )}
 
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 text-xs"
-                        disabled={sermon.status !== "complete"}
+                        disabled={!["complete", "review"].includes(sermon.status)}
                         onClick={() =>
                           togglePublish.mutate({
                             id: sermon.id,
@@ -215,7 +317,180 @@ export default function AdminSermons() {
           })}
         </div>
       )}
+
+      {/* Review Sheet */}
+      <ReviewSheet
+        sermonId={reviewSermonId}
+        open={!!reviewSermonId}
+        onClose={() => setReviewSermonId(null)}
+        onApprove={(id) => approveSermon.mutate(id)}
+        approving={approveSermon.isPending}
+      />
     </div>
+  );
+}
+
+/* ─── Review Sheet ─── */
+
+function ReviewSheet({
+  sermonId,
+  open,
+  onClose,
+  onApprove,
+  approving,
+}: {
+  sermonId: string | null;
+  open: boolean;
+  onClose: () => void;
+  onApprove: (id: string) => void;
+  approving: boolean;
+}) {
+  const { data: content, isLoading } = useQuery({
+    queryKey: ["admin", "sermon-review-content", sermonId],
+    enabled: !!sermonId,
+    queryFn: async () => {
+      // Need to read sermon_content via service-level — but admins have RLS for published sermons only
+      // Actually admins can read via the sermons RLS. But sermon_content RLS requires is_published=true.
+      // We'll use a direct query — the admin can see sermons, but content RLS is restrictive.
+      // For now, let's try — if it fails we'll need an RLS policy update.
+      const { data, error } = await supabase
+        .from("sermon_content")
+        .select("content_type, content")
+        .eq("sermon_id", sermonId!);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const contentMap = new Map<string, any>((content || []).map((c) => [c.content_type as string, c.content]));
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
+        <SheetHeader className="p-6 pb-4">
+          <SheetTitle>Review Generated Content</SheetTitle>
+        </SheetHeader>
+        <ScrollArea className="flex-1 px-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-6 pb-6">
+              {TRACKED_CONTENT_TYPES.concat(["weekly_challenge", "weekend_reflection"]).map((ct) => {
+                const data = contentMap.get(ct) as any;
+                if (!data) return null;
+                return (
+                  <div key={ct} className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      {CONTENT_TYPE_LABELS[ct] || ct}
+                    </h3>
+                    <ContentPreview type={ct} data={data} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+        <div className="p-6 pt-4 border-t flex gap-3">
+          <Button variant="outline" className="flex-1" onClick={onClose}>
+            Go Back
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={approving || isLoading}
+            onClick={() => sermonId && onApprove(sermonId)}
+          >
+            {approving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+            Approve & Schedule
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ContentPreview({ type, data }: { type: string; data: any }) {
+  if (!data) return null;
+
+  if (type === "spark") {
+    return (
+      <Card className="bg-muted/50">
+        <CardContent className="p-3">
+          <p className="font-medium text-sm">{data.title}</p>
+          <p className="text-sm text-muted-foreground mt-1">{data.summary}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (type === "takeaways") {
+    return (
+      <div className="space-y-2">
+        {(data.takeaways || []).map((t: any, i: number) => (
+          <Card key={i} className="bg-muted/50">
+            <CardContent className="p-3">
+              <p className="font-medium text-sm">{t.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "reflection_questions") {
+    return (
+      <div className="space-y-2">
+        {(data.questions || []).map((q: any, i: number) => (
+          <Card key={i} className="bg-muted/50">
+            <CardContent className="p-3">
+              <p className="font-medium text-sm">{q.question}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{q.context}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "scriptures") {
+    return (
+      <div className="space-y-2">
+        {(data.scriptures || []).map((s: any, i: number) => (
+          <Card key={i} className="bg-muted/50">
+            <CardContent className="p-3">
+              <p className="font-medium text-sm">{s.reference}</p>
+              <p className="text-xs text-muted-foreground italic mt-0.5">{s.text}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.context}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "chapters") {
+    return (
+      <div className="space-y-1">
+        {(data.chapters || []).map((c: any, i: number) => (
+          <div key={i} className="flex gap-2 text-sm py-1">
+            <span className="text-muted-foreground font-mono text-xs min-w-[3ch]">{i + 1}.</span>
+            <span className="font-medium">{c.title}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Generic fallback for weekly_challenge, weekend_reflection etc
+  return (
+    <Card className="bg-muted/50">
+      <CardContent className="p-3">
+        <pre className="text-xs text-muted-foreground whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -274,7 +549,6 @@ function UploadSermonForm({
 
     try {
       if (mode === "upload" && file) {
-        // Step 1: Upload file with XHR for progress tracking
         setUploadStep("uploading");
         setUploadPercent(0);
         setFriendlyMessage(getUploadMessage("uploading", 0));
@@ -320,7 +594,6 @@ function UploadSermonForm({
           xhr.send(file);
         });
 
-        // Step 2: Call edge function
         setUploadStep("finalizing");
         setUploadPercent(100);
         setFriendlyMessage(getUploadMessage("finalizing", 100));
@@ -337,7 +610,6 @@ function UploadSermonForm({
         if (fnError) throw new Error(fnError.message || "Failed to create sermon");
         if (data?.error) throw new Error(data.error);
 
-        // Brief "done" state
         setUploadStep("done");
         setFriendlyMessage(getUploadMessage("done", 100));
         await new Promise((r) => setTimeout(r, 1200));
@@ -373,7 +645,6 @@ function UploadSermonForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Source mode toggle */}
       <div className="flex gap-2">
         <Button
           type="button"

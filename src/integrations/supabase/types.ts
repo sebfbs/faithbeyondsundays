@@ -1087,6 +1087,7 @@ export type Database = {
         | "uploading"
         | "transcribing"
         | "generating"
+        | "review"
         | "complete"
         | "failed"
     }
@@ -1242,6 +1243,7 @@ export const Constants = {
         "uploading",
         "transcribing",
         "generating",
+        "review",
         "complete",
         "failed",
       ],

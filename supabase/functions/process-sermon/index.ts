@@ -300,10 +300,10 @@ serve(async (req) => {
         })
         .eq("id", job.id);
 
-      // Still mark sermon as complete if most content generated
+      // Still mark sermon as review if most content generated
       const generatedCount = allContentTypes.length - failedTypes.length;
       if (generatedCount > 0) {
-        await supabase.from("sermons").update({ status: "complete" }).eq("id", sermon.id);
+        await supabase.from("sermons").update({ status: "review" }).eq("id", sermon.id);
       } else {
         await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
       }
@@ -319,10 +319,10 @@ serve(async (req) => {
       });
     }
 
-    // All content generated successfully!
+    // All content generated successfully — move to review for admin approval
     await supabase
       .from("sermons")
-      .update({ status: "complete" })
+      .update({ status: "review" })
       .eq("id", sermon.id);
 
     await supabase

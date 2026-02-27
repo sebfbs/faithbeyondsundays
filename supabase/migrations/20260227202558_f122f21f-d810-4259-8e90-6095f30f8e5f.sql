@@ -1,0 +1,1 @@
+ALTER TYPE public.sermon_status ADD VALUE 'review' BEFORE 'complete';
