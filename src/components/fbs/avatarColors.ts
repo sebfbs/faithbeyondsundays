@@ -1,8 +1,8 @@
 const AVATAR_PALETTE = [
-  "#C9A66B", // Soft Gold
-  "#89B4D8", // Sky Blue
-  "#CDA08A", // Dusty Peach
-  "#9BAEC8", // Muted Lavender
+  "#E8B84B", // Warm Gold
+  "#5BA8E0", // Bright Sky Blue
+  "#E8926A", // Warm Peach
+  "#7B9FD4", // Periwinkle
 ];
 
 export function getAvatarColor(name: string): string {
