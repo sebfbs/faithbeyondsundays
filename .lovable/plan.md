@@ -1,65 +1,76 @@
 
 
-## Sermon Experience Improvements -- 4 Issues
+## Redesign Approval Wizard + 7 Daily Sparks + Editable/Regenerable Content
 
-### Issue 1: Video Playback + Thumbnail Selection
+### Overview
+Five changes: (1) replace the right-side Sheet with a centered wizard Dialog, (2) remove weekly_challenge and weekend_reflection, (3) generate 7 daily sparks instead of 1, (4) make all content editable inline, and (5) add per-section regeneration.
 
-**Member side:** Replace the static gradient placeholder in `SermonTab.tsx` and `PreviousSermonDetailScreen.tsx` with a functional video player:
-- For uploaded files: generate a signed URL from the `sermon-media` storage bucket and render an HTML5 `<video>` element with controls
-- For YouTube URLs: extract the video ID and embed a YouTube iframe player
-- If a `thumbnail_url` exists on the sermon, show it as the video poster/cover image; otherwise fall back to the current gradient placeholder
-- Tapping the thumbnail starts playback (show/hide player vs poster)
+---
 
-**Admin side (thumbnail picker):** After the sermon upload completes and enters the `review` state, present 3-4 AI-suggested thumbnail options in the Review Sheet:
-- For uploaded videos: use the `process-sermon` edge function to extract frames at ~25%, 50%, 75% of the video duration using a lightweight approach -- since we can't run ffmpeg in edge functions, we'll generate thumbnails client-side instead: when the admin opens the Review Sheet for a sermon with an uploaded file, load the video in a hidden `<video>` element, seek to 3-4 positions, and capture frames via `<canvas>`. The admin picks one, it gets uploaded to the `sermon-media` bucket, and the `thumbnail_url` is saved on the sermon record.
-- For YouTube: auto-extract the thumbnail from YouTube's thumbnail API (`https://img.youtube.com/vi/{id}/maxresdefault.jpg` etc.) and offer those as options.
-- Add `thumbnail_url` column to the sermons table (it already exists in the schema).
+### 1. Remove Weekly Challenge & Weekend Reflection
 
-### Issue 2: Chapter Timestamps + Tappable Seek
+**Edge function (`process-sermon/index.ts`):**
+- Remove `weekly_challenge` and `weekend_reflection` from the `allContentTypes` array (lines 193-194)
+- Remove `buildChallengePrompt` and `buildWeekendReflectionPrompt` functions (lines 640-656)
+- Remove their tool schemas from `buildToolSchema` (lines 530-567)
 
-**Timestamp generation:** Update `process-sermon/index.ts` to capture word-level timing data from the ElevenLabs Scribe response (`transcription.words` array with `start`/`end` times). Before sending the transcript to the chapters AI prompt, embed periodic timing markers (e.g., `[00:05:23]`) into the text at regular intervals. Update the chapters tool schema to include a `timestamp` field (format `"MM:SS"` or `"HH:MM:SS"`). Update the chapters prompt to instruct the AI to assign the closest timing marker to each chapter boundary.
+**Admin UI (`AdminSermons.tsx`):**
+- Remove `weekly_challenge` and `weekend_reflection` from `CONTENT_TYPE_LABELS` (lines 51-52)
+- Remove the `.concat(["weekly_challenge", "weekend_reflection"])` on line 527
 
-**Tappable timestamps:** In `SermonTab.tsx` and `PreviousSermonDetailScreen.tsx`, make chapter timestamps tappable buttons. When tapped, seek the video player to that timestamp. This requires lifting the video player ref up so the chapter section can call `videoRef.current.currentTime = seconds`.
+---
 
-**Files changed:**
-- `supabase/functions/process-sermon/index.ts` -- capture word timestamps, embed timing markers, update chapters schema + prompt
-- `src/components/fbs/SermonTab.tsx` -- make timestamps tappable, connect to video player ref
-- `src/components/fbs/PreviousSermonDetailScreen.tsx` -- same timestamp interaction
-- `src/hooks/useCurrentSermon.ts` -- no changes needed (already reads `timestamp` from chapters)
+### 2. Generate 7 Daily Sparks (One Per Day of the Week)
 
-### Issue 3: Full Transcript for AI Content Generation
+**Edge function (`process-sermon/index.ts`):**
+- Update `buildSparkPrompt()` to ask for 7 sparks -- one for each day of the week (Monday through Sunday)
+- Update the `spark` tool schema to return an array of 7 spark objects, each with `day`, `title`, and `summary` fields
+- Schema becomes: `{ sparks: [{ day: "Monday", title: "...", summary: "..." }, ...] }`
 
-**Problem:** All prompts currently truncate the transcript to 8,000 characters (or 12,000 for chapters). This loses most of the sermon content, resulting in shallow/irrelevant takeaways.
+**Admin UI:** The spark step in the wizard will show all 7 sparks, one card per day, each individually editable.
 
-**Fix:** Remove the `.slice()` truncation from all prompt builder functions. Send the full transcript to the AI. The model being used (Gemini 2.5 Flash) supports up to 1M tokens of context, so even a 2-hour sermon transcript (~20,000 words / ~80,000 characters) will fit comfortably.
+**Member UI:** The existing `SermonTab.tsx` will need to pick the correct spark for today's day of the week from the array. This is a display-side change to read `spark.sparks[dayIndex]` instead of `spark.title`.
 
-Additionally, update prompt instructions to:
-- Focus exclusively on spiritual, biblical, and faith-based insights
-- Explicitly ignore logistical announcements, church business, administrative updates, and non-spiritual content
-- Frame takeaways as actionable spiritual truths
+---
 
-**Files changed:**
-- `supabase/functions/process-sermon/index.ts` -- remove all `.slice()` calls from prompt builders; rewrite prompt instructions for spiritual focus
+### 3. Centered Wizard Dialog for Approval
 
-### Issue 4: Scripture References as Clickable Pills that Open the Bible
+Replace the `ReviewSheet` (right-side Sheet) with a `ReviewWizard` that uses the `Dialog` component, centered on screen with `max-w-2xl`.
 
-**AI prompt change:** Update `buildScripturesPrompt()` to instruct the AI to return only the book/verse reference (e.g., "Luke 5:1-7") and a brief note about how it was used in the sermon -- no full scripture text. The `text` field in the schema will become a short context note instead of the full passage.
+**Wizard steps with progress dots:**
+1. **Thumbnail** -- Pick video thumbnail (skip if none available)
+2. **Daily Sparks** -- Review/edit all 7 sparks
+3. **Key Takeaways** -- Review/edit each takeaway
+4. **Reflection Questions** -- Review/edit each question
+5. **Scripture References** -- Review/edit references
+6. **Sermon Chapters** -- Review/edit chapters with timestamps
+7. **Confirm** -- Summary with "Approve & Schedule" button
 
-**UI change:** In `SermonTab.tsx` and `PreviousSermonDetailScreen.tsx`, render scripture references as compact tappable pills/chips instead of large text blocks. Each pill shows the reference (e.g., "Luke 5:1-7").
+Each step shows progress dots at the top (like onboarding), Back/Next buttons at the bottom.
 
-**Deep-link to Bible:** When a user taps a scripture pill:
-- Parse the reference to extract book name, chapter, and verse
-- Navigate to the Bible screen with query parameters (e.g., `/bible?book=Luke&chapter=5&verse=1`)
-- Update `BibleScreen.tsx` to read these query params on mount and auto-navigate to the correct book/chapter, highlighting or scrolling to the specific verse
+---
 
-**Callback pattern:** Add an `onOpenBible` callback prop to `SermonTab` and `PreviousSermonDetailScreen`, which `Index.tsx` will wire up to navigate to `/bible?book=...&chapter=...&verse=...`. `BibleScreen` will check for URL params and auto-load the chapter.
+### 4. Inline Editing
 
-**Files changed:**
-- `supabase/functions/process-sermon/index.ts` -- update scriptures prompt + schema
-- `src/components/fbs/SermonTab.tsx` -- scripture pills with `onOpenBible` callback
-- `src/components/fbs/PreviousSermonDetailScreen.tsx` -- same
-- `src/components/fbs/BibleScreen.tsx` -- read query params and auto-navigate to book/chapter/verse
-- `src/pages/Index.tsx` -- wire up `onOpenBible` callback to navigate to Bible with params
+Each content step has an "Edit" toggle button. When activated:
+- Text fields become `<Input>` or `<Textarea>` components
+- Changes are tracked in local state
+- On "Next" or "Save", changed content is written back to the `sermon_content` table via an update mutation
+
+---
+
+### 5. Per-Section Regeneration
+
+Each content step has a "Regenerate" button with a refresh icon. When clicked:
+- Calls `process-sermon` edge function with a new `regenerate_type` body parameter
+- The edge function detects this parameter and only regenerates that single content type
+- Deletes the old `sermon_content` row and inserts the fresh one
+- UI shows a spinner during regeneration, then refreshes the content
+
+**Edge function changes for regeneration:**
+- At the top of the handler, check for `regenerate_type` in the request body
+- If present, skip the job queue entirely: look up the sermon's transcript, run just that one prompt, delete+insert the content row, and return
+- This requires the edge function to accept direct calls (not just job-based), authenticated with the admin's token or service role key
 
 ---
 
@@ -67,14 +78,33 @@ Additionally, update prompt instructions to:
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/process-sermon/index.ts` | Capture ElevenLabs word timestamps; embed timing markers in transcript; remove `.slice()` truncation from all prompts; rewrite prompts for spiritual focus; update chapters schema with `timestamp` field; update scriptures prompt to return references only |
-| `src/components/fbs/SermonTab.tsx` | Add video player (HTML5 video + YouTube iframe); thumbnail poster image; tappable chapter timestamps that seek video; scripture reference pills with `onOpenBible` callback |
-| `src/components/fbs/PreviousSermonDetailScreen.tsx` | Same video player, timestamps, and scripture pill changes |
-| `src/hooks/useCurrentSermon.ts` | Add `thumbnailUrl` and `storagePath` to `SermonUIData` |
-| `src/components/fbs/BibleScreen.tsx` | Accept URL query params to auto-navigate to a specific book/chapter/verse |
-| `src/pages/Index.tsx` | Pass `onOpenBible` callback to SermonTab and PreviousSermonDetailScreen; wire navigation to Bible with query params |
-| `src/pages/admin/AdminSermons.tsx` | Add client-side thumbnail extraction in ReviewSheet; thumbnail picker UI with 3-4 frame options; upload selected thumbnail to storage |
-| Migration SQL | None needed -- `thumbnail_url` column already exists on sermons table |
+| `supabase/functions/process-sermon/index.ts` | Remove weekly_challenge + weekend_reflection; update spark schema to 7 items with day field; update spark prompt for 7 days; add `regenerate_type` direct-call path |
+| `src/pages/admin/AdminSermons.tsx` | Replace ReviewSheet with ReviewWizard dialog; remove weekly_challenge/weekend_reflection; wizard steps with progress dots, inline editing, regenerate buttons; update spark preview for 7 items |
+| `src/components/fbs/SermonTab.tsx` | Update spark display to read from `sparks` array using current day of week |
+| `src/components/fbs/PreviousSermonDetailScreen.tsx` | Same spark array update |
+| `sermon_content` table | Needs an RLS policy allowing church admins to UPDATE content (currently only SELECT is allowed) -- will add via migration |
 
-**Note:** These changes to the AI prompts and timestamps only affect newly processed sermons. The existing Penhurst test sermon would need to be re-processed (delete its `sermon_content` rows and re-run the pipeline) to see improved results.
+**New migration:** Add UPDATE policy on `sermon_content` for church admins so they can save edits and delete+reinsert for regeneration.
+
+```sql
+CREATE POLICY "Church admins can update sermon content"
+  ON public.sermon_content FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM sermons s
+    WHERE s.id = sermon_content.sermon_id
+    AND (has_role_in_church(auth.uid(), s.church_id, 'admin') 
+      OR has_role_in_church(auth.uid(), s.church_id, 'owner')
+      OR has_role_in_church(auth.uid(), s.church_id, 'pastor'))
+  ));
+
+CREATE POLICY "Church admins can delete sermon content"
+  ON public.sermon_content FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM sermons s
+    WHERE s.id = sermon_content.sermon_id
+    AND (has_role_in_church(auth.uid(), s.church_id, 'admin')
+      OR has_role_in_church(auth.uid(), s.church_id, 'owner')
+      OR has_role_in_church(auth.uid(), s.church_id, 'pastor'))
+  ));
+```
 
