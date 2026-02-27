@@ -9,14 +9,29 @@ function formatSermonDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
+function getDayOfWeek(): string {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[new Date().getDay()];
+}
+
 function transformContent(contentRows: { content_type: string; content: Json }[]) {
   const byType: Record<string, any> = {};
   for (const row of contentRows) {
     byType[row.content_type] = row.content;
   }
 
-  const sparkData = byType["spark"];
-  const spark = sparkData?.summary || sparkData?.title || "";
+  const sparkRaw = byType["spark"];
+  let spark = "";
+  let sparkData: { day: string; title: string; summary: string }[] | null = null;
+
+  if (sparkRaw?.sparks && Array.isArray(sparkRaw.sparks)) {
+    sparkData = sparkRaw.sparks;
+    const today = getDayOfWeek();
+    const todaySpark = sparkData.find((s: any) => s.day === today) || sparkData[0];
+    spark = todaySpark ? `${todaySpark.title} — ${todaySpark.summary}` : "";
+  } else {
+    spark = sparkRaw?.summary || sparkRaw?.title || "";
+  }
 
   const takeawaysData = byType["takeaways"];
   const takeaways: string[] = (takeawaysData?.takeaways || []).map(
@@ -42,13 +57,7 @@ function transformContent(contentRows: { content_type: string; content: Json }[]
       timestamp: c.timestamp || "",
     }));
 
-  const challengeData = byType["weekly_challenge"];
-  const weeklyChallenge = challengeData?.challenge || challengeData?.description || "";
-
-  const weekendData = byType["weekend_reflection"];
-  const weekendReflection = weekendData?.prompt || weekendData?.reflection || "";
-
-  return { chapters, scriptures, takeaways, reflectionQuestions, spark, weeklyChallenge, weekendReflection };
+  return { chapters, scriptures, takeaways, reflectionQuestions, spark, sparkData };
 }
 
 export function usePreviousSermons() {
@@ -60,7 +69,6 @@ export function usePreviousSermons() {
     queryFn: async (): Promise<SermonUIData[]> => {
       if (!churchId) return [];
 
-      // Fetch all published sermons that are NOT current
       const { data: sermons, error } = await supabase
         .from("sermons")
         .select("*")
@@ -72,14 +80,12 @@ export function usePreviousSermons() {
 
       if (error || !sermons?.length) return [];
 
-      // Fetch content for all these sermons
       const sermonIds = sermons.map((s) => s.id);
       const { data: allContent } = await supabase
         .from("sermon_content")
         .select("sermon_id, content_type, content")
         .in("sermon_id", sermonIds);
 
-      // Group content by sermon_id
       const contentBySermon: Record<string, { content_type: string; content: Json }[]> = {};
       for (const row of allContent || []) {
         if (!contentBySermon[row.sermon_id]) contentBySermon[row.sermon_id] = [];

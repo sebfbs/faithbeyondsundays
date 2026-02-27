@@ -21,13 +21,17 @@ export interface SermonUIData {
   takeaways: string[];
   reflectionQuestions: string[];
   spark: string;
-  weeklyChallenge: string;
-  weekendReflection: string;
+  sparkData: { day: string; title: string; summary: string }[] | null;
 }
 
 function formatSermonDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function getDayOfWeek(): string {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[new Date().getDay()];
 }
 
 function transformContent(contentRows: { content_type: string; content: Json }[]): {
@@ -36,16 +40,27 @@ function transformContent(contentRows: { content_type: string; content: Json }[]
   takeaways: string[];
   reflectionQuestions: string[];
   spark: string;
-  weeklyChallenge: string;
-  weekendReflection: string;
+  sparkData: { day: string; title: string; summary: string }[] | null;
 } {
   const byType: Record<string, any> = {};
   for (const row of contentRows) {
     byType[row.content_type] = row.content;
   }
 
-  const sparkData = byType["spark"];
-  const spark = sparkData?.summary || sparkData?.title || "";
+  const sparkRaw = byType["spark"];
+  let spark = "";
+  let sparkData: { day: string; title: string; summary: string }[] | null = null;
+
+  if (sparkRaw?.sparks && Array.isArray(sparkRaw.sparks)) {
+    // New 7-day format
+    sparkData = sparkRaw.sparks;
+    const today = getDayOfWeek();
+    const todaySpark = sparkData.find((s: any) => s.day === today) || sparkData[0];
+    spark = todaySpark ? `${todaySpark.title} — ${todaySpark.summary}` : "";
+  } else {
+    // Legacy single spark format
+    spark = sparkRaw?.summary || sparkRaw?.title || "";
+  }
 
   const takeawaysData = byType["takeaways"];
   const takeaways: string[] = (takeawaysData?.takeaways || []).map(
@@ -71,13 +86,7 @@ function transformContent(contentRows: { content_type: string; content: Json }[]
       timestamp: c.timestamp || "",
     }));
 
-  const challengeData = byType["weekly_challenge"];
-  const weeklyChallenge = challengeData?.challenge || challengeData?.description || "";
-
-  const weekendData = byType["weekend_reflection"];
-  const weekendReflection = weekendData?.prompt || weekendData?.reflection || "";
-
-  return { chapters, scriptures, takeaways, reflectionQuestions, spark, weeklyChallenge, weekendReflection };
+  return { chapters, scriptures, takeaways, reflectionQuestions, spark, sparkData };
 }
 
 export function useCurrentSermon() {

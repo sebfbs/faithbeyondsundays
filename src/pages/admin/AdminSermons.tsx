@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,12 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Plus,
   Loader2,
@@ -36,6 +31,11 @@ import {
   CircleDot,
   Check,
   Sparkles,
+  RefreshCw,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Image,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -48,8 +48,6 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   reflection_questions: "Reflection Questions",
   scriptures: "Scripture References",
   chapters: "Sermon Chapters",
-  weekly_challenge: "Weekly Challenge",
-  weekend_reflection: "Weekend Reflection",
 };
 
 const TRACKED_CONTENT_TYPES = ["spark", "takeaways", "reflection_questions", "scriptures", "chapters"];
@@ -62,6 +60,19 @@ const statusConfig: Record<string, { label: string; icon: any; className: string
   review: { label: "Ready for Review", icon: Sparkles, className: "bg-purple-100 text-purple-700" },
   complete: { label: "Complete", icon: CheckCircle2, className: "bg-emerald-100 text-emerald-700" },
   failed: { label: "Failed", icon: AlertCircle, className: "bg-destructive/10 text-destructive" },
+};
+
+const WIZARD_STEPS = ["thumbnail", "spark", "takeaways", "reflection_questions", "scriptures", "chapters", "confirm"] as const;
+type WizardStep = typeof WIZARD_STEPS[number];
+
+const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
+  thumbnail: "Thumbnail",
+  spark: "Daily Sparks",
+  takeaways: "Key Takeaways",
+  reflection_questions: "Reflection Questions",
+  scriptures: "Scripture References",
+  chapters: "Sermon Chapters",
+  confirm: "Confirm",
 };
 
 export default function AdminSermons() {
@@ -88,7 +99,6 @@ export default function AdminSermons() {
     },
   });
 
-  // Fetch content progress for generating sermons
   const generatingIds = sermons?.filter((s) => s.status === "generating").map((s) => s.id) || [];
   const { data: contentProgress } = useQuery({
     queryKey: ["admin", "sermon-content-progress", generatingIds],
@@ -146,7 +156,6 @@ export default function AdminSermons() {
 
   const approveSermon = useMutation({
     mutationFn: async (id: string) => {
-      // Set as current, unset others first
       await supabase
         .from("sermons")
         .update({ is_current: false })
@@ -229,7 +238,6 @@ export default function AdminSermons() {
                         {sermon.duration && <span>{sermon.duration}</span>}
                       </div>
 
-                      {/* Content generation progress */}
                       {sermon.status === "generating" && (
                         <div className="mt-3 space-y-1">
                           <p className="text-xs font-medium text-amber-700">Generating content…</p>
@@ -318,8 +326,8 @@ export default function AdminSermons() {
         </div>
       )}
 
-      {/* Review Sheet */}
-      <ReviewSheet
+      {/* Review Wizard Dialog */}
+      <ReviewWizard
         sermonId={reviewSermonId}
         churchId={churchId}
         open={!!reviewSermonId}
@@ -331,9 +339,9 @@ export default function AdminSermons() {
   );
 }
 
-/* ─── Review Sheet ─── */
+/* ─── Review Wizard Dialog ─── */
 
-function ReviewSheet({
+function ReviewWizard({
   sermonId,
   churchId,
   open,
@@ -348,9 +356,26 @@ function ReviewSheet({
   onApprove: (id: string) => void;
   approving: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const [step, setStep] = useState(0);
+  const [editedContent, setEditedContent] = useState<Record<string, any>>({});
+  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
+  const [regenerating, setRegenerating] = useState<string | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedThumb, setSelectedThumb] = useState<number | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+
+  const currentStep = WIZARD_STEPS[step];
+
+  // Reset on open
+  useEffect(() => {
+    if (open) {
+      setStep(0);
+      setEditedContent({});
+      setEditMode({});
+      setRegenerating(null);
+    }
+  }, [open, sermonId]);
 
   const { data: sermon } = useQuery({
     queryKey: ["admin", "sermon-detail", sermonId],
@@ -379,7 +404,7 @@ function ReviewSheet({
     },
   });
 
-  // Generate thumbnails from YouTube or uploaded video
+  // Generate thumbnails
   useEffect(() => {
     if (!sermon || !open) return;
     setThumbnails([]);
@@ -397,7 +422,6 @@ function ReviewSheet({
         ]);
       }
     } else if (sermon.source_type === "upload" && sermon.storage_path) {
-      // Extract frames from uploaded video client-side
       (async () => {
         try {
           const { data } = await supabase.storage
@@ -439,17 +463,75 @@ function ReviewSheet({
     }
   }, [sermon, open]);
 
+  const contentMap = new Map<string, any>((content || []).map((c) => [c.content_type as string, c.content]));
+
+  const getContent = (type: string) => {
+    if (editedContent[type] !== undefined) return editedContent[type];
+    return contentMap.get(type);
+  };
+
+  const updateContent = (type: string, newContent: any) => {
+    setEditedContent((prev) => ({ ...prev, [type]: newContent }));
+  };
+
+  // Save edits to DB when moving to next step
+  const saveEdits = async (type: string) => {
+    if (editedContent[type] === undefined || !sermonId) return;
+    try {
+      await supabase
+        .from("sermon_content")
+        .update({ content: editedContent[type] })
+        .eq("sermon_id", sermonId)
+        .eq("content_type", type as any);
+    } catch (e) {
+      console.error("Failed to save edits:", e);
+    }
+  };
+
+  const handleRegenerate = async (type: string) => {
+    if (!sermonId) return;
+    setRegenerating(type);
+    try {
+      const { data, error } = await supabase.functions.invoke("process-sermon", {
+        body: { regenerate_type: type, sermon_id: sermonId },
+      });
+      if (error) throw error;
+      if (data?.content) {
+        updateContent(type, data.content);
+        // Also refresh from DB
+        queryClient.invalidateQueries({ queryKey: ["admin", "sermon-review-content", sermonId] });
+      }
+      toast.success(`${CONTENT_TYPE_LABELS[type] || type} regenerated!`);
+    } catch (e: any) {
+      toast.error("Failed to regenerate. Please try again.");
+      console.error("Regeneration error:", e);
+    } finally {
+      setRegenerating(null);
+      setEditMode((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleNext = async () => {
+    // Save any current edits
+    if (currentStep !== "thumbnail" && currentStep !== "confirm") {
+      await saveEdits(currentStep);
+    }
+    setStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
+  };
+
+  const handleBack = () => {
+    setStep((s) => Math.max(s - 1, 0));
+  };
+
   const handleApproveWithThumb = async () => {
     if (!sermonId) return;
 
-    // If a thumbnail was selected, upload it first
     if (selectedThumb !== null && thumbnails[selectedThumb]) {
       setUploadingThumb(true);
       try {
         const thumbData = thumbnails[selectedThumb];
         let thumbnailUrl = thumbData;
 
-        // If it's a data URL (from canvas), upload to storage
         if (thumbData.startsWith("data:")) {
           const blob = await (await fetch(thumbData)).blob();
           const path = `${churchId}/thumb-${sermonId}.jpg`;
@@ -464,7 +546,6 @@ function ReviewSheet({
           }
         }
 
-        // Save thumbnail_url on sermon
         await supabase
           .from("sermons")
           .update({ thumbnail_url: thumbnailUrl })
@@ -476,170 +557,558 @@ function ReviewSheet({
       }
     }
 
+    // Save any remaining edits
+    for (const type of TRACKED_CONTENT_TYPES) {
+      if (editedContent[type] !== undefined) {
+        await saveEdits(type);
+      }
+    }
+
     onApprove(sermonId);
   };
 
-  const contentMap = new Map<string, any>((content || []).map((c) => [c.content_type as string, c.content]));
-
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
-        <SheetHeader className="p-6 pb-4">
-          <SheetTitle>Review Generated Content</SheetTitle>
-        </SheetHeader>
-        <ScrollArea className="flex-1 px-6">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0 flex flex-col gap-0 overflow-hidden">
+        {/* Progress dots */}
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            {WIZARD_STEPS.map((s, i) => (
+              <button
+                key={s}
+                onClick={() => i <= step && setStep(i)}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  i === step
+                    ? "bg-primary w-6"
+                    : i < step
+                    ? "bg-primary/60"
+                    : "bg-muted-foreground/20"
+                }`}
+              />
+            ))}
+          </div>
+          <h2 className="text-lg font-bold text-foreground text-center">
+            {WIZARD_STEP_LABELS[currentStep]}
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mt-0.5">
+            Step {step + 1} of {WIZARD_STEPS.length}
+          </p>
+        </div>
+
+        {/* Content area */}
+        <ScrollArea className="flex-1 px-6 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-6 pb-6">
-              {/* Thumbnail Picker */}
-              {thumbnails.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-foreground">Choose a Thumbnail</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {thumbnails.map((thumb, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedThumb(i)}
-                        className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                          selectedThumb === i ? "border-primary ring-2 ring-primary/30" : "border-transparent"
-                        }`}
-                      >
-                        <img
-                          src={thumb}
-                          alt={`Thumbnail option ${i + 1}`}
-                          className="w-full aspect-video object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                        {selectedThumb === i && (
-                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="pb-6">
+              {currentStep === "thumbnail" && (
+                <ThumbnailStep
+                  thumbnails={thumbnails}
+                  selectedThumb={selectedThumb}
+                  onSelect={setSelectedThumb}
+                />
               )}
-
-              {TRACKED_CONTENT_TYPES.concat(["weekly_challenge", "weekend_reflection"]).map((ct) => {
-                const data = contentMap.get(ct) as any;
-                if (!data) return null;
-                return (
-                  <div key={ct} className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      {CONTENT_TYPE_LABELS[ct] || ct}
-                    </h3>
-                    <ContentPreview type={ct} data={data} />
-                  </div>
-                );
-              })}
+              {currentStep === "spark" && (
+                <ContentEditStep
+                  type="spark"
+                  data={getContent("spark")}
+                  editing={editMode.spark || false}
+                  onToggleEdit={() => setEditMode((p) => ({ ...p, spark: !p.spark }))}
+                  onUpdate={(d) => updateContent("spark", d)}
+                  onRegenerate={() => handleRegenerate("spark")}
+                  regenerating={regenerating === "spark"}
+                />
+              )}
+              {currentStep === "takeaways" && (
+                <ContentEditStep
+                  type="takeaways"
+                  data={getContent("takeaways")}
+                  editing={editMode.takeaways || false}
+                  onToggleEdit={() => setEditMode((p) => ({ ...p, takeaways: !p.takeaways }))}
+                  onUpdate={(d) => updateContent("takeaways", d)}
+                  onRegenerate={() => handleRegenerate("takeaways")}
+                  regenerating={regenerating === "takeaways"}
+                />
+              )}
+              {currentStep === "reflection_questions" && (
+                <ContentEditStep
+                  type="reflection_questions"
+                  data={getContent("reflection_questions")}
+                  editing={editMode.reflection_questions || false}
+                  onToggleEdit={() => setEditMode((p) => ({ ...p, reflection_questions: !p.reflection_questions }))}
+                  onUpdate={(d) => updateContent("reflection_questions", d)}
+                  onRegenerate={() => handleRegenerate("reflection_questions")}
+                  regenerating={regenerating === "reflection_questions"}
+                />
+              )}
+              {currentStep === "scriptures" && (
+                <ContentEditStep
+                  type="scriptures"
+                  data={getContent("scriptures")}
+                  editing={editMode.scriptures || false}
+                  onToggleEdit={() => setEditMode((p) => ({ ...p, scriptures: !p.scriptures }))}
+                  onUpdate={(d) => updateContent("scriptures", d)}
+                  onRegenerate={() => handleRegenerate("scriptures")}
+                  regenerating={regenerating === "scriptures"}
+                />
+              )}
+              {currentStep === "chapters" && (
+                <ContentEditStep
+                  type="chapters"
+                  data={getContent("chapters")}
+                  editing={editMode.chapters || false}
+                  onToggleEdit={() => setEditMode((p) => ({ ...p, chapters: !p.chapters }))}
+                  onUpdate={(d) => updateContent("chapters", d)}
+                  onRegenerate={() => handleRegenerate("chapters")}
+                  regenerating={regenerating === "chapters"}
+                />
+              )}
+              {currentStep === "confirm" && (
+                <ConfirmStep
+                  contentMap={contentMap}
+                  editedContent={editedContent}
+                  sermon={sermon}
+                />
+              )}
             </div>
           )}
         </ScrollArea>
-        <div className="p-6 pt-4 border-t flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
-            Go Back
-          </Button>
-          <Button
-            className="flex-1"
-            disabled={approving || isLoading || uploadingThumb}
-            onClick={handleApproveWithThumb}
-          >
-            {(approving || uploadingThumb) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-            Approve & Schedule
-          </Button>
+
+        {/* Navigation */}
+        <div className="px-6 py-4 border-t flex items-center gap-3">
+          {step > 0 ? (
+            <Button variant="outline" onClick={handleBack} className="gap-1">
+              <ChevronLeft className="h-4 w-4" /> Back
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          <div className="flex-1" />
+          {currentStep === "confirm" ? (
+            <Button
+              disabled={approving || uploadingThumb}
+              onClick={handleApproveWithThumb}
+              className="gap-2"
+            >
+              {(approving || uploadingThumb) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Approve & Schedule
+            </Button>
+          ) : (
+            <Button onClick={handleNext} className="gap-1">
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function ContentPreview({ type, data }: { type: string; data: any }) {
-  if (!data) return null;
+/* ─── Wizard Step Components ─── */
 
-  if (type === "spark") {
+function ThumbnailStep({
+  thumbnails,
+  selectedThumb,
+  onSelect,
+}: {
+  thumbnails: string[];
+  selectedThumb: number | null;
+  onSelect: (i: number) => void;
+}) {
+  if (thumbnails.length === 0) {
     return (
-      <Card className="bg-muted/50">
-        <CardContent className="p-3">
-          <p className="font-medium text-sm">{data.title}</p>
-          <p className="text-sm text-muted-foreground mt-1">{data.summary}</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (type === "takeaways") {
-    return (
-      <div className="space-y-2">
-        {(data.takeaways || []).map((t: any, i: number) => (
-          <Card key={i} className="bg-muted/50">
-            <CardContent className="p-3">
-              <p className="font-medium text-sm">{t.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="text-center py-8">
+        <Image className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No thumbnails available for this sermon.</p>
+        <p className="text-xs text-muted-foreground mt-1">You can skip this step.</p>
       </div>
     );
   }
 
-  if (type === "reflection_questions") {
-    return (
-      <div className="space-y-2">
-        {(data.questions || []).map((q: any, i: number) => (
-          <Card key={i} className="bg-muted/50">
-            <CardContent className="p-3">
-              <p className="font-medium text-sm">{q.question}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{q.context}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (type === "scriptures") {
-    return (
-      <div className="space-y-2">
-        {(data.scriptures || []).map((s: any, i: number) => (
-          <Card key={i} className="bg-muted/50">
-            <CardContent className="p-3">
-              <p className="font-medium text-sm">{s.reference}</p>
-              <p className="text-xs text-muted-foreground italic mt-0.5">{s.text}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.context}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (type === "chapters") {
-    return (
-      <div className="space-y-1">
-        {(data.chapters || []).map((c: any, i: number) => (
-          <div key={i} className="flex gap-2 text-sm py-1">
-            <span className="text-muted-foreground font-mono text-xs min-w-[3ch]">{i + 1}.</span>
-            <span className="font-medium">{c.title}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Generic fallback for weekly_challenge, weekend_reflection etc
   return (
-    <Card className="bg-muted/50">
-      <CardContent className="p-3">
-        <pre className="text-xs text-muted-foreground whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Choose a thumbnail for this sermon:</p>
+      <div className="grid grid-cols-2 gap-3">
+        {thumbnails.map((thumb, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(i)}
+            className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+              selectedThumb === i ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground/40"
+            }`}
+          >
+            <img
+              src={thumb}
+              alt={`Thumbnail option ${i + 1}`}
+              className="w-full aspect-video object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+            {selectedThumb === i && (
+              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-primary-foreground" />
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
+
+function ContentEditStep({
+  type,
+  data,
+  editing,
+  onToggleEdit,
+  onUpdate,
+  onRegenerate,
+  regenerating,
+}: {
+  type: string;
+  data: any;
+  editing: boolean;
+  onToggleEdit: () => void;
+  onUpdate: (d: any) => void;
+  onRegenerate: () => void;
+  regenerating: boolean;
+}) {
+  if (regenerating) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Regenerating content…</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-muted-foreground">No content generated for this section.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs"
+          onClick={onToggleEdit}
+        >
+          <Pencil className="h-3 w-3" />
+          {editing ? "Done Editing" : "Edit"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs"
+          onClick={onRegenerate}
+        >
+          <RefreshCw className="h-3 w-3" />
+          Regenerate
+        </Button>
+      </div>
+
+      {type === "spark" && <SparkEditor data={data} editing={editing} onUpdate={onUpdate} />}
+      {type === "takeaways" && <TakeawaysEditor data={data} editing={editing} onUpdate={onUpdate} />}
+      {type === "reflection_questions" && <ReflectionEditor data={data} editing={editing} onUpdate={onUpdate} />}
+      {type === "scriptures" && <ScripturesEditor data={data} editing={editing} onUpdate={onUpdate} />}
+      {type === "chapters" && <ChaptersEditor data={data} editing={editing} onUpdate={onUpdate} />}
+    </div>
+  );
+}
+
+function SparkEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+  // Support both new (sparks array) and legacy (single spark) format
+  const sparks = data?.sparks || [{ day: "Daily", title: data?.title || "", summary: data?.summary || "" }];
+
+  const updateSpark = (index: number, field: string, value: string) => {
+    const updated = [...sparks];
+    updated[index] = { ...updated[index], [field]: value };
+    onUpdate({ sparks: updated });
+  };
+
+  return (
+    <div className="space-y-3">
+      {sparks.map((spark: any, i: number) => (
+        <Card key={i} className="bg-muted/30">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary" className="text-xs font-medium">{spark.day}</Badge>
+            </div>
+            {editing ? (
+              <div className="space-y-2">
+                <Input
+                  value={spark.title}
+                  onChange={(e) => updateSpark(i, "title", e.target.value)}
+                  placeholder="Spark title"
+                  className="text-sm"
+                />
+                <Textarea
+                  value={spark.summary}
+                  onChange={(e) => updateSpark(i, "summary", e.target.value)}
+                  placeholder="Spark summary"
+                  className="text-sm min-h-[60px]"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="font-medium text-sm text-foreground">{spark.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{spark.summary}</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function TakeawaysEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+  const takeaways = data?.takeaways || [];
+
+  const updateItem = (index: number, field: string, value: string) => {
+    const updated = [...takeaways];
+    updated[index] = { ...updated[index], [field]: value };
+    onUpdate({ takeaways: updated });
+  };
+
+  return (
+    <div className="space-y-3">
+      {takeaways.map((t: any, i: number) => (
+        <Card key={i} className="bg-muted/30">
+          <CardContent className="p-4">
+            {editing ? (
+              <div className="space-y-2">
+                <Input
+                  value={t.title}
+                  onChange={(e) => updateItem(i, "title", e.target.value)}
+                  placeholder="Takeaway title"
+                  className="text-sm"
+                />
+                <Textarea
+                  value={t.description}
+                  onChange={(e) => updateItem(i, "description", e.target.value)}
+                  placeholder="Takeaway description"
+                  className="text-sm min-h-[60px]"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="font-medium text-sm text-foreground">{t.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ReflectionEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+  const questions = data?.questions || [];
+
+  const updateItem = (index: number, field: string, value: string) => {
+    const updated = [...questions];
+    updated[index] = { ...updated[index], [field]: value };
+    onUpdate({ questions: updated });
+  };
+
+  return (
+    <div className="space-y-3">
+      {questions.map((q: any, i: number) => (
+        <Card key={i} className="bg-muted/30">
+          <CardContent className="p-4">
+            {editing ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={q.question}
+                  onChange={(e) => updateItem(i, "question", e.target.value)}
+                  placeholder="Question"
+                  className="text-sm min-h-[60px]"
+                />
+                <Input
+                  value={q.context}
+                  onChange={(e) => updateItem(i, "context", e.target.value)}
+                  placeholder="Context"
+                  className="text-sm"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="font-medium text-sm text-foreground">{q.question}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{q.context}</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ScripturesEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+  const scriptures = data?.scriptures || [];
+
+  const updateItem = (index: number, field: string, value: string) => {
+    const updated = [...scriptures];
+    updated[index] = { ...updated[index], [field]: value };
+    onUpdate({ scriptures: updated });
+  };
+
+  return (
+    <div className="space-y-3">
+      {scriptures.map((s: any, i: number) => (
+        <Card key={i} className="bg-muted/30">
+          <CardContent className="p-4">
+            {editing ? (
+              <div className="space-y-2">
+                <Input
+                  value={s.reference}
+                  onChange={(e) => updateItem(i, "reference", e.target.value)}
+                  placeholder="Reference (e.g. Luke 5:1-7)"
+                  className="text-sm"
+                />
+                <Input
+                  value={s.text}
+                  onChange={(e) => updateItem(i, "text", e.target.value)}
+                  placeholder="Context note"
+                  className="text-sm"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="font-medium text-sm text-foreground">{s.reference}</p>
+                <p className="text-xs text-muted-foreground italic mt-0.5">{s.text}</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ChaptersEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+  const chapters = data?.chapters || [];
+
+  const updateItem = (index: number, field: string, value: string) => {
+    const updated = [...chapters];
+    updated[index] = { ...updated[index], [field]: value };
+    onUpdate({ chapters: updated });
+  };
+
+  return (
+    <div className="space-y-2">
+      {chapters.map((c: any, i: number) => (
+        <Card key={i} className="bg-muted/30">
+          <CardContent className="p-3">
+            {editing ? (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={c.title}
+                    onChange={(e) => updateItem(i, "title", e.target.value)}
+                    placeholder="Chapter title"
+                    className="text-sm flex-1"
+                  />
+                  <Input
+                    value={c.timestamp || ""}
+                    onChange={(e) => updateItem(i, "timestamp", e.target.value)}
+                    placeholder="0:00"
+                    className="text-sm w-20"
+                  />
+                </div>
+                <Textarea
+                  value={c.summary || ""}
+                  onChange={(e) => updateItem(i, "summary", e.target.value)}
+                  placeholder="Summary"
+                  className="text-sm min-h-[50px]"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground font-mono text-xs min-w-[2ch]">{c.order || i + 1}.</span>
+                  <span className="font-medium text-sm">{c.title}</span>
+                </div>
+                {c.timestamp && (
+                  <span className="text-xs font-mono text-primary">{c.timestamp}</span>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function ConfirmStep({
+  contentMap,
+  editedContent,
+  sermon,
+}: {
+  contentMap: Map<string, any>;
+  editedContent: Record<string, any>;
+  sermon: any;
+}) {
+  const getCount = (type: string): number => {
+    const data = editedContent[type] ?? contentMap.get(type);
+    if (!data) return 0;
+    if (type === "spark") return (data.sparks || []).length || (data.title ? 1 : 0);
+    if (type === "takeaways") return (data.takeaways || []).length;
+    if (type === "reflection_questions") return (data.questions || []).length;
+    if (type === "scriptures") return (data.scriptures || []).length;
+    if (type === "chapters") return (data.chapters || []).length;
+    return 0;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center py-4">
+        <Sparkles className="h-10 w-10 text-primary mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-foreground">Everything looks good!</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Review the summary below, then approve to publish.
+        </p>
+      </div>
+
+      {sermon && (
+        <Card className="bg-muted/30">
+          <CardContent className="p-4">
+            <p className="font-semibold text-foreground">{sermon.title}</p>
+            {sermon.speaker && <p className="text-xs text-muted-foreground mt-0.5">{sermon.speaker}</p>}
+            <p className="text-xs text-muted-foreground">{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        {TRACKED_CONTENT_TYPES.map((ct) => {
+          const count = getCount(ct);
+          return (
+            <div key={ct} className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="text-foreground">{CONTENT_TYPE_LABELS[ct]}</span>
+              <span className="text-muted-foreground">({count})</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Upload Form ─── */
 
 type UploadStep = "idle" | "uploading" | "finalizing" | "done";
 

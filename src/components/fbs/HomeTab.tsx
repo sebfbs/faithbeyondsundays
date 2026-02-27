@@ -162,9 +162,8 @@ function formatDate() {
 
 function getDailyPrompt(sermon: SermonUIData): string {
   const day = new Date().getDay();
-  if (day === 0 || day === 6) return sermon.weekendReflection || "Look back on this week — what has God been teaching you?";
-  const idx = day - 1; // Mon=0..Fri=4
-  return sermon.reflectionQuestions[idx] || sermon.reflectionQuestions[0] || "";
+  const idx = day === 0 ? 6 : day - 1; // Sun=6, Mon=0..Sat=5
+  return sermon.reflectionQuestions[idx] || sermon.reflectionQuestions[0] || "Look back on this week — what has God been teaching you?";
 }
 
 interface DailyContent {

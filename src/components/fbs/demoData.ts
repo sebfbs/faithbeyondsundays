@@ -53,10 +53,15 @@ export const DEMO_SERMON = {
     "Who in your community is in a storm right now? How can you reach out to them this week?",
   ],
   spark: "Grace meets you in the storm, not on the other side of it.",
-  weeklyChallenge:
-    "This week, write down one fear that's been keeping you from trusting God fully. Then write a verse of scripture next to it — a promise that speaks directly to that fear.",
-  weekendReflection:
-    "Look back on this week — what has God been teaching you through this sermon?",
+  sparkData: [
+    { day: "Monday", title: "Storm-Proof Faith", summary: "Grace meets you in the storm, not on the other side of it." },
+    { day: "Tuesday", title: "Eyes on Jesus", summary: "Like Peter, shift your gaze from the waves to the One walking on them." },
+    { day: "Wednesday", title: "Anchored in Grace", summary: "Peace isn't the absence of storms; it's the presence of God within them." },
+    { day: "Thursday", title: "Trust the Process", summary: "Every storm has a purpose — God uses uncertainty to deepen our trust." },
+    { day: "Friday", title: "Not Alone", summary: "Community is part of God's design for resilience. Don't face the storm alone." },
+    { day: "Saturday", title: "Rest in His Arms", summary: "Grace is not earned — it is a gift that meets us right where we are." },
+    { day: "Sunday", title: "Worship Through the Waves", summary: "Praise Him in the storm — that's where faith becomes real." },
+  ],
 };
 
 export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
@@ -96,8 +101,7 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
       "How would your week look different if you truly believed you were enough?",
     ],
     spark: "You don't have to earn what God has already freely given.",
-    weeklyChallenge: "Write down one lie you've believed about yourself, then find a verse that speaks the truth. Read it aloud every morning this week.",
-    weekendReflection: "Look back on this week — what has God been teaching you through this sermon?",
+    sparkData: null,
   },
   {
     id: "demo-sermon-3",
@@ -135,8 +139,7 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
       "How can you celebrate small wins with God this week?",
     ],
     spark: "Don't despise small beginnings — God starts big things in small places.",
-    weeklyChallenge: "Identify one small spiritual habit — 5 minutes of prayer, one verse a day — and do it every day this week without skipping.",
-    weekendReflection: "Look back on this week — what has God been teaching you through this sermon?",
+    sparkData: null,
   },
   {
     id: "demo-sermon-4",
@@ -174,8 +177,7 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
       "How have past dry seasons shaped your faith in ways you didn't expect?",
     ],
     spark: "God has not moved. He is closer than you think.",
-    weeklyChallenge: "Spend 10 minutes in silence each morning this week — no music, no phone — just sitting with God and letting Him speak.",
-    weekendReflection: "Look back on this week — what has God been teaching you through this sermon?",
+    sparkData: null,
   },
   {
     id: "demo-sermon-5",
@@ -214,8 +216,7 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
       "How has God's forgiveness of you changed the way you see others?",
     ],
     spark: "Forgiveness is not a feeling — it's a decision to stop carrying what God never asked you to hold.",
-    weeklyChallenge: "Write a letter to someone you need to forgive — you don't have to send it. Just write what you felt and then write: 'I release this to God.'",
-    weekendReflection: "Look back on this week — what has God been teaching you through this sermon?",
+    sparkData: null,
   },
 ];
 
