@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -51,6 +51,8 @@ export default function Index() {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+  const [scrollY, setScrollY] = useState(0);
+  const topBarRatio = useMemo(() => Math.min(scrollY / 60, 1), [scrollY]);
 
   // Real data hooks (only active when not in demo mode)
   const { data: currentSermon, isLoading: sermonLoading } = useCurrentSermon();
@@ -335,9 +337,10 @@ export default function Index() {
           className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
           style={{
             height: "env(safe-area-inset-top, 0px)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            background: "hsl(var(--card) / 0.95)",
+            backdropFilter: `blur(${12 * topBarRatio}px)`,
+            WebkitBackdropFilter: `blur(${12 * topBarRatio}px)`,
+            background: `hsl(var(--card) / ${0.95 * topBarRatio})`,
+            transition: "background 0.1s, backdrop-filter 0.1s, -webkit-backdrop-filter 0.1s",
           }}
         />
       )}
@@ -345,6 +348,7 @@ export default function Index() {
       <main
         key={`${activeTab}-${overlay}-${subOverlay}`}
         ref={mainRef}
+        onScroll={(e) => setScrollY((e.target as HTMLElement).scrollTop)}
         className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
