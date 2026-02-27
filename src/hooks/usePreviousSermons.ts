@@ -99,6 +99,8 @@ export function usePreviousSermons() {
           videoUrl: sermon.video_url,
           sourceUrl: sermon.source_url,
           sourceType: sermon.source_type,
+          thumbnailUrl: sermon.thumbnail_url,
+          storagePath: sermon.storage_path,
           ...content,
         };
       });

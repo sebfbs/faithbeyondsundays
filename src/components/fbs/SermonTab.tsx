@@ -2,9 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  Clock,
   Calendar,
-  Play,
   Share,
   Church,
   Heart,
@@ -12,6 +10,8 @@ import {
 import { toast } from "sonner";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { useSermonLikes } from "@/hooks/useSermonLikes";
+import SermonVideoPlayer, { type SermonVideoPlayerHandle } from "./SermonVideoPlayer";
+import ScripturePills from "./ScripturePills";
 
 interface SermonTabProps {
   sermon: SermonUIData | null;
@@ -19,6 +19,14 @@ interface SermonTabProps {
   previousSermonsCount: number;
   onPreviousSermons: () => void;
   hasChurch?: boolean;
+  onOpenBible?: (reference: string) => void;
+}
+
+function parseTimestampToSeconds(ts: string): number {
+  const parts = ts.split(":").map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
 }
 
 function AccordionSection({
@@ -72,7 +80,8 @@ function AccordionSection({
   );
 }
 
-export default function SermonTab({ sermon, isLoading, previousSermonsCount, onPreviousSermons, hasChurch = true }: SermonTabProps) {
+export default function SermonTab({ sermon, isLoading, previousSermonsCount, onPreviousSermons, hasChurch = true, onOpenBible }: SermonTabProps) {
+  const videoRef = useRef<SermonVideoPlayerHandle>(null);
   const {
     sermonLikeCount,
     hasLikedSermon,
@@ -117,6 +126,11 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
     toggleTakeawayLike(index);
   };
 
+  const handleTimestampClick = (timestamp: string) => {
+    const seconds = parseTimestampToSeconds(timestamp);
+    videoRef.current?.seekTo(seconds);
+  };
+
   // Churchless state
   if (!hasChurch) {
     return (
@@ -148,7 +162,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
         </div>
         <div className="bg-card rounded-3xl p-8 shadow-card text-center">
           <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-muted">
-            <Play size={24} className="text-muted-foreground ml-1" />
+            <Church size={24} className="text-muted-foreground" />
           </div>
           <h2 className="text-lg font-bold text-foreground mb-2">No sermon yet</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -171,31 +185,16 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
         </p>
       </div>
 
-      {/* Video Thumbnail */}
-      <div className="relative rounded-3xl overflow-hidden tap-active">
-        <div
-          className="w-full aspect-video flex flex-col items-center justify-center"
-          style={{
-            background:
-              "linear-gradient(135deg, hsl(207, 55%, 35%) 0%, hsl(220, 50%, 25%) 100%)",
-          }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center opacity-10">
-            <div style={{ width: 60, height: 4, background: "white", position: "absolute" }} />
-            <div style={{ width: 4, height: 80, background: "white", position: "absolute" }} />
-          </div>
-          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 z-10">
-            <Play size={24} className="text-white fill-white ml-1" />
-          </div>
-          <p className="text-white/80 text-xs font-medium z-10">Tap to watch</p>
-          {sermon.duration && (
-            <p className="text-white/50 text-xs mt-1 z-10 flex items-center gap-1">
-              <Clock size={11} />
-              {sermon.duration}
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Video Player */}
+      <SermonVideoPlayer
+        ref={videoRef}
+        videoUrl={sermon.videoUrl}
+        sourceUrl={sermon.sourceUrl}
+        sourceType={sermon.sourceType}
+        thumbnailUrl={sermon.thumbnailUrl}
+        storagePath={sermon.storagePath}
+        duration={sermon.duration}
+      />
 
       {/* Main Sermon Card */}
       <div className="bg-card rounded-3xl p-5 shadow-card">
@@ -248,9 +247,12 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
               >
                 <span className="text-sm text-foreground">{ch.title}</span>
                 {ch.timestamp && (
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <button
+                    onClick={() => handleTimestampClick(ch.timestamp)}
+                    className="text-xs font-mono text-primary tap-active hover:underline"
+                  >
                     {ch.timestamp}
-                  </span>
+                  </button>
                 )}
               </div>
             ))}
@@ -260,18 +262,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
         {/* Scripture */}
         {sermon.scriptures.length > 0 && (
           <AccordionSection title="Scripture">
-            {sermon.scriptures.map((s, i) => (
-              <div
-                key={i}
-                className="rounded-2xl p-4"
-                style={{ background: "hsl(48 80% 94%)" }}
-              >
-                <p className="text-xs font-bold text-amber mb-1.5">{s.reference}</p>
-                <p className="text-sm text-foreground leading-relaxed italic">
-                  {s.text}
-                </p>
-              </div>
-            ))}
+            <ScripturePills scriptures={sermon.scriptures} onOpenBible={onOpenBible} />
           </AccordionSection>
         )}
 

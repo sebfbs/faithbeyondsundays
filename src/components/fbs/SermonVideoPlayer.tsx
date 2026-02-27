@@ -1,0 +1,169 @@
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { Play, Clock } from "lucide-react";
+
+export interface SermonVideoPlayerHandle {
+  seekTo: (seconds: number) => void;
+}
+
+interface SermonVideoPlayerProps {
+  videoUrl?: string | null;
+  sourceUrl?: string | null;
+  sourceType: "upload" | "youtube" | "vimeo";
+  thumbnailUrl?: string | null;
+  storagePath?: string | null;
+  duration?: string | null;
+}
+
+function extractYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match?.[1] || null;
+}
+
+const SermonVideoPlayer = forwardRef<SermonVideoPlayerHandle, SermonVideoPlayerProps>(
+  ({ videoUrl, sourceUrl, sourceType, thumbnailUrl, storagePath, duration }, ref) => {
+    const [playing, setPlaying] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const playableUrl = videoUrl || sourceUrl;
+    const youtubeId = sourceType === "youtube" && playableUrl ? extractYouTubeId(playableUrl) : null;
+
+    useImperativeHandle(ref, () => ({
+      seekTo: (seconds: number) => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = seconds;
+          if (videoRef.current.paused) videoRef.current.play();
+          setPlaying(true);
+        } else if (youtubeId && iframeRef.current?.contentWindow) {
+          // YouTube postMessage API
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: "command", func: "seekTo", args: [seconds, true] }),
+            "*"
+          );
+          setPlaying(true);
+        }
+      },
+    }));
+
+    // YouTube embed
+    if (youtubeId) {
+      if (!playing) {
+        const ytThumb = thumbnailUrl || `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+        return (
+          <div
+            className="relative rounded-3xl overflow-hidden tap-active cursor-pointer"
+            onClick={() => setPlaying(true)}
+          >
+            <div className="w-full aspect-video relative">
+              <img src={ytThumb} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
+                  <Play size={24} className="text-white fill-white ml-1" />
+                </div>
+                <p className="text-white/80 text-xs font-medium">Tap to watch</p>
+                {duration && (
+                  <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
+                    <Clock size={11} />
+                    {duration}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="rounded-3xl overflow-hidden">
+          <iframe
+            ref={iframeRef}
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&enablejsapi=1`}
+            className="w-full aspect-video"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    // Direct video (uploaded file)
+    if (playableUrl || storagePath) {
+      if (!playing) {
+        return (
+          <div
+            className="relative rounded-3xl overflow-hidden tap-active cursor-pointer"
+            onClick={() => setPlaying(true)}
+          >
+            <div className="w-full aspect-video relative">
+              {thumbnailUrl ? (
+                <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, hsl(207, 55%, 35%) 0%, hsl(220, 50%, 25%) 100%)",
+                  }}
+                />
+              )}
+              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
+                  <Play size={24} className="text-white fill-white ml-1" />
+                </div>
+                <p className="text-white/80 text-xs font-medium">Tap to watch</p>
+                {duration && (
+                  <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
+                    <Clock size={11} />
+                    {duration}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const src = playableUrl || "";
+      return (
+        <div className="rounded-3xl overflow-hidden">
+          <video
+            ref={videoRef}
+            src={src}
+            poster={thumbnailUrl || undefined}
+            controls
+            autoPlay
+            className="w-full aspect-video bg-black"
+          />
+        </div>
+      );
+    }
+
+    // Fallback: no video available
+    return (
+      <div className="relative rounded-3xl overflow-hidden">
+        <div
+          className="w-full aspect-video flex flex-col items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, hsl(207, 55%, 35%) 0%, hsl(220, 50%, 25%) 100%)",
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center opacity-10">
+            <div style={{ width: 60, height: 4, background: "white", position: "absolute" }} />
+            <div style={{ width: 4, height: 80, background: "white", position: "absolute" }} />
+          </div>
+          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 z-10">
+            <Play size={24} className="text-white fill-white ml-1" />
+          </div>
+          <p className="text-white/80 text-xs font-medium z-10">Video coming soon</p>
+          {duration && (
+            <p className="text-white/50 text-xs mt-1 z-10 flex items-center gap-1">
+              <Clock size={11} />
+              {duration}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+);
+
+SermonVideoPlayer.displayName = "SermonVideoPlayer";
+export default SermonVideoPlayer;

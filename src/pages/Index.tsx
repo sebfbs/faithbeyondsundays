@@ -19,6 +19,7 @@ import OnboardingScreen from "@/components/fbs/OnboardingScreen";
 import TabletSidebar, { SidebarNavTarget } from "@/components/fbs/TabletSidebar";
 import { GIVING_URL } from "@/components/fbs/data";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
+import { parseScriptureReference } from "@/components/fbs/ScripturePills";
 import type { CommunityMember } from "@/components/fbs/communityData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDemoMode } from "@/components/fbs/DemoModeProvider";
@@ -108,6 +109,7 @@ export default function Index() {
   const [selectedSermon, setSelectedSermon] = useState<SermonUIData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
   const [subOverlay, setSubOverlay] = useState<"previous-sermon-detail" | "public-profile" | null>(null);
+  const [bibleDeepLink, setBibleDeepLink] = useState<{ book: string; chapter: number; verse?: number } | null>(null);
   const subOverlayRef = useRef(subOverlay);
   subOverlayRef.current = subOverlay;
   const mainRef = useRef<HTMLDivElement>(null);
@@ -139,6 +141,16 @@ export default function Index() {
       document.body.scrollTop = 0;
     });
   }, [navigate, isDemo]);
+
+  const handleOpenBible = useCallback((reference: string) => {
+    const parsed = parseScriptureReference(reference);
+    if (parsed) {
+      setBibleDeepLink({ book: parsed.book, chapter: parsed.chapter, verse: parsed.verse });
+    } else {
+      setBibleDeepLink(null);
+    }
+    navTo("/bible");
+  }, [navTo]);
 
   // Build UserData
   const userData: UserData | null = isDemo
@@ -244,9 +256,9 @@ export default function Index() {
       return <PublicProfileScreen member={selectedMember} onBack={() => window.history.back()} isDemo={isDemo} />;
     }
     if (subOverlay === "previous-sermon-detail" && selectedSermon) {
-      return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => window.history.back()} />;
+      return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => window.history.back()} onOpenBible={handleOpenBible} />;
     }
-    if (overlay === "bible") return <BibleScreen onBack={() => navTo("/home")} />;
+    if (overlay === "bible") return <BibleScreen onBack={() => { setBibleDeepLink(null); navTo("/home"); }} initialBook={bibleDeepLink?.book} initialChapter={bibleDeepLink?.chapter} initialVerse={bibleDeepLink?.verse} />;
     if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} isDemo={isDemo} />;
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => navTo("/home")} user={userData} onSignOut={handleSignOut} onUpdateUser={() => refetchProfile()} />;
@@ -302,6 +314,7 @@ export default function Index() {
             previousSermonsCount={prevSermons.length}
             onPreviousSermons={() => navTo("/previous-sermons")}
             hasChurch={!!userData?.churchCode}
+            onOpenBible={handleOpenBible}
           />
         );
       case "journal":

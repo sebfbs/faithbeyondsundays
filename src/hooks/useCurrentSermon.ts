@@ -14,6 +14,8 @@ export interface SermonUIData {
   videoUrl: string | null;
   sourceUrl: string | null;
   sourceType: "upload" | "youtube" | "vimeo";
+  thumbnailUrl: string | null;
+  storagePath: string | null;
   chapters: { title: string; timestamp: string }[];
   scriptures: { reference: string; text: string }[];
   takeaways: string[];
@@ -42,30 +44,25 @@ function transformContent(contentRows: { content_type: string; content: Json }[]
     byType[row.content_type] = row.content;
   }
 
-  // Spark
   const sparkData = byType["spark"];
   const spark = sparkData?.summary || sparkData?.title || "";
 
-  // Takeaways
   const takeawaysData = byType["takeaways"];
   const takeaways: string[] = (takeawaysData?.takeaways || []).map(
     (t: any) => t.description ? `${t.title} — ${t.description}` : t.title || t
   );
 
-  // Reflection questions
   const reflectionData = byType["reflection_questions"];
   const reflectionQuestions: string[] = (reflectionData?.questions || []).map(
     (q: any) => q.question || q
   );
 
-  // Scriptures
   const scripturesData = byType["scriptures"];
   const scriptures = (scripturesData?.scriptures || []).map((s: any) => ({
     reference: s.reference || "",
     text: s.text || "",
   }));
 
-  // Chapters
   const chaptersData = byType["chapters"];
   const chapters = (chaptersData?.chapters || [])
     .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
@@ -74,11 +71,9 @@ function transformContent(contentRows: { content_type: string; content: Json }[]
       timestamp: c.timestamp || "",
     }));
 
-  // Weekly challenge
   const challengeData = byType["weekly_challenge"];
   const weeklyChallenge = challengeData?.challenge || challengeData?.description || "";
 
-  // Weekend reflection
   const weekendData = byType["weekend_reflection"];
   const weekendReflection = weekendData?.prompt || weekendData?.reflection || "";
 
@@ -94,7 +89,6 @@ export function useCurrentSermon() {
     queryFn: async (): Promise<SermonUIData | null> => {
       if (!churchId) return null;
 
-      // Fetch the current published sermon
       const { data: sermon, error } = await supabase
         .from("sermons")
         .select("*")
@@ -105,7 +99,6 @@ export function useCurrentSermon() {
 
       if (error || !sermon) return null;
 
-      // Fetch all content for this sermon
       const { data: contentRows } = await supabase
         .from("sermon_content")
         .select("content_type, content")
@@ -124,6 +117,8 @@ export function useCurrentSermon() {
         videoUrl: sermon.video_url,
         sourceUrl: sermon.source_url,
         sourceType: sermon.source_type,
+        thumbnailUrl: sermon.thumbnail_url,
+        storagePath: sermon.storage_path,
         ...content,
       };
     },

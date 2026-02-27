@@ -5,6 +5,9 @@ import { getAccentColors } from "./themeColors";
 
 interface BibleScreenProps {
   onBack: () => void;
+  initialBook?: string;
+  initialChapter?: number;
+  initialVerse?: number;
 }
 
 interface Verse {
@@ -16,7 +19,7 @@ interface Verse {
 
 type View = "books" | "chapters" | "text";
 
-export default function BibleScreen({ onBack }: BibleScreenProps) {
+export default function BibleScreen({ onBack, initialBook, initialChapter, initialVerse }: BibleScreenProps) {
   const colors = getAccentColors();
   const [view, setView] = useState<View>("books");
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
@@ -46,6 +49,20 @@ export default function BibleScreen({ onBack }: BibleScreenProps) {
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
   }, [view, selectedBook, selectedChapter]);
+
+  // Auto-navigate to a specific book/chapter/verse when deep-linking
+  useEffect(() => {
+    if (!initialBook) return;
+    const book = BIBLE_BOOKS.find(
+      (b) => b.name.toLowerCase() === initialBook.toLowerCase()
+    );
+    if (!book) return;
+    setSelectedBook(book);
+    const ch = initialChapter || 1;
+    setSelectedChapter(ch);
+    fetchChapter(book, ch);
+    setView("text");
+  }, [initialBook, initialChapter]);
 
   const fetchChapter = async (book: BibleBook, chapter: number) => {
     const cacheKey = `${translation.id}:${book.name}:${chapter}`;
