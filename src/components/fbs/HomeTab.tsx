@@ -133,6 +133,13 @@ function getGreeting() {
   return "Good evening";
 }
 
+export function getSkyGradientTopColor() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "hsl(207, 65%, 62%)";
+  if (hour < 17) return "hsl(210, 70%, 55%)";
+  return "hsl(225, 55%, 22%)";
+}
+
 export function getSkyGradient() {
   const hour = new Date().getHours();
   if (hour < 12) {

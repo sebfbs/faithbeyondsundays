@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
-import HomeTab, { getSkyGradient } from "@/components/fbs/HomeTab";
+import HomeTab, { getSkyGradient, getSkyGradientTopColor } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
 import JournalTab from "@/components/fbs/JournalTab";
 import BibleScreen from "@/components/fbs/BibleScreen";
@@ -353,7 +353,9 @@ export default function Index() {
             height: "env(safe-area-inset-top, 0px)",
             backdropFilter: `blur(${12 * topBarRatio}px)`,
             WebkitBackdropFilter: `blur(${12 * topBarRatio}px)`,
-            background: `hsl(var(--card) / ${0.95 * topBarRatio})`,
+            background: (overlay === null && activeTab === "home")
+              ? getSkyGradientTopColor().replace(')', ` / ${0.95 * topBarRatio})`)
+              : `hsl(var(--background) / ${0.95 * topBarRatio})`,
             transition: "background 0.1s, backdrop-filter 0.1s, -webkit-backdrop-filter 0.1s",
           }}
         />
