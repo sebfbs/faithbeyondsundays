@@ -1,30 +1,41 @@
 
 
-## Scroll-Aware Top Bar -- Apple-Style Fade-In
+## Fix: iOS Keyboard Dismiss Gap on Journal Compose Screen
 
-### What Changes
-The frosted-glass status bar overlay at the top of the home screen will start fully transparent when the page loads (scrolled to top), then smoothly fade in as the user scrolls down -- just like Apple's native iOS apps.
+### Problem
+When composing a personal journal entry on iOS PWA, tapping "Done" on the keyboard dismisses it but leaves a visible gap below the bottom navigation bar. The current fix (`window.scrollTo(0, 0)` with a 100ms delay) isn't sufficient for iOS's keyboard dismiss animation timing.
 
-### Behavior
-- **At scroll position 0**: Top bar is invisible (fully transparent, no blur). The home screen content extends cleanly to the top edge.
-- **Scrolling down (0-60px)**: The bar progressively fades in -- opacity and blur increase proportionally.
-- **Past 60px**: Bar is fully opaque with the current frosted-glass appearance (blur + card background).
-- **Scrolling back to top**: Bar fades out again smoothly.
+### Solution
+Strengthen the keyboard dismiss handling in the Journal compose view with two changes:
 
-### Technical Details
+**File: `src/components/fbs/JournalTab.tsx`**
 
-**File: `src/pages/Index.tsx`**
+1. **Improve `handleInputBlur`** -- fire `window.scrollTo(0, 0)` at multiple intervals (0ms, 100ms, 300ms) to catch the iOS keyboard dismiss animation at different stages. Also reset `document.documentElement.scrollTop` and `document.body.scrollTop` directly as a fallback.
 
-1. Add a `scrollY` state variable (or ref) that tracks the main content area's scroll position via an `onScroll` listener on the `<main>` element (which already has `ref={mainRef}`).
+2. **Improve the `visualViewport` resize listener** (lines 185-194) -- instead of only calling `window.scrollTo(0, 0)`, also force `document.body.style.height = '100%'` temporarily and reset it, which forces iOS Safari to recalculate layout and close the gap. Add a small delayed secondary scroll reset (300ms) to handle the tail end of the keyboard animation.
 
-2. Compute an opacity value: `Math.min(scrollY / 60, 1)` to get a 0-to-1 ratio over 60px of scroll.
+### Technical Detail
 
-3. Apply that ratio to the existing top bar's `background` opacity and `backdropFilter` blur amount:
-   - Background: `hsl(var(--card) / ${0.95 * ratio})`
-   - Blur: `blur(${12 * ratio}px)`
-   - When ratio is 0, the bar is completely invisible.
+```typescript
+const handleInputBlur = () => {
+  // iOS needs multiple attempts as keyboard dismiss animates
+  window.scrollTo(0, 0);
+  setTimeout(() => window.scrollTo(0, 0), 100);
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, 300);
+};
+```
 
-4. This only applies to the mobile view (the bar is already gated behind `isMobile`).
+For the `visualViewport` resize listener:
+```typescript
+const onResize = () => {
+  window.scrollTo(0, 0);
+  setTimeout(() => window.scrollTo(0, 0), 150);
+};
+```
 
-**No other files need to change.**
+No other files need to change.
 
