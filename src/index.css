@@ -142,6 +142,11 @@
     select {
       font-size: 16px !important;
     }
+
+    /* Stabilize vaul Drawer during keyboard open */
+    [vaul-drawer] {
+      position: fixed !important;
+    }
   }
 
   /* Platform pages break out of member app constraints */

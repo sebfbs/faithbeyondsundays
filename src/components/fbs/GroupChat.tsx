@@ -30,6 +30,25 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [pendingMessage, setPendingMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+  // Track visual viewport to handle iOS keyboard
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      setViewportHeight(vv.height);
+    };
+
+    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   // Fetch messages
   const { data: messages = [], isLoading } = useQuery({
@@ -181,7 +200,15 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
   };
 
   return (
-    <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+    <div
+      ref={containerRef}
+      className="flex flex-col"
+      style={{
+        height: viewportHeight ? `${viewportHeight}px` : "100%",
+        minHeight: 0,
+        overflow: "hidden",
+      }}
+    >
       {/* Messages */}
       <div className="flex-1 px-4 py-3 space-y-3" style={{ overflowY: "auto", minHeight: 0, WebkitOverflowScrolling: "touch" }}>
         {isLoading && (
@@ -247,6 +274,10 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+          onBlur={() => {
+            // Fix iOS gap after keyboard dismissal
+            setTimeout(() => window.scrollTo(0, 0), 50);
+          }}
           placeholder="Type a message..."
           className="flex-1 bg-card rounded-2xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-accent/40"
         />
