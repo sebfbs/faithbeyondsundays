@@ -121,7 +121,7 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
   };
 
   return (
-    <div className="min-h-screen px-5 pt-14 pb-8">
+    <div className="min-h-screen px-5 pb-8" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center tap-active">
