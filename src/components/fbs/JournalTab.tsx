@@ -188,13 +188,20 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     if (!vv) return;
     const onResize = () => {
       window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 150);
     };
     vv.addEventListener("resize", onResize);
     return () => vv.removeEventListener("resize", onResize);
   }, [composing]);
 
   const handleInputBlur = () => {
+    window.scrollTo(0, 0);
     setTimeout(() => window.scrollTo(0, 0), 100);
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 300);
   };
 
   if (composing) {
