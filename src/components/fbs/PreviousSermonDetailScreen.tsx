@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronDown, Clock, Calendar, BookText, Play, Share, Heart } from "lucide-react";
+import { ChevronLeft, ChevronDown, Calendar, Share, Heart } from "lucide-react";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { toast } from "sonner";
 import { useSermonLikes } from "@/hooks/useSermonLikes";
+import SermonVideoPlayer, { type SermonVideoPlayerHandle } from "./SermonVideoPlayer";
+import ScripturePills from "./ScripturePills";
+
+function parseTimestampToSeconds(ts: string): number {
+  const parts = ts.split(":").map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
 
 function AccordionSection({
   title,
@@ -56,12 +65,15 @@ function AccordionSection({
 interface PreviousSermonDetailScreenProps {
   sermon: SermonUIData;
   onBack: () => void;
+  onOpenBible?: (reference: string) => void;
 }
 
 export default function PreviousSermonDetailScreen({
   sermon,
   onBack,
+  onOpenBible,
 }: PreviousSermonDetailScreenProps) {
+  const videoRef = useRef<SermonVideoPlayerHandle>(null);
   const {
     sermonLikeCount,
     hasLikedSermon,
@@ -86,6 +98,7 @@ export default function PreviousSermonDetailScreen({
     }
     toggleTakeawayLike(index);
   };
+
   const handleShare = async () => {
     const shareData = {
       title: sermon.title,
@@ -104,6 +117,11 @@ export default function PreviousSermonDetailScreen({
     }
   };
 
+  const handleTimestampClick = (timestamp: string) => {
+    const seconds = parseTimestampToSeconds(timestamp);
+    videoRef.current?.seekTo(seconds);
+  };
+
   return (
     <div className="animate-fade-in min-h-screen" style={{ background: "hsl(var(--background))" }}>
       {/* Back button */}
@@ -117,29 +135,16 @@ export default function PreviousSermonDetailScreen({
       </div>
 
       <div className="px-5 pt-2 pb-6 space-y-5">
-        {/* Video Thumbnail */}
-        <div className="relative rounded-3xl overflow-hidden tap-active">
-          <div
-            className="w-full aspect-video flex flex-col items-center justify-center"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(207, 55%, 35%) 0%, hsl(220, 50%, 25%) 100%)",
-            }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-              <div style={{ width: 60, height: 4, background: "white", position: "absolute" }} />
-              <div style={{ width: 4, height: 80, background: "white", position: "absolute" }} />
-            </div>
-            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 z-10">
-              <Play size={24} className="text-white fill-white ml-1" />
-            </div>
-            <p className="text-white/80 text-xs font-medium z-10">Tap to watch</p>
-            <p className="text-white/50 text-xs mt-1 z-10 flex items-center gap-1">
-              <Clock size={11} />
-              {sermon.duration}
-            </p>
-          </div>
-        </div>
+        {/* Video Player */}
+        <SermonVideoPlayer
+          ref={videoRef}
+          videoUrl={sermon.videoUrl}
+          sourceUrl={sermon.sourceUrl}
+          sourceType={sermon.sourceType}
+          thumbnailUrl={sermon.thumbnailUrl}
+          storagePath={sermon.storagePath}
+          duration={sermon.duration}
+        />
 
         {/* Main Sermon Card */}
         <div className="bg-card rounded-3xl p-5 shadow-card">
@@ -178,19 +183,21 @@ export default function PreviousSermonDetailScreen({
                 className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-muted/50 transition-colors"
               >
                 <span className="text-sm text-foreground">{ch.title}</span>
-                <span className="text-xs font-mono text-muted-foreground">{ch.timestamp}</span>
+                {ch.timestamp && (
+                  <button
+                    onClick={() => handleTimestampClick(ch.timestamp)}
+                    className="text-xs font-mono text-primary tap-active hover:underline"
+                  >
+                    {ch.timestamp}
+                  </button>
+                )}
               </div>
             ))}
           </AccordionSection>
 
           {/* Scripture */}
           <AccordionSection title="Scripture">
-            {sermon.scriptures.map((s, i) => (
-              <div key={i} className="rounded-2xl p-4" style={{ background: "hsl(48 80% 94%)" }}>
-                <p className="text-xs font-bold text-amber mb-1.5">{s.reference}</p>
-                <p className="text-sm text-foreground leading-relaxed italic">{s.text}</p>
-              </div>
-            ))}
+            <ScripturePills scriptures={sermon.scriptures} onOpenBible={onOpenBible} />
           </AccordionSection>
 
           {/* Takeaways */}

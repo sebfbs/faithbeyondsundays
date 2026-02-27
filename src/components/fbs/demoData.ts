@@ -14,6 +14,8 @@ export const DEMO_SERMON = {
   videoUrl: null as string | null,
   sourceUrl: null as string | null,
   sourceType: "upload" as const,
+  thumbnailUrl: null as string | null,
+  storagePath: null as string | null,
   chapters: [
     { title: "Introduction", timestamp: "00:00" },
     { title: "The Story of Peter", timestamp: "07:12" },
@@ -69,6 +71,8 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
     videoUrl: null,
     sourceUrl: null,
     sourceType: "upload",
+    thumbnailUrl: null,
+    storagePath: null,
     chapters: [
       { title: "Introduction", timestamp: "00:00" },
       { title: "The Lie of Performance", timestamp: "06:30" },
@@ -106,6 +110,8 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
     videoUrl: null,
     sourceUrl: null,
     sourceType: "upload",
+    thumbnailUrl: null,
+    storagePath: null,
     chapters: [
       { title: "Introduction", timestamp: "00:00" },
       { title: "David & Goliath Revisited", timestamp: "05:00" },
@@ -143,6 +149,8 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
     videoUrl: null,
     sourceUrl: null,
     sourceType: "upload",
+    thumbnailUrl: null,
+    storagePath: null,
     chapters: [
       { title: "Introduction", timestamp: "00:00" },
       { title: "The Psalms of Lament", timestamp: "08:00" },
@@ -180,6 +188,8 @@ export const DEMO_PREVIOUS_SERMONS: typeof DEMO_SERMON[] = [
     videoUrl: null,
     sourceUrl: null,
     sourceType: "upload",
+    thumbnailUrl: null,
+    storagePath: null,
     chapters: [
       { title: "Introduction", timestamp: "00:00" },
       { title: "The Weight of Unforgiveness", timestamp: "07:00" },

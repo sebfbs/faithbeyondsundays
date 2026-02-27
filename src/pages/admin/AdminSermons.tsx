@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -321,6 +321,7 @@ export default function AdminSermons() {
       {/* Review Sheet */}
       <ReviewSheet
         sermonId={reviewSermonId}
+        churchId={churchId}
         open={!!reviewSermonId}
         onClose={() => setReviewSermonId(null)}
         onApprove={(id) => approveSermon.mutate(id)}
@@ -334,25 +335,41 @@ export default function AdminSermons() {
 
 function ReviewSheet({
   sermonId,
+  churchId,
   open,
   onClose,
   onApprove,
   approving,
 }: {
   sermonId: string | null;
+  churchId: string;
   open: boolean;
   onClose: () => void;
   onApprove: (id: string) => void;
   approving: boolean;
 }) {
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [selectedThumb, setSelectedThumb] = useState<number | null>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+
+  const { data: sermon } = useQuery({
+    queryKey: ["admin", "sermon-detail", sermonId],
+    enabled: !!sermonId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sermons")
+        .select("*")
+        .eq("id", sermonId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: content, isLoading } = useQuery({
     queryKey: ["admin", "sermon-review-content", sermonId],
     enabled: !!sermonId,
     queryFn: async () => {
-      // Need to read sermon_content via service-level — but admins have RLS for published sermons only
-      // Actually admins can read via the sermons RLS. But sermon_content RLS requires is_published=true.
-      // We'll use a direct query — the admin can see sermons, but content RLS is restrictive.
-      // For now, let's try — if it fails we'll need an RLS policy update.
       const { data, error } = await supabase
         .from("sermon_content")
         .select("content_type, content")
@@ -361,6 +378,106 @@ function ReviewSheet({
       return data;
     },
   });
+
+  // Generate thumbnails from YouTube or uploaded video
+  useEffect(() => {
+    if (!sermon || !open) return;
+    setThumbnails([]);
+    setSelectedThumb(null);
+
+    if (sermon.source_type === "youtube" && sermon.source_url) {
+      const match = sermon.source_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (match?.[1]) {
+        const id = match[1];
+        setThumbnails([
+          `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+          `https://img.youtube.com/vi/${id}/sddefault.jpg`,
+          `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+          `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+        ]);
+      }
+    } else if (sermon.source_type === "upload" && sermon.storage_path) {
+      // Extract frames from uploaded video client-side
+      (async () => {
+        try {
+          const { data } = await supabase.storage
+            .from("sermon-media")
+            .createSignedUrl(sermon.storage_path!, 600);
+          if (!data?.signedUrl) return;
+
+          const video = document.createElement("video");
+          video.crossOrigin = "anonymous";
+          video.preload = "auto";
+          video.muted = true;
+          video.src = data.signedUrl;
+
+          await new Promise<void>((resolve, reject) => {
+            video.onloadedmetadata = () => resolve();
+            video.onerror = () => reject();
+          });
+
+          const dur = video.duration;
+          const positions = [0.15, 0.35, 0.55, 0.75];
+          const frames: string[] = [];
+
+          for (const pos of positions) {
+            video.currentTime = dur * pos;
+            await new Promise<void>((resolve) => {
+              video.onseeked = () => resolve();
+            });
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext("2d")?.drawImage(video, 0, 0);
+            frames.push(canvas.toDataURL("image/jpeg", 0.8));
+          }
+          setThumbnails(frames);
+        } catch (e) {
+          console.error("Failed to extract thumbnails:", e);
+        }
+      })();
+    }
+  }, [sermon, open]);
+
+  const handleApproveWithThumb = async () => {
+    if (!sermonId) return;
+
+    // If a thumbnail was selected, upload it first
+    if (selectedThumb !== null && thumbnails[selectedThumb]) {
+      setUploadingThumb(true);
+      try {
+        const thumbData = thumbnails[selectedThumb];
+        let thumbnailUrl = thumbData;
+
+        // If it's a data URL (from canvas), upload to storage
+        if (thumbData.startsWith("data:")) {
+          const blob = await (await fetch(thumbData)).blob();
+          const path = `${churchId}/thumb-${sermonId}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("sermon-media")
+            .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from("sermon-media")
+              .getPublicUrl(path);
+            thumbnailUrl = urlData?.publicUrl || thumbData;
+          }
+        }
+
+        // Save thumbnail_url on sermon
+        await supabase
+          .from("sermons")
+          .update({ thumbnail_url: thumbnailUrl })
+          .eq("id", sermonId);
+      } catch (e) {
+        console.error("Thumbnail upload error:", e);
+      } finally {
+        setUploadingThumb(false);
+      }
+    }
+
+    onApprove(sermonId);
+  };
 
   const contentMap = new Map<string, any>((content || []).map((c) => [c.content_type as string, c.content]));
 
@@ -377,6 +494,36 @@ function ReviewSheet({
             </div>
           ) : (
             <div className="space-y-6 pb-6">
+              {/* Thumbnail Picker */}
+              {thumbnails.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Choose a Thumbnail</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {thumbnails.map((thumb, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedThumb(i)}
+                        className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                          selectedThumb === i ? "border-primary ring-2 ring-primary/30" : "border-transparent"
+                        }`}
+                      >
+                        <img
+                          src={thumb}
+                          alt={`Thumbnail option ${i + 1}`}
+                          className="w-full aspect-video object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        {selectedThumb === i && (
+                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {TRACKED_CONTENT_TYPES.concat(["weekly_challenge", "weekend_reflection"]).map((ct) => {
                 const data = contentMap.get(ct) as any;
                 if (!data) return null;
@@ -399,10 +546,10 @@ function ReviewSheet({
           </Button>
           <Button
             className="flex-1"
-            disabled={approving || isLoading}
-            onClick={() => sermonId && onApprove(sermonId)}
+            disabled={approving || isLoading || uploadingThumb}
+            onClick={handleApproveWithThumb}
           >
-            {approving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+            {(approving || uploadingThumb) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
             Approve & Schedule
           </Button>
         </div>

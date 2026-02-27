@@ -17,7 +17,6 @@ serve(async (req) => {
   const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
   const token = authHeader?.replace("Bearer ", "") || "";
-  // Allow service role key OR anon key (for internal fire-and-forget calls from upload-sermon)
   if (token !== expectedKey && token !== anonKey) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
@@ -34,10 +33,8 @@ serve(async (req) => {
   const workerId = crypto.randomUUID();
 
   try {
-    // Claim a queued or retrying job using optimistic locking
     const now = new Date().toISOString();
 
-    // Fetch queued jobs directly, and retrying jobs that have waited long enough (backoff)
     const { data: jobs, error: claimError } = await supabase
       .from("sermon_jobs")
       .select("*")
@@ -57,7 +54,6 @@ serve(async (req) => {
     const job = jobs[0];
     const isRetry = job.status === "retrying";
 
-    // Try to claim the job
     const { data: claimedRows, error: lockError } = await supabase
       .from("sermon_jobs")
       .update({
@@ -77,7 +73,6 @@ serve(async (req) => {
       });
     }
 
-    // Get sermon details
     const { data: sermon, error: sermonError } = await supabase
       .from("sermons")
       .select("*")
@@ -100,15 +95,14 @@ serve(async (req) => {
       .maybeSingle();
 
     let transcriptText = existingTranscript?.full_text || "";
+    let wordTimings: { text: string; start: number; end: number }[] = [];
 
     if (!existingTranscript) {
-      // Update sermon status to transcribing
       await supabase
         .from("sermons")
         .update({ status: "transcribing" })
         .eq("id", sermon.id);
 
-      // Step 1: Download file from storage
       console.log("Downloading file from storage:", sermon.storage_path);
       const { data: fileData, error: downloadError } = await supabase.storage
         .from("sermon-media")
@@ -123,7 +117,6 @@ serve(async (req) => {
         });
       }
 
-      // Step 2: Transcribe with ElevenLabs Scribe
       console.log("Transcribing with ElevenLabs...");
       const transcribeFormData = new FormData();
       transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
@@ -150,9 +143,13 @@ serve(async (req) => {
 
       const transcription = await transcribeResponse.json();
       transcriptText = transcription.text || "";
+      wordTimings = (transcription.words || []).map((w: any) => ({
+        text: w.text,
+        start: w.start,
+        end: w.end,
+      }));
       const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
 
-      // Save transcript
       const { error: transcriptError } = await supabase
         .from("sermon_transcripts")
         .insert({
@@ -171,13 +168,15 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-    } // end if (!existingTranscript)
+    }
+
+    // Build transcript with timing markers for chapters
+    const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
 
     // Step 3: Generate AI content (only missing types)
     console.log("Generating AI content...");
     await supabase.from("sermons").update({ status: "generating" }).eq("id", sermon.id);
 
-    // Check which content types already exist
     const { data: existingContent } = await supabase
       .from("sermon_content")
       .select("content_type")
@@ -190,12 +189,11 @@ serve(async (req) => {
       { type: "takeaways", prompt: buildTakeawaysPrompt(sermon.title, transcriptText) },
       { type: "reflection_questions", prompt: buildReflectionPrompt(sermon.title, transcriptText) },
       { type: "scriptures", prompt: buildScripturesPrompt(sermon.title, transcriptText) },
-      { type: "chapters", prompt: buildChaptersPrompt(sermon.title, transcriptText) },
+      { type: "chapters", prompt: buildChaptersPrompt(sermon.title, transcriptWithTimings) },
       { type: "weekly_challenge", prompt: buildChallengePrompt(sermon.title, transcriptText) },
       { type: "weekend_reflection", prompt: buildWeekendReflectionPrompt(sermon.title, transcriptText) },
     ];
 
-    // Only generate what's missing
     const missingTypes = allContentTypes.filter((ct) => !existingTypes.has(ct.type));
     const failedTypes: string[] = [];
 
@@ -214,7 +212,7 @@ serve(async (req) => {
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              { role: "system", content: "You are a sermon content analyst for a church app. Return valid JSON only. No markdown, no code fences." },
+              { role: "system", content: "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Ignore any logistical announcements, church business, administrative updates, building/location discussions, or non-spiritual content in the sermon. Return valid JSON only. No markdown, no code fences." },
               { role: "user", content: ct.prompt },
             ],
             tools: [buildToolSchema(ct.type)],
@@ -258,8 +256,6 @@ serve(async (req) => {
 
     // Step 4: Determine final status
     if (failedTypes.length > 0 && job.attempts < job.max_attempts) {
-      // Some content failed but we have retries left — schedule automatic retry
-      // Backoff: 1min, 5min, 15min, 30min per attempt
       const backoffMinutes = [1, 2, 5, 5, 5];
       const delayMinutes = backoffMinutes[Math.min(job.attempts - 1, backoffMinutes.length - 1)];
       const retryAfter = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
@@ -275,7 +271,6 @@ serve(async (req) => {
         })
         .eq("id", job.id);
 
-      // Keep sermon in "generating" so users know it's still being worked on
       return new Response(JSON.stringify({
         success: false,
         sermon_id: sermon.id,
@@ -288,7 +283,6 @@ serve(async (req) => {
     }
 
     if (failedTypes.length > 0) {
-      // Max retries exhausted — mark as failed
       console.error(`Max retries reached. Still missing: ${failedTypes.join(", ")}`);
       await supabase
         .from("sermon_jobs")
@@ -300,7 +294,6 @@ serve(async (req) => {
         })
         .eq("id", job.id);
 
-      // Still mark sermon as review if most content generated
       const generatedCount = allContentTypes.length - failedTypes.length;
       if (generatedCount > 0) {
         await supabase.from("sermons").update({ status: "review" }).eq("id", sermon.id);
@@ -319,7 +312,6 @@ serve(async (req) => {
       });
     }
 
-    // All content generated successfully — move to review for admin approval
     await supabase
       .from("sermons")
       .update({ status: "review" })
@@ -366,6 +358,48 @@ async function failJob(supabase: any, jobId: string, message: string) {
     .eq("id", jobId);
 }
 
+// --- Embed timing markers into transcript text ---
+
+function formatTimestamp(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function embedTimingMarkers(
+  transcript: string,
+  wordTimings: { text: string; start: number; end: number }[]
+): string {
+  if (!wordTimings.length) return transcript;
+
+  // Insert a timing marker every ~60 seconds
+  const INTERVAL = 60;
+  let result = "";
+  let lastMarkerTime = -INTERVAL;
+  const words = transcript.split(/\s+/);
+
+  // Build a quick index: for each word position, find the closest timing
+  // wordTimings may not align 1:1 with split words, so we'll sample by timing array
+  let timingIdx = 0;
+  for (let i = 0; i < words.length; i++) {
+    // Advance timing index to match word position approximately
+    while (timingIdx < wordTimings.length - 1 && timingIdx < i) {
+      timingIdx++;
+    }
+    const currentTime = timingIdx < wordTimings.length ? wordTimings[timingIdx].start : 0;
+
+    if (currentTime - lastMarkerTime >= INTERVAL) {
+      result += `[${formatTimestamp(currentTime)}] `;
+      lastMarkerTime = currentTime;
+    }
+    result += words[i] + " ";
+  }
+
+  return result.trim();
+}
+
 // --- Tool schemas for structured output ---
 
 function buildToolSchema(type: string) {
@@ -379,7 +413,7 @@ function buildToolSchema(type: string) {
           type: "object",
           properties: {
             title: { type: "string", description: "A catchy title for the spark" },
-            summary: { type: "string", description: "A 1-2 sentence short and to-the-point summary of the sermon's core message" },
+            summary: { type: "string", description: "A 1-2 sentence short and to-the-point summary of the sermon's core spiritual message" },
           },
           required: ["title", "summary"],
           additionalProperties: false,
@@ -390,7 +424,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_takeaways",
-        description: "Generate key takeaways from the sermon",
+        description: "Generate key spiritual takeaways from the sermon",
         parameters: {
           type: "object",
           properties: {
@@ -416,7 +450,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_reflection_questions",
-        description: "Generate reflection questions for personal study",
+        description: "Generate reflection questions for personal spiritual study",
         parameters: {
           type: "object",
           properties: {
@@ -442,7 +476,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_scriptures",
-        description: "Extract and list scripture references from the sermon",
+        description: "Extract scripture references mentioned in the sermon",
         parameters: {
           type: "object",
           properties: {
@@ -451,9 +485,9 @@ function buildToolSchema(type: string) {
               items: {
                 type: "object",
                 properties: {
-                  reference: { type: "string", description: "e.g. John 3:16" },
-                  text: { type: "string", description: "The scripture text" },
-                  context: { type: "string", description: "How this scripture was used in the sermon" },
+                  reference: { type: "string", description: "Book chapter:verse format, e.g. Luke 5:1-7" },
+                  text: { type: "string", description: "A brief 1-sentence note about how this scripture was used in the sermon" },
+                  context: { type: "string", description: "How this scripture connects to the sermon's message" },
                 },
                 required: ["reference", "text", "context"],
                 additionalProperties: false,
@@ -469,7 +503,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_chapters",
-        description: "Divide the sermon into logical chapters/sections",
+        description: "Divide the sermon into logical chapters/sections with timestamps",
         parameters: {
           type: "object",
           properties: {
@@ -481,8 +515,9 @@ function buildToolSchema(type: string) {
                   title: { type: "string" },
                   summary: { type: "string", description: "1-2 sentence summary of this section" },
                   order: { type: "number" },
+                  timestamp: { type: "string", description: "Timestamp in M:SS or H:MM:SS format from the nearest timing marker, e.g. 5:23 or 1:05:23" },
                 },
-                required: ["title", "summary", "order"],
+                required: ["title", "summary", "order", "timestamp"],
                 additionalProperties: false,
               },
             },
@@ -535,32 +570,87 @@ function buildToolSchema(type: string) {
   return schemas[type];
 }
 
-// --- Prompts ---
+// --- Prompts (full transcript, spiritual focus) ---
 
 function buildSparkPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nGenerate a "Spark" — a catchy title and a 1-2 sentence short, to-the-point summary that captures the core message. Keep it concise and impactful — no more than two sentences.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Generate a "Spark" — a catchy title and a 1-2 sentence short, to-the-point summary that captures the core SPIRITUAL message of this sermon. Focus only on biblical truths, faith principles, and spiritual insights. Ignore any logistical announcements, church business, or administrative content.`;
 }
 
 function buildTakeawaysPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nExtract 3-5 key takeaways. Each should have a clear title and a 1-2 sentence description explaining the point.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Extract 3-5 key SPIRITUAL takeaways from this sermon. Each should have a clear title and a 1-2 sentence description. Focus EXCLUSIVELY on:
+- Biblical truths and principles
+- Faith-based insights and spiritual growth points
+- Actionable spiritual truths that listeners can apply to their walk with God
+
+IGNORE completely:
+- Church logistics (building, location, lease, finances)
+- Administrative announcements
+- Event promotions or scheduling
+- Any non-spiritual content`;
 }
 
 function buildReflectionPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nCreate 4-6 thought-provoking reflection questions for personal study. Include brief context connecting each question to the sermon.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Create 4-6 thought-provoking reflection questions for personal spiritual study based on this sermon. Each question should help the reader examine their faith and relationship with God. Include brief context connecting each question to the sermon's spiritual message. Ignore any non-spiritual or administrative content.`;
 }
 
 function buildScripturesPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nIdentify all Bible verses referenced or relevant to this sermon. For each, provide the reference, the text, and how it was used.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Identify all Bible verses referenced or quoted in this sermon. For each, provide:
+- The reference in standard format (e.g. "Luke 5:1-7", "Romans 8:28")
+- A brief 1-sentence note about how this scripture was used in the sermon (NOT the full scripture text — just a short context note)
+- How it connects to the sermon's spiritual message
+
+Only include scriptures that were actually mentioned or directly referenced by the speaker.`;
 }
 
-function buildChaptersPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 12000)}\n\nDivide this sermon into 4-8 logical chapters/sections. Each should have a clear title, a 1-2 sentence summary, and an order number.`;
+function buildChaptersPrompt(title: string, transcriptWithTimings: string) {
+  return `Sermon title: "${title}"
+
+Transcript (with timing markers like [5:23]):
+${transcriptWithTimings}
+
+Divide this sermon into 4-8 logical chapters/sections. For each chapter:
+- Give it a clear, descriptive title
+- Write a 1-2 sentence summary
+- Assign an order number (1, 2, 3, ...)
+- Assign a timestamp from the nearest timing marker [M:SS] or [H:MM:SS] that corresponds to where this chapter begins in the sermon
+
+Use the timing markers embedded in the transcript to estimate the most accurate timestamp for each chapter boundary. The first chapter should start at 0:00 or close to it.`;
 }
 
 function buildChallengePrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nCreate a weekly challenge inspired by this sermon. Include a title, description of the challenge, and 3-5 concrete action steps people can take this week.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Create a weekly spiritual challenge inspired by this sermon. Focus on faith-based growth and spiritual disciplines. Include a title, description of the challenge, and 3-5 concrete action steps people can take this week to grow in their faith. Ignore any non-spiritual content.`;
 }
 
 function buildWeekendReflectionPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"\n\nTranscript:\n${transcript.slice(0, 8000)}\n\nCreate a weekend reflection with a title, a thoughtful paragraph for meditation, and a short closing prayer related to the sermon's message.`;
+  return `Sermon title: "${title}"
+
+Transcript:
+${transcript}
+
+Create a weekend reflection with a title, a thoughtful paragraph for spiritual meditation, and a short closing prayer related to the sermon's spiritual message. Focus on the biblical truths and spiritual insights from the sermon.`;
 }
