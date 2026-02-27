@@ -187,7 +187,7 @@ export default function CommunityScreen({
     const shareData = {
       title: "Join Faith Beyond Sundays",
       text: "Join me on Faith Beyond Sundays! Download the app and start growing in your faith.",
-      url: "https://faithbeyondsundays.lovable.app",
+      url: "https://faithbeyondsundays.app",
     };
     try {
       if (navigator.share) {
