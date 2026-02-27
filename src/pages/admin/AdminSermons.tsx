@@ -226,7 +226,7 @@ const uploadMessages: Record<string, string[]> = {
     "Sending your sermon to the cloud ☁️",
     "Your sermon is on its way… 🚀",
     "Hang tight, good things take a moment ✨",
-    "Almost there, keep the faith! 🙌",
+    "Almost there! 🙌",
     "Uploading the good stuff… 📖",
   ],
   finalizing: [
