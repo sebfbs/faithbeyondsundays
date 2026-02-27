@@ -310,6 +310,7 @@ function UploadSermonForm({
 
           xhr.open("POST", `${supabaseUrl}/storage/v1/object/sermon-media/${storagePath}`);
           xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+          xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
           xhr.setRequestHeader("x-upsert", "false");
           xhr.send(file);
         });
