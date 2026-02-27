@@ -137,7 +137,7 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={1000}
-          className="bg-muted/50 border-none rounded-xl text-sm min-h-[120px] resize-none focus-visible:ring-1"
+          className="bg-muted/50 border-none rounded-xl text-sm min-h-[120px] resize-none focus-visible:ring-1 pt-4"
         />
         <div className="flex items-center justify-between mt-4">
           <label className="text-sm text-muted-foreground">Submit anonymously</label>
