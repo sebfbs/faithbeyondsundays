@@ -229,6 +229,8 @@ function UploadSermonForm({
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [uploadProgress, setUploadProgress] = useState<string>("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -236,27 +238,36 @@ function UploadSermonForm({
 
     try {
       if (mode === "upload" && file) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("title", title);
-        formData.append("speaker", speaker);
-        formData.append("sermon_date", sermonDate);
+        // Step 1: Upload file directly to storage
+        setUploadProgress("Uploading file...");
+        const timestamp = Date.now();
+        const storagePath = `${churchId}/${timestamp}-${file.name}`;
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const res = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/upload-sermon`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: formData,
-          }
-        );
+        const { error: storageError } = await supabase.storage
+          .from("sermon-media")
+          .upload(storagePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || "Upload failed");
+        if (storageError) {
+          throw new Error(`File upload failed: ${storageError.message}`);
+        }
+
+        // Step 2: Call edge function with metadata only (no file)
+        setUploadProgress("Creating sermon record...");
+        const { data, error: fnError } = await supabase.functions.invoke("upload-sermon", {
+          body: {
+            title,
+            speaker,
+            sermon_date: sermonDate,
+            storage_path: storagePath,
+          },
+        });
+
+        if (fnError) throw new Error(fnError.message || "Failed to create sermon");
+        if (data?.error) throw new Error(data.error);
+
         toast.success("Sermon uploaded! Processing will begin shortly.");
         onSuccess();
       } else if (mode === "youtube" && youtubeUrl) {
