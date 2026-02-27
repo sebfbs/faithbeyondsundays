@@ -21,7 +21,7 @@ interface ProfileScreenProps {
   onBack: () => void;
   user: UserData;
   onSignOut: () => void;
-  onUpdateUser?: (updated: UserData) => void;
+  onUpdateUser?: (updated?: UserData) => void;
 }
 
 const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier) => {
@@ -157,28 +157,26 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
 
   const handleSaveIg = async () => {
     const clean = sanitizeIgHandle(igInput);
-    const updated = { ...user, instagramHandle: clean || undefined };
-    onUpdateUser?.(updated);
     if (authUser) {
       await supabase
         .from("profiles")
         .update({ instagram_handle: clean || null })
         .eq("user_id", authUser.id);
     }
+    onUpdateUser?.();
     setIgSaved(true);
     setTimeout(() => setIgSaved(false), 2000);
   };
 
   const handleSavePhone = async () => {
     const trimmed = phoneInput.trim();
-    const updated = { ...user, phoneNumber: trimmed || undefined };
-    onUpdateUser?.(updated);
     if (authUser) {
       await supabase
         .from("profiles")
         .update({ phone_number: trimmed || null })
         .eq("user_id", authUser.id);
     }
+    onUpdateUser?.();
     setPhoneSaved(true);
     setTimeout(() => setPhoneSaved(false), 2000);
   };

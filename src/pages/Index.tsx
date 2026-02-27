@@ -47,7 +47,7 @@ export type { JournalEntry } from "@/hooks/useJournalEntries";
 export default function Index() {
   const { isDemo } = useDemoMode();
   const { user: authUser, loading: authLoading, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -154,6 +154,7 @@ export default function Index() {
         churchName: profile.church_name || "", phone: "",
         email: authUser?.email || "", avatarUrl: profile.avatar_url || undefined,
         instagramHandle: profile.instagram_handle || undefined,
+        phoneNumber: profile.phone_number || undefined,
       }
     : null;
 
@@ -248,7 +249,7 @@ export default function Index() {
     if (overlay === "bible") return <BibleScreen onBack={() => navTo("/home")} />;
     if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} isDemo={isDemo} />;
     if (overlay === "profile") {
-      return <ProfileScreen onBack={() => navTo("/home")} user={userData} onSignOut={handleSignOut} onUpdateUser={() => {}} />;
+      return <ProfileScreen onBack={() => navTo("/home")} user={userData} onSignOut={handleSignOut} onUpdateUser={() => refetchProfile()} />;
     }
     if (overlay === "community") {
       return (

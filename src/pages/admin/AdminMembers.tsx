@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, Users } from "lucide-react";
+import { Loader2, Search, Users, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { getAvatarColor } from "@/components/fbs/avatarColors";
 
@@ -59,7 +59,7 @@ export default function AdminMembers() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, user_id, first_name, last_name, username, avatar_url, created_at")
+        .select("id, user_id, first_name, last_name, username, avatar_url, phone_number, created_at")
         .eq("church_id", churchId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -83,6 +83,7 @@ export default function AdminMembers() {
         ...p,
         role: roleMap[p.user_id] || "member",
         displayName: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.username,
+        phone_number: (p as any).phone_number || null,
       }));
     },
   });
@@ -194,6 +195,12 @@ export default function AdminMembers() {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground">@{member.username}</p>
+                    {member.phone_number && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Phone size={11} />
+                        {member.phone_number}
+                      </p>
+                    )}
                   </div>
                   {disabled ? (
                     <Badge variant="outline" className={`text-xs ${roleColors[member.role] || ""}`}>
