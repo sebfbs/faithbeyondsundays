@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get auth token from request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -25,7 +24,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // User client to verify auth and get user info
+    // User client to verify auth
     const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -57,59 +56,23 @@ serve(async (req) => {
 
     const churchId = roles[0].church_id;
 
-    // Parse multipart form data
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const title = formData.get("title") as string;
-    const speaker = formData.get("speaker") as string | null;
-    const sermonDate = formData.get("sermon_date") as string | null;
-    const subtitle = formData.get("subtitle") as string | null;
+    // Parse JSON body (no file — file was uploaded directly to storage by the client)
+    const { title, speaker, sermon_date, subtitle, storage_path } = await req.json();
 
-    if (!file || !title) {
-      return new Response(JSON.stringify({ error: "File and title are required" }), {
+    if (!title || !storage_path) {
+      return new Response(JSON.stringify({ error: "Title and storage_path are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate file type
-    const allowedTypes = [
-      "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/ogg",
-      "audio/aac", "audio/m4a", "audio/x-m4a",
-      "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo",
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      return new Response(JSON.stringify({ error: `Unsupported file type: ${file.type}` }), {
-        status: 400,
+    // Verify the storage_path starts with this church's ID (prevent cross-church injection)
+    if (!storage_path.startsWith(`${churchId}/`)) {
+      return new Response(JSON.stringify({ error: "Storage path does not match your church" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Generate storage path
-    const ext = file.name.split(".").pop() || "mp4";
-    const timestamp = Date.now();
-    const storagePath = `${churchId}/${timestamp}-${file.name}`;
-
-    // Upload file to storage
-    const fileBuffer = await file.arrayBuffer();
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("sermon-media")
-      .upload(storagePath, fileBuffer, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return new Response(JSON.stringify({ error: "Failed to upload file" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Determine source type
-    const isVideo = file.type.startsWith("video/");
-    const sourceType = "upload";
 
     // Create sermon record
     const { data: sermon, error: sermonError } = await supabaseAdmin
@@ -118,10 +81,10 @@ serve(async (req) => {
         title,
         speaker: speaker || null,
         subtitle: subtitle || null,
-        sermon_date: sermonDate || new Date().toISOString().split("T")[0],
+        sermon_date: sermon_date || new Date().toISOString().split("T")[0],
         church_id: churchId,
-        source_type: sourceType,
-        storage_path: storagePath,
+        source_type: "upload",
+        storage_path,
         uploaded_by: user.id,
         status: "pending",
         is_published: false,
@@ -132,8 +95,6 @@ serve(async (req) => {
 
     if (sermonError) {
       console.error("Sermon insert error:", sermonError);
-      // Clean up uploaded file
-      await supabaseAdmin.storage.from("sermon-media").remove([storagePath]);
       return new Response(JSON.stringify({ error: "Failed to create sermon record" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -153,10 +114,9 @@ serve(async (req) => {
 
     if (jobError) {
       console.error("Job insert error:", jobError);
-      // Still return success — sermon was created, job can be retried
     }
 
-    // Immediately trigger processing (fire-and-forget, cron is the safety net)
+    // Fire-and-forget trigger processing
     try {
       const processUrl = `${supabaseUrl}/functions/v1/process-sermon`;
       fetch(processUrl, {
@@ -169,14 +129,13 @@ serve(async (req) => {
       }).catch((err) => console.error("Fire-and-forget process trigger failed:", err));
     } catch (triggerErr) {
       console.error("Failed to trigger immediate processing:", triggerErr);
-      // Not critical — cron will pick it up within 1 minute
     }
 
     return new Response(JSON.stringify({
       success: true,
       sermon_id: sermon.id,
       status: "queued",
-      message: "Sermon uploaded and processing started",
+      message: "Sermon created and processing started",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
