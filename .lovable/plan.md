@@ -1,63 +1,33 @@
 
 
-## Fix Sermon Upload: Memory Limit Exceeded
+## Add Upload Progress Bar with Friendly Messages
 
-### Root Cause
+### What Changes
+Update the sermon upload form in `AdminSermons.tsx` to show a real percentage progress bar during file upload, with fun, friendly step messages instead of technical jargon.
 
-The `upload-sermon` edge function receives the entire file via `FormData`, loads it fully into memory with `file.arrayBuffer()`, then re-uploads it to storage. Edge functions have a ~150MB memory limit, so any sermon file over that size crashes the function.
+### Friendly Messages
+Instead of "Uploading file..." and "Creating sermon record...", the UI will show playful rotating messages like:
+- During upload: "Sending your sermon to the cloud...", "Almost there, hang tight!", "Your sermon is on its way..."
+- After upload completes: "Finishing up the magic...", "Just a few more seconds..."
+- On success (brief flash before dialog closes): "You're all set!"
 
-### Solution: Client-Side Direct Upload
+The message will change as the upload progresses through percentage milestones (e.g., new message every ~25%).
 
-Instead of routing the file through the edge function, upload it directly from the browser to the `sermon-media` storage bucket, then create the sermon + job records via a streamlined edge function (no file in the payload).
+### Visual Design
+- A `<Progress>` bar component (already exists in the project) showing 0-100%
+- Percentage text displayed alongside (e.g., "64%")
+- A friendly message below the bar that rotates as progress increases
+- The submit button area is replaced with this progress UI while uploading
+- Dialog stays open until complete, then auto-closes
 
-### Changes
+### Technical Approach
 
-**1. Add Storage RLS Policy for `sermon-media` bucket**
+**Single file modified: `src/pages/admin/AdminSermons.tsx`**
 
-Create a migration that allows authenticated church admins/pastors/owners to upload files to the `sermon-media` bucket scoped to their `church_id` path prefix:
+- Replace `supabase.storage.upload()` with an `XMLHttpRequest` to the Supabase Storage REST API, which provides `xhr.upload.onprogress` events with `loaded`/`total` bytes for real percentage tracking
+- Add `uploadPercent` (number 0-100) and `uploadStep` ("idle" | "uploading" | "finalizing" | "done") state variables
+- Show the `<Progress />` component (from `src/components/ui/progress.tsx`) with the current percentage
+- Display a friendly message that changes at 0%, 25%, 50%, 75%, and 100% milestones
+- After the edge function call succeeds, briefly show "You're all set!" before closing the dialog
+- No backend or database changes needed
 
-```sql
-CREATE POLICY "Church admins can upload sermon media"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'sermon-media'
-  AND (storage.foldername(name))[1]::uuid IS NOT NULL
-  AND has_role_in_church(auth.uid(), (storage.foldername(name))[1]::uuid, 'admin')
-  OR has_role_in_church(auth.uid(), (storage.foldername(name))[1]::uuid, 'owner')
-  OR has_role_in_church(auth.uid(), (storage.foldername(name))[1]::uuid, 'pastor')
-);
-```
-
-**2. Update `AdminSermons.tsx` upload flow**
-
-Change the file upload handler to:
-1. Get the user's `church_id` from their role
-2. Upload the file directly to `sermon-media/{church_id}/{timestamp}-{filename}` using `supabase.storage.from('sermon-media').upload(...)`
-3. Call a new lightweight `create-sermon` edge function (or rewrite `upload-sermon`) with just the metadata (title, speaker, date, storage_path) -- no file data
-
-**3. Rewrite `upload-sermon` edge function (or create `create-sermon`)**
-
-Strip out all file handling. The function now:
-- Receives JSON body: `{ title, speaker, sermon_date, storage_path }`
-- Verifies the user has admin/pastor/owner role
-- Creates the `sermons` record
-- Creates the `sermon_jobs` record
-- Fire-and-forget triggers `process-sermon`
-
-This keeps the function lightweight (a few KB of JSON) and will never hit memory limits.
-
-### Technical Details
-
-**Files to modify:**
-- `src/pages/admin/AdminSermons.tsx` -- update `handleSubmit` to upload file via Storage SDK, then call edge function with metadata only
-- `supabase/functions/upload-sermon/index.ts` -- remove file handling, accept JSON metadata + storage_path instead
-- New DB migration -- add storage RLS policies for `sermon-media` bucket
-
-**How it works end-to-end:**
-1. Admin fills form, picks file, clicks "Upload & Process"
-2. Browser uploads file directly to `sermon-media/{churchId}/{timestamp}-{filename}`
-3. Browser calls `upload-sermon` with `{ title, speaker, sermon_date, storage_path }`
-4. Edge function creates sermon + job records, triggers processing
-5. `process-sermon` downloads file from storage (using service role key) and proceeds as before
-
-This approach eliminates the memory bottleneck entirely -- the edge function never touches the file.
