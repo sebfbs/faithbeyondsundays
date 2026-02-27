@@ -108,7 +108,20 @@ export default function Index() {
   const [selectedSermon, setSelectedSermon] = useState<SermonUIData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
   const [subOverlay, setSubOverlay] = useState<"previous-sermon-detail" | "public-profile" | null>(null);
+  const subOverlayRef = useRef(subOverlay);
+  subOverlayRef.current = subOverlay;
   const mainRef = useRef<HTMLDivElement>(null);
+
+  // Sync sub-overlay screens with browser history for iOS swipe-back
+  useEffect(() => {
+    const handlePopState = () => {
+      if (subOverlayRef.current) {
+        setSubOverlay(null);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const scrollToTop = useCallback(() => {
     mainRef.current?.scrollTo(0, 0);
@@ -227,10 +240,10 @@ export default function Index() {
     if (!userData) return null;
 
     if (subOverlay === "public-profile" && selectedMember) {
-      return <PublicProfileScreen member={selectedMember} onBack={() => { setSubOverlay(null); navTo("/community"); }} isDemo={isDemo} />;
+      return <PublicProfileScreen member={selectedMember} onBack={() => window.history.back()} isDemo={isDemo} />;
     }
     if (subOverlay === "previous-sermon-detail" && selectedSermon) {
-      return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => { setSubOverlay(null); navTo("/previous-sermons"); }} />;
+      return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => window.history.back()} />;
     }
     if (overlay === "bible") return <BibleScreen onBack={() => navTo("/home")} />;
     if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} isDemo={isDemo} />;
@@ -241,7 +254,7 @@ export default function Index() {
       return (
         <CommunityScreen
           onBack={() => navTo("/home")}
-          onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); }}
+          onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); window.history.pushState({ subOverlay: "public-profile" }, ""); }}
           userChurchCode={userData.churchCode}
           userChurchName={userData.churchName}
           userChurchId={profile?.church_id || undefined}
@@ -254,7 +267,7 @@ export default function Index() {
         <PreviousSermonsListScreen
           sermons={prevSermons}
           onBack={() => navTo("/sermon")}
-          onSelectSermon={(s) => { setSelectedSermon(s); setSubOverlay("previous-sermon-detail"); }}
+          onSelectSermon={(s) => { setSelectedSermon(s); setSubOverlay("previous-sermon-detail"); window.history.pushState({ subOverlay: "previous-sermon-detail" }, ""); }}
         />
       );
     }
