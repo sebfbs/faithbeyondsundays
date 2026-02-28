@@ -444,7 +444,7 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       } else if (contentType === "scriptures") {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture reference from the sermon that is different from: "${currentItem.reference}". Provide the reference, a brief context note, and how it connects to the sermon.`;
       } else {
-        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.`;
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.\n\nRules:\n- Only create a chapter where there is a genuine shift in topic, theme, or focus\n- The chapter should represent a meaningful, distinct section — not a brief aside or transition\n- Make sure the chapter fits naturally within the full sermon duration and doesn't duplicate coverage of existing chapters`;
       }
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -839,11 +839,16 @@ function buildChaptersPrompt(title: string, transcriptWithTimings: string) {
 Transcript (with timing markers like [5:23]):
 ${transcriptWithTimings}
 
-Divide this sermon into 4-8 logical chapters/sections. For each chapter:
+Divide this sermon into logical chapters/sections based on its natural structure. For each chapter:
 - Give it a clear, descriptive title
 - Write a 1-2 sentence summary
 - Assign an order number (1, 2, 3, ...)
 - Assign a timestamp from the nearest timing marker [M:SS] or [H:MM:SS] that corresponds to where this chapter begins in the sermon
 
-Use the timing markers embedded in the transcript to estimate the most accurate timestamp for each chapter boundary. The first chapter should start at 0:00 or close to it.`;
+CRITICAL RULES:
+- Do NOT force a specific number of chapters. Only create a new chapter where there is a genuine shift in topic, theme, or focus.
+- Each chapter should represent a meaningful, distinct section of the sermon — not brief asides, transitions, or minor sub-points.
+- Chapters MUST span the ENTIRE sermon from start to finish. The first chapter should start at or near 0:00, and the last chapter MUST begin in the final portion of the sermon.
+- Do NOT cluster all chapters in the first half. Distribute chapters across the full duration based on where natural topic shifts occur.
+- Use the timing markers embedded in the transcript to determine accurate timestamps for each chapter boundary.`;
 }
