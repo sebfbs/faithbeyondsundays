@@ -1143,8 +1143,9 @@ function ReflectionEditor({ data, editing, onUpdate, onRegenerateItem, regenerat
       {questions.map((q: any, i: number) => (
         <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-4">
-            <div className="flex items-center justify-end mb-2">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+            <div className="flex items-center justify-between mb-2">
+              {q.day && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{q.day}</Badge>}
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 ml-auto" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
                 {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               </Button>
             </div>
