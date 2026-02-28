@@ -440,7 +440,7 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       } else if (contentType === "takeaways") {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new key spiritual takeaway from this sermon. It must be different from: "${currentItem.title}". Provide a fresh insight. Focus EXCLUSIVELY on biblical truths and spiritual growth.`;
       } else if (contentType === "reflection_questions") {
-        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new reflection question for personal spiritual study. It must be different from: "${currentItem.question}". Include brief context connecting it to the sermon.`;
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new reflection question for ${currentItem.day || "this day"}. It must be different from: "${currentItem.question}".\n\nRules:\n- Use SECOND PERSON ("you", "your") — never first person ("I", "my")\n- NEVER reference "the sermon", "the preacher", the speaker, or any meta-framing\n- The question should feel standalone and personal, as if a wise pastor is asking directly\n- Include brief spiritual context (also in second person)`;
       } else if (contentType === "scriptures") {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture reference from the sermon that is different from: "${currentItem.reference}". Provide the reference, a brief context note, and how it connects to the sermon.`;
       } else {
@@ -487,7 +487,7 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
 
       // Merge back into existing array
       const updatedArray = [...existingArray];
-      if (contentType === "spark" && newItem.day) {
+      if ((contentType === "spark" || contentType === "reflection_questions") && currentItem.day) {
         updatedArray[itemIndex] = { ...newItem, day: currentItem.day }; // preserve day
       } else {
         updatedArray[itemIndex] = newItem;
@@ -684,19 +684,21 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_reflection_questions",
-        description: "Generate reflection questions for personal spiritual study",
+        description: "Generate 7 reflection questions, one for each day of the week (Monday through Sunday)",
         parameters: {
           type: "object",
           properties: {
             questions: {
               type: "array",
+              description: "Array of 7 reflection questions, one for each day of the week",
               items: {
                 type: "object",
                 properties: {
-                  question: { type: "string" },
-                  context: { type: "string", description: "Brief context connecting this question to the sermon" },
+                  day: { type: "string", description: "Day of the week: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday" },
+                  question: { type: "string", description: "A thought-provoking question in second person (you/your)" },
+                  context: { type: "string", description: "Brief spiritual context in second person (you/your)" },
                 },
-                required: ["question", "context"],
+                required: ["day", "question", "context"],
                 additionalProperties: false,
               },
             },
@@ -805,7 +807,16 @@ function buildReflectionPrompt(title: string, transcript: string) {
 Transcript:
 ${transcript}
 
-Create 4-6 thought-provoking reflection questions for personal spiritual study based on this sermon. Each question should help the reader examine their faith and relationship with God. Include brief context connecting each question to the sermon's spiritual message. Ignore any non-spiritual or administrative content.`;
+Generate exactly 7 reflection questions — one for each day of the week (Monday through Sunday). Each question should:
+- Be written in SECOND PERSON ("you", "your") — NEVER first person ("I", "my")
+- Feel standalone and personal, as if a wise pastor is asking the reader directly
+- NEVER reference "the sermon", "the preacher", the speaker, or any meta-framing like "the message emphasizes"
+- Explore a different angle of the sermon's spiritual truths each day
+- Help the reader examine their faith and relationship with God
+
+Each question needs a "day" field and brief spiritual context (also in second person).
+
+Focus only on spiritual, biblical, and faith-based content. Ignore any logistical announcements or church business.`;
 }
 
 function buildScripturesPrompt(title: string, transcript: string) {
