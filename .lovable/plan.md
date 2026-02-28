@@ -1,25 +1,45 @@
 
 
-## Add Progress Indicator for YouTube "Pending" State
+## Fix: YouTube Sermon Processing Stuck at "Pending"
 
-### Problem
-When a YouTube sermon is uploaded, it shows a static "Pending" badge with no visual feedback, making it look like nothing is happening.
+### Root Cause
+The `sermon_jobs` table has Row Level Security (RLS) enabled with only a SELECT policy for church admins. There is **no INSERT policy**, so when the admin uploads a YouTube sermon and the frontend tries to create a processing job, the insert silently fails. Without a job in the queue, the `process-sermon` function has nothing to pick up, and the sermon stays at "pending" indefinitely.
 
-### Solution
-Replace the static "Pending" badge for YouTube sermons with a simulated progress bar (similar to the existing `TranscribingProgress` component) that shows "Fetching YouTube transcript..." with a percentage.
+The 85% cap on the progress bar is by design (simulated progress), but the real issue is the backend never starts.
 
-### Changes
+### Fix
 
-**File: `src/pages/admin/AdminSermons.tsx`**
+**1. Add INSERT policy for sermon_jobs (database migration)**
 
-1. **Update `statusConfig`** (line 76): Change the pending label to something more active -- "Queued" with a spinning Loader2 icon instead of a static Clock.
+Add an RLS policy allowing church admins/owners/pastors to insert jobs for their church:
 
-2. **Create a `PendingProgress` component** (near the existing `TranscribingProgress`): A small component that shows a progress bar with "Processing YouTube video..." text and a simulated percentage (caps at ~85% over ~2 minutes). It will only render when `source_type === "youtube"`.
+```sql
+CREATE POLICY "Admins can create jobs in their church"
+  ON public.sermon_jobs FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    public.has_role_in_church(auth.uid(), church_id, 'admin')
+    OR public.has_role_in_church(auth.uid(), church_id, 'owner')
+    OR public.has_role_in_church(auth.uid(), church_id, 'pastor')
+  );
+```
 
-3. **Add the progress bar to the sermon card** (around line 306): Add a condition for `sermon.status === "pending" && sermon.source_type === "youtube"` that renders the new `PendingProgress` component, matching the visual style of the existing transcribing progress bar.
+**2. Fix the stuck sermon**
 
-### Visual Result
-Instead of a plain "Pending" badge, YouTube uploads will show:
-- A spinning loader icon in the badge
-- A blue progress bar with "Processing YouTube video..." and a percentage
-- Smooth animation that fills over ~2 minutes before the status transitions to "generating"
+Run a one-time migration to create the missing job for the currently stuck sermon so it can be processed without needing to delete and re-upload:
+
+```sql
+INSERT INTO public.sermon_jobs (sermon_id, church_id, job_type, status, priority)
+SELECT id, church_id, 'full_pipeline', 'queued', 0
+FROM public.sermons
+WHERE status = 'pending'
+  AND source_type = 'youtube'
+  AND id NOT IN (SELECT sermon_id FROM public.sermon_jobs);
+```
+
+**3. Re-trigger processing**
+
+After the migration, the admin page's polling will detect the job exists. We should also ensure the `process-sermon` function is invoked. The existing code already calls `supabase.functions.invoke("process-sermon")` after insert -- once the INSERT policy is in place, this will work on future uploads automatically.
+
+### Files Changed
+- **Database migration only** -- no frontend code changes needed. The UI code is already correct; it just needs the RLS policy to allow the insert to succeed.
