@@ -12,23 +12,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const authHeader = req.headers.get("Authorization");
-  const expectedKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
-  const token = authHeader?.replace("Bearer ", "") || "";
-  if (token !== expectedKey && token !== anonKey) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const elevenlabsKey = Deno.env.get("ELEVENLABS_API_KEY")!;
   const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Auth check: accept service role key, anon key, or valid user JWT
+  const authHeader = req.headers.get("Authorization");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+  const token = authHeader?.replace("Bearer ", "") || "";
+  if (token !== supabaseServiceKey && token !== anonKey) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   try {
     // ─── Check for regeneration request ───
