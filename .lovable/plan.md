@@ -1,110 +1,84 @@
 
 
-## Redesign Approval Wizard + 7 Daily Sparks + Editable/Regenerable Content
+## Redesign Sermon List Page -- Clear Status, Sections, Delete, and Click-to-View
 
-### Overview
-Five changes: (1) replace the right-side Sheet with a centered wizard Dialog, (2) remove weekly_challenge and weekend_reflection, (3) generate 7 daily sparks instead of 1, (4) make all content editable inline, and (5) add per-section regeneration.
+### Problems
+- All sermons look identical when they share the same title -- no upload timestamp visible
+- No way to delete unwanted sermons
+- No visual sectioning by status -- everything blends together
+- The "CURRENT" badge is small and easy to miss
+- No way to click into a published sermon to view/edit its content after approval
+- Action buttons are cluttered and unclear
 
----
+### Solution
 
-### 1. Remove Weekly Challenge & Weekend Reflection
+**1. Section sermons into clear groups with headers**
 
-**Edge function (`process-sermon/index.ts`):**
-- Remove `weekly_challenge` and `weekend_reflection` from the `allContentTypes` array (lines 193-194)
-- Remove `buildChallengePrompt` and `buildWeekendReflectionPrompt` functions (lines 640-656)
-- Remove their tool schemas from `buildToolSchema` (lines 530-567)
+Three sections, each with a bold header and distinct styling:
 
-**Admin UI (`AdminSermons.tsx`):**
-- Remove `weekly_challenge` and `weekend_reflection` from `CONTENT_TYPE_LABELS` (lines 51-52)
-- Remove the `.concat(["weekly_challenge", "weekend_reflection"])` on line 527
+- **Live Now** (green accent) -- the sermon marked `is_current`. Gets a prominent highlighted card with a green left border and "LIVE ON YOUR APP" label. Only one sermon can be here.
+- **Needs Attention** (amber/purple accent) -- sermons in `review` or `failed` status. Shows at the top so the admin sees what needs action.
+- **Processing** -- sermons in `pending`, `uploading`, `transcribing`, or `generating` status. Shows animated progress indicators.
+- **All Sermons** -- all remaining `complete` sermons (published or draft), sorted by `created_at` descending.
 
----
+Empty sections are hidden entirely.
 
-### 2. Generate 7 Daily Sparks (One Per Day of the Week)
+**2. Show upload timestamp on every card**
 
-**Edge function (`process-sermon/index.ts`):**
-- Update `buildSparkPrompt()` to ask for 7 sparks -- one for each day of the week (Monday through Sunday)
-- Update the `spark` tool schema to return an array of 7 spark objects, each with `day`, `title`, and `summary` fields
-- Schema becomes: `{ sparks: [{ day: "Monday", title: "...", summary: "..." }, ...] }`
+Display "Uploaded Feb 27 at 3:05 PM" (using `created_at`) underneath the existing speaker/date line. Sort within each section by `created_at` descending so the most recent upload is always first.
 
-**Admin UI:** The spark step in the wizard will show all 7 sparks, one card per day, each individually editable.
+**3. Add delete functionality**
 
-**Member UI:** The existing `SermonTab.tsx` will need to pick the correct spark for today's day of the week from the array. This is a display-side change to read `spark.sparks[dayIndex]` instead of `spark.title`.
+- Add a three-dot dropdown menu (`DropdownMenu`) on each sermon card with: "View Content", "Edit Details", "Set as Current", "Publish/Unpublish", and "Delete"
+- Delete shows an `AlertDialog` confirmation: "This will permanently delete the sermon and all its generated content."
+- Delete mutation: removes `sermon_content` rows, removes storage file (if exists), then deletes the sermon row
+- Requires no new RLS policy -- admins already have ALL access on sermons table
 
----
+**4. Click-to-view/edit published sermon content**
 
-### 3. Centered Wizard Dialog for Approval
+- Clicking a sermon card (or "View Content" from the dropdown) opens the same wizard dialog but in a **view/edit mode** (not approval mode)
+- For `complete` sermons, the wizard opens without the "Approve & Schedule" button -- instead shows "Save Changes" if edits were made
+- This lets admins review and edit content post-publication
 
-Replace the `ReviewSheet` (right-side Sheet) with a `ReviewWizard` that uses the `Dialog` component, centered on screen with `max-w-2xl`.
+**5. Prominent "Live" indicator**
 
-**Wizard steps with progress dots:**
-1. **Thumbnail** -- Pick video thumbnail (skip if none available)
-2. **Daily Sparks** -- Review/edit all 7 sparks
-3. **Key Takeaways** -- Review/edit each takeaway
-4. **Reflection Questions** -- Review/edit each question
-5. **Scripture References** -- Review/edit references
-6. **Sermon Chapters** -- Review/edit chapters with timestamps
-7. **Confirm** -- Summary with "Approve & Schedule" button
+The current live sermon gets a visually distinct card:
+- Green left border with a pulsing green dot and "LIVE ON YOUR APP" badge
+- Slightly larger card with the sermon title more prominent
+- Quick action button to swap which sermon is live
 
-Each step shows progress dots at the top (like onboarding), Back/Next buttons at the bottom.
-
----
-
-### 4. Inline Editing
-
-Each content step has an "Edit" toggle button. When activated:
-- Text fields become `<Input>` or `<Textarea>` components
-- Changes are tracked in local state
-- On "Next" or "Save", changed content is written back to the `sermon_content` table via an update mutation
-
----
-
-### 5. Per-Section Regeneration
-
-Each content step has a "Regenerate" button with a refresh icon. When clicked:
-- Calls `process-sermon` edge function with a new `regenerate_type` body parameter
-- The edge function detects this parameter and only regenerates that single content type
-- Deletes the old `sermon_content` row and inserts the fresh one
-- UI shows a spinner during regeneration, then refreshes the content
-
-**Edge function changes for regeneration:**
-- At the top of the handler, check for `regenerate_type` in the request body
-- If present, skip the job queue entirely: look up the sermon's transcript, run just that one prompt, delete+insert the content row, and return
-- This requires the edge function to accept direct calls (not just job-based), authenticated with the admin's token or service role key
-
----
-
-### Technical Summary
+### Technical Changes
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/process-sermon/index.ts` | Remove weekly_challenge + weekend_reflection; update spark schema to 7 items with day field; update spark prompt for 7 days; add `regenerate_type` direct-call path |
-| `src/pages/admin/AdminSermons.tsx` | Replace ReviewSheet with ReviewWizard dialog; remove weekly_challenge/weekend_reflection; wizard steps with progress dots, inline editing, regenerate buttons; update spark preview for 7 items |
-| `src/components/fbs/SermonTab.tsx` | Update spark display to read from `sparks` array using current day of week |
-| `src/components/fbs/PreviousSermonDetailScreen.tsx` | Same spark array update |
-| `sermon_content` table | Needs an RLS policy allowing church admins to UPDATE content (currently only SELECT is allowed) -- will add via migration |
+| `src/pages/admin/AdminSermons.tsx` | Add DropdownMenu import; add delete mutation with AlertDialog; group sermons into sections; add `created_at` display with `formatDistanceToNow`; add "Live Now" highlighted card; make cards clickable to open wizard in view mode; add three-dot menu with actions; sort by `created_at` desc |
 
-**New migration:** Add UPDATE policy on `sermon_content` for church admins so they can save edits and delete+reinsert for regeneration.
+### Card Layout (per sermon)
 
-```sql
-CREATE POLICY "Church admins can update sermon content"
-  ON public.sermon_content FOR UPDATE
-  USING (EXISTS (
-    SELECT 1 FROM sermons s
-    WHERE s.id = sermon_content.sermon_id
-    AND (has_role_in_church(auth.uid(), s.church_id, 'admin') 
-      OR has_role_in_church(auth.uid(), s.church_id, 'owner')
-      OR has_role_in_church(auth.uid(), s.church_id, 'pastor'))
-  ));
-
-CREATE POLICY "Church admins can delete sermon content"
-  ON public.sermon_content FOR DELETE
-  USING (EXISTS (
-    SELECT 1 FROM sermons s
-    WHERE s.id = sermon_content.sermon_id
-    AND (has_role_in_church(auth.uid(), s.church_id, 'admin')
-      OR has_role_in_church(auth.uid(), s.church_id, 'owner')
-      OR has_role_in_church(auth.uid(), s.church_id, 'pastor'))
-  ));
+```text
++---+------------------------------------------+-----+
+| G |  "I'm Goin In"                           | ... |
+| R |  Luke Chafin · Feb 26, 2026              |     |
+| E |  Uploaded 2 hours ago · File Upload       |     |
+| E |                                           |     |
+| N |  [Ready for Review]  [Review & Approve]   |     |
++---+------------------------------------------+-----+
 ```
+
+The green left border only appears on the LIVE sermon. The three-dot menu (`...`) contains secondary actions. Primary actions (Review & Approve) stay inline.
+
+### Delete Flow
+
+1. Admin clicks `...` menu, then "Delete"
+2. AlertDialog appears: "Delete this sermon? This will permanently remove the sermon and all generated content. This cannot be undone."
+3. On confirm: delete `sermon_content` where `sermon_id`, delete storage file via `supabase.storage.from('sermon-media').remove([path])`, delete sermon row
+4. Toast: "Sermon deleted"
+
+### View Mode for Published Sermons
+
+When a `complete` sermon card is clicked, open the ReviewWizard with a new `mode` prop:
+- `mode="review"` -- current behavior with "Approve & Schedule"  
+- `mode="view"` -- same wizard steps but final step shows "Save Changes" instead of "Approve & Schedule", and only saves edited content without changing sermon status
+
+This reuses all existing wizard step components (SparkEditor, TakeawaysEditor, etc.) with no duplication.
 
