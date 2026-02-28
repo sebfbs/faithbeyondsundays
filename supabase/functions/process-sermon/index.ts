@@ -117,179 +117,73 @@ serve(async (req) => {
         .update({ status: "transcribing" })
         .eq("id", sermon.id);
 
-      if (sermon.source_type === "youtube" && sermon.source_url) {
-        // ─── YouTube: fetch transcript (Innertube → HTML scrape → Cobalt+ElevenLabs) ───
-        console.log("Fetching YouTube transcript for:", sermon.source_url);
-        const videoId = extractYouTubeId(sermon.source_url);
-        if (!videoId) {
-          await failJob(supabase, job.id, "Could not extract YouTube video ID");
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+      // ─── File upload: download from storage and transcribe ───
+      console.log("Downloading file from storage:", sermon.storage_path);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("sermon-media")
+        .download(sermon.storage_path!);
 
-        let transcriptFetched = false;
+      if (downloadError || !fileData) {
+        await failJob(supabase, job.id, "Failed to download file from storage");
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Download failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-        // Path 1: Try native captions (Innertube API + HTML scraping fallback)
-        try {
-          transcriptText = await fetchYouTubeTranscript(videoId);
-          if (transcriptText && transcriptText.length >= 100) {
-            transcriptFetched = true;
-            console.log(`YouTube caption transcript: ${transcriptText.length} chars`);
-          }
-        } catch (ytErr) {
-          console.warn("YouTube caption fetch failed:", ytErr);
-        }
+      console.log("Transcribing with ElevenLabs...");
+      const transcribeFormData = new FormData();
+      transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
+      transcribeFormData.append("model_id", "scribe_v2");
+      transcribeFormData.append("tag_audio_events", "false");
+      transcribeFormData.append("diarize", "false");
 
-        // Path 2: Download audio via Cobalt → transcribe with ElevenLabs
-        if (!transcriptFetched) {
-          console.log("No captions available. Trying audio download + ElevenLabs transcription...");
-          try {
-            const audioBlob = await downloadYouTubeAudio(videoId);
-            
-            console.log("Transcribing YouTube audio with ElevenLabs...");
-            const transcribeFormData = new FormData();
-            transcribeFormData.append("file", audioBlob, `youtube-${videoId}.mp3`);
-            transcribeFormData.append("model_id", "scribe_v2");
-            transcribeFormData.append("tag_audio_events", "false");
-            transcribeFormData.append("diarize", "false");
+      const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+        method: "POST",
+        headers: { "xi-api-key": elevenlabsKey },
+        body: transcribeFormData,
+      });
 
-            const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-              method: "POST",
-              headers: { "xi-api-key": elevenlabsKey },
-              body: transcribeFormData,
-            });
+      if (!transcribeResponse.ok) {
+        const errText = await transcribeResponse.text();
+        console.error("ElevenLabs error:", transcribeResponse.status, errText);
+        await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Transcription failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-            if (!transcribeResponse.ok) {
-              const errText = await transcribeResponse.text();
-              throw new Error(`ElevenLabs transcription failed: ${transcribeResponse.status} - ${errText}`);
-            }
+      const transcription = await transcribeResponse.json();
+      transcriptText = transcription.text || "";
+      wordTimings = (transcription.words || []).map((w: any) => ({
+        text: w.text,
+        start: w.start,
+        end: w.end,
+      }));
+      const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
 
-            const transcription = await transcribeResponse.json();
-            transcriptText = transcription.text || "";
-            wordTimings = (transcription.words || []).map((w: any) => ({
-              text: w.text,
-              start: w.start,
-              end: w.end,
-            }));
-
-            if (transcriptText.length >= 100) {
-              transcriptFetched = true;
-              console.log(`ElevenLabs transcript from YouTube audio: ${transcriptText.length} chars`);
-            }
-          } catch (audioErr) {
-            console.error("Audio download + transcription fallback failed:", audioErr);
-          }
-        }
-
-        // If both paths failed, fail explicitly — no title-only generation
-        if (!transcriptFetched) {
-          const errorMsg = "Could not extract transcript from YouTube. The video may have no captions, and audio extraction was unavailable. Please upload the video/audio file directly instead.";
-          console.error(errorMsg);
-          await failJob(supabase, job.id, errorMsg);
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: errorMsg }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
-        const { error: transcriptError } = await supabase
-          .from("sermon_transcripts")
-          .insert({
-            sermon_id: sermon.id,
-            full_text: transcriptText,
-            word_count: wordCount,
-            language: "en",
-          });
-
-        if (transcriptError) {
-          console.error("Transcript save error:", transcriptError);
-          await failJob(supabase, job.id, "Failed to save transcript");
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        // Set video_url for playback
-        await supabase
-          .from("sermons")
-          .update({ video_url: sermon.source_url })
-          .eq("id", sermon.id);
-
-      } else {
-        // ─── File upload: download from storage and transcribe ───
-        console.log("Downloading file from storage:", sermon.storage_path);
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from("sermon-media")
-          .download(sermon.storage_path!);
-
-        if (downloadError || !fileData) {
-          await failJob(supabase, job.id, "Failed to download file from storage");
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: "Download failed" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        console.log("Transcribing with ElevenLabs...");
-        const transcribeFormData = new FormData();
-        transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
-        transcribeFormData.append("model_id", "scribe_v2");
-        transcribeFormData.append("tag_audio_events", "false");
-        transcribeFormData.append("diarize", "false");
-
-        const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-          method: "POST",
-          headers: { "xi-api-key": elevenlabsKey },
-          body: transcribeFormData,
+      const { error: transcriptError } = await supabase
+        .from("sermon_transcripts")
+        .insert({
+          sermon_id: sermon.id,
+          full_text: transcriptText,
+          word_count: wordCount,
+          language: "en",
         });
 
-        if (!transcribeResponse.ok) {
-          const errText = await transcribeResponse.text();
-          console.error("ElevenLabs error:", transcribeResponse.status, errText);
-          await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: "Transcription failed" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const transcription = await transcribeResponse.json();
-        transcriptText = transcription.text || "";
-        wordTimings = (transcription.words || []).map((w: any) => ({
-          text: w.text,
-          start: w.start,
-          end: w.end,
-        }));
-        const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
-
-        const { error: transcriptError } = await supabase
-          .from("sermon_transcripts")
-          .insert({
-            sermon_id: sermon.id,
-            full_text: transcriptText,
-            word_count: wordCount,
-            language: "en",
-          });
-
-        if (transcriptError) {
-          console.error("Transcript save error:", transcriptError);
-          await failJob(supabase, job.id, "Failed to save transcript");
-          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-          return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+      if (transcriptError) {
+        console.error("Transcript save error:", transcriptError);
+        await failJob(supabase, job.id, "Failed to save transcript");
+        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+        return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+    }
     }
 
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
@@ -961,309 +855,3 @@ CRITICAL RULES:
 - Use the timing markers embedded in the transcript to determine accurate timestamps for each chapter boundary.`;
 }
 
-// ─── YouTube helpers ───
-
-function extractYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match?.[1] || null;
-}
-
-async function fetchYouTubeTranscript(videoId: string): Promise<string> {
-  // ─── Strategy 1: YouTube Innertube API with multiple client contexts ───
-  // Different clients return different caption data. ANDROID is most reliable for auto-captions.
-  const clients = [
-    { clientName: "ANDROID", clientVersion: "19.29.37", apiKey: "AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w" },
-    { clientName: "WEB", clientVersion: "2.20250101.00.00" },
-    { clientName: "TV_EMBEDDED", clientVersion: "2.0" },
-  ];
-
-  for (const client of clients) {
-    console.log(`[YouTube] Trying Innertube API with ${client.clientName} client for video ${videoId}`);
-    try {
-      const endpoint = client.apiKey
-        ? `https://www.youtube.com/youtubei/v1/player?key=${client.apiKey}&prettyPrint=false`
-        : "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
-
-      const body: any = {
-        videoId,
-        context: {
-          client: {
-            clientName: client.clientName,
-            clientVersion: client.clientVersion,
-            hl: "en",
-          },
-        },
-      };
-
-      // Android client needs these additional fields
-      if (client.clientName === "ANDROID") {
-        body.context.client.androidSdkVersion = 30;
-        body.context.client.platform = "MOBILE";
-        body.params = "CgIQBg=="; // Request captions
-      }
-
-      const playerResponse = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(client.clientName === "ANDROID" ? { "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 11) gzip" } : {}),
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!playerResponse.ok) {
-        console.warn(`[YouTube] ${client.clientName} Innertube returned ${playerResponse.status}`);
-        continue;
-      }
-
-      const playerData = await playerResponse.json();
-      const tracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-
-      if (tracks && tracks.length > 0) {
-        const enManual = tracks.find((t: any) => t.languageCode === "en" && t.kind !== "asr");
-        const enAuto = tracks.find((t: any) => t.languageCode === "en");
-        const bestTrack = enManual || enAuto || tracks[0];
-        const captionUrl = bestTrack?.baseUrl;
-
-        if (captionUrl) {
-          console.log(`[YouTube] Found caption track via ${client.clientName}: ${bestTrack.languageCode} (${bestTrack.kind || "manual"})`);
-          const transcript = await fetchAndParseCaptionXml(captionUrl);
-          if (transcript && transcript.length >= 100) {
-            console.log(`[YouTube] ${client.clientName} transcript fetched: ${transcript.length} chars`);
-            return transcript;
-          }
-          console.warn(`[YouTube] ${client.clientName} transcript too short (${transcript?.length || 0} chars)`);
-        }
-      } else {
-        console.warn(`[YouTube] No caption tracks from ${client.clientName} client`);
-      }
-
-      // Also try extracting audio stream URL from this response for fallback
-      // (stored for later use in downloadYouTubeAudio)
-      const streamingData = playerData?.streamingData;
-      if (streamingData) {
-        _lastStreamingData = streamingData;
-      }
-    } catch (err) {
-      console.warn(`[YouTube] ${client.clientName} Innertube failed:`, err);
-    }
-  }
-
-  // ─── Strategy 2: Direct timedtext API for auto-generated captions ───
-  console.log(`[YouTube] Trying direct timedtext API for video ${videoId}`);
-  try {
-    // Try fetching auto-generated English captions directly
-    const timedtextUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`;
-    const ttResponse = await fetch(timedtextUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-    if (ttResponse.ok) {
-      const xml = await ttResponse.text();
-      if (xml.includes("<text")) {
-        const transcript = await parseTimedTextXml(xml);
-        if (transcript && transcript.length >= 100) {
-          console.log(`[YouTube] Direct timedtext transcript: ${transcript.length} chars`);
-          return transcript;
-        }
-      }
-    }
-
-    // Also try manually uploaded captions (no kind parameter)
-    const timedtextUrlManual = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`;
-    const ttManualResponse = await fetch(timedtextUrlManual, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-    if (ttManualResponse.ok) {
-      const xml = await ttManualResponse.text();
-      if (xml.includes("<text")) {
-        const transcript = await parseTimedTextXml(xml);
-        if (transcript && transcript.length >= 100) {
-          console.log(`[YouTube] Direct timedtext (manual) transcript: ${transcript.length} chars`);
-          return transcript;
-        }
-      }
-    }
-  } catch (ttErr) {
-    console.warn("[YouTube] Direct timedtext API failed:", ttErr);
-  }
-
-  // ─── Strategy 3: HTML scraping fallback ───
-  console.log(`[YouTube] Trying HTML scraping fallback for video ${videoId}`);
-  try {
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const pageResponse = await fetch(watchUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-
-    if (pageResponse.ok) {
-      const html = await pageResponse.text();
-      let captionUrl: string | null = null;
-
-      const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var\s|<\/script)/s);
-      if (playerResponseMatch) {
-        try {
-          const playerData = JSON.parse(playerResponseMatch[1]);
-          const tracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-          if (tracks?.length > 0) {
-            const enTrack = tracks.find((t: any) => t.languageCode === "en" && !t.kind) ||
-                            tracks.find((t: any) => t.languageCode === "en") ||
-                            tracks[0];
-            captionUrl = enTrack?.baseUrl || null;
-          }
-
-          // Also grab streaming data for audio fallback
-          const streamingData = playerData?.streamingData;
-          if (streamingData) _lastStreamingData = streamingData;
-        } catch {}
-      }
-
-      if (!captionUrl) {
-        const timedtextMatch = html.match(/"(https?:\/\/www\.youtube\.com\/api\/timedtext[^"]+)"/);
-        if (timedtextMatch) {
-          captionUrl = timedtextMatch[1].replace(/\\u0026/g, "&");
-        }
-      }
-
-      if (captionUrl) {
-        const transcript = await fetchAndParseCaptionXml(captionUrl);
-        if (transcript && transcript.length >= 100) {
-          console.log(`[YouTube] HTML scraping transcript fetched: ${transcript.length} chars`);
-          return transcript;
-        }
-      }
-    }
-  } catch (scrapeErr) {
-    console.warn("[YouTube] HTML scraping fallback failed:", scrapeErr);
-  }
-
-  throw new Error("No captions found via any method. Video may have no captions enabled.");
-}
-
-// Store streaming data from Innertube responses for audio extraction fallback
-let _lastStreamingData: any = null;
-
-// ─── Parse timedtext XML directly (same logic as fetchAndParseCaptionXml but accepts raw XML) ───
-async function parseTimedTextXml(xml: string): Promise<string> {
-  const segments: { start: number; text: string }[] = [];
-  const regex = /<text start="([\d.]+)"[^>]*>(.*?)<\/text>/gs;
-  let match;
-  while ((match = regex.exec(xml)) !== null) {
-    const start = parseFloat(match[1]);
-    let text = match[2]
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/<[^>]+>/g, "")
-      .trim();
-    if (text) segments.push({ start, text });
-  }
-
-  if (segments.length === 0) return "";
-
-  let result = "";
-  let lastMarkerTime = -60;
-  for (const seg of segments) {
-    if (seg.start - lastMarkerTime >= 30) {
-      const totalSec = Math.floor(seg.start);
-      const h = Math.floor(totalSec / 3600);
-      const m = Math.floor((totalSec % 3600) / 60);
-      const s = totalSec % 60;
-      const marker = h > 0
-        ? `[${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}]`
-        : `[${m}:${String(s).padStart(2, "0")}]`;
-      result += `\n${marker} `;
-      lastMarkerTime = seg.start;
-    }
-    result += seg.text + " ";
-  }
-
-  return result.trim();
-}
-
-// ─── Parse YouTube caption XML into timestamped transcript ───
-function fetchAndParseCaptionXml(captionUrl: string): Promise<string> {
-  return fetch(captionUrl).then(async (res) => {
-    if (!res.ok) throw new Error(`Caption fetch failed: ${res.status}`);
-    const xml = await res.text();
-    return parseTimedTextXml(xml);
-  });
-}
-
-// ─── Download YouTube audio via Innertube streaming data (no third-party API needed) ───
-async function downloadYouTubeAudio(videoId: string): Promise<Blob> {
-  console.log(`[YouTube] Attempting audio download for video ${videoId}`);
-
-  // First, try using cached streaming data from Innertube responses
-  let streamingData = _lastStreamingData;
-
-  // If no cached data, make a fresh Innertube request with ANDROID client
-  if (!streamingData) {
-    console.log("[YouTube] Fetching streaming data via ANDROID client...");
-    const playerResponse = await fetch(
-      "https://www.youtube.com/youtubei/v1/player?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w&prettyPrint=false",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 11) gzip",
-        },
-        body: JSON.stringify({
-          videoId,
-          context: {
-            client: {
-              clientName: "ANDROID",
-              clientVersion: "19.29.37",
-              androidSdkVersion: 30,
-              hl: "en",
-              platform: "MOBILE",
-            },
-          },
-        }),
-      }
-    );
-
-    if (!playerResponse.ok) {
-      throw new Error(`Innertube player request failed: ${playerResponse.status}`);
-    }
-
-    const playerData = await playerResponse.json();
-    streamingData = playerData?.streamingData;
-  }
-
-  if (!streamingData) {
-    throw new Error("No streaming data available from YouTube");
-  }
-
-  // Find audio-only adaptive format (prefer medium quality for smaller size)
-  const formats = [...(streamingData.adaptiveFormats || []), ...(streamingData.formats || [])];
-  const audioFormats = formats
-    .filter((f: any) => f.mimeType?.startsWith("audio/") && f.url)
-    .sort((a: any, b: any) => (a.bitrate || 0) - (b.bitrate || 0));
-
-  if (audioFormats.length === 0) {
-    throw new Error("No audio streams found in YouTube response");
-  }
-
-  // Pick a medium-quality audio stream (not too large for edge function memory)
-  const audioStream = audioFormats.find((f: any) => (f.bitrate || 0) <= 130000) || audioFormats[0];
-  console.log(`[YouTube] Downloading audio stream: ${audioStream.mimeType}, bitrate: ${audioStream.bitrate}`);
-
-  const audioResponse = await fetch(audioStream.url);
-  if (!audioResponse.ok) {
-    throw new Error(`Audio stream download failed: ${audioResponse.status}`);
-  }
-
-  const audioBlob = await audioResponse.blob();
-  console.log(`[YouTube] Audio downloaded: ${(audioBlob.size / 1024 / 1024).toFixed(1)} MB`);
-  return audioBlob;
-}

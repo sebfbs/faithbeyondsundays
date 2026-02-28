@@ -859,6 +859,7 @@ export type Database = {
           id: string
           is_current: boolean
           is_published: boolean
+          media_type: string | null
           sermon_date: string
           source_type: Database["public"]["Enums"]["sermon_source_type"]
           source_url: string | null
@@ -882,6 +883,7 @@ export type Database = {
           id?: string
           is_current?: boolean
           is_published?: boolean
+          media_type?: string | null
           sermon_date?: string
           source_type?: Database["public"]["Enums"]["sermon_source_type"]
           source_url?: string | null
@@ -905,6 +907,7 @@ export type Database = {
           id?: string
           is_current?: boolean
           is_published?: boolean
+          media_type?: string | null
           sermon_date?: string
           source_type?: Database["public"]["Enums"]["sermon_source_type"]
           source_url?: string | null
