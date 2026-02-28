@@ -57,7 +57,7 @@ serve(async (req) => {
     const churchId = roles[0].church_id;
 
     // Parse JSON body (no file — file was uploaded directly to storage by the client)
-    const { title, speaker, sermon_date, subtitle, storage_path } = await req.json();
+    const { title, speaker, sermon_date, subtitle, storage_path, media_type } = await req.json();
 
     if (!title || !storage_path) {
       return new Response(JSON.stringify({ error: "Title and storage_path are required" }), {
@@ -85,6 +85,7 @@ serve(async (req) => {
         church_id: churchId,
         source_type: "upload",
         storage_path,
+        media_type: media_type || null,
         uploaded_by: user.id,
         status: "pending",
         is_published: false,

@@ -1,0 +1,1 @@
+ALTER TABLE public.sermons ADD COLUMN media_type text;

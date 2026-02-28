@@ -1,8 +1,16 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
-import { Play, Clock } from "lucide-react";
+import { Play, Clock, Music } from "lucide-react";
 
 export interface SermonVideoPlayerHandle {
   seekTo: (seconds: number) => void;
+}
+
+const AUDIO_EXTENSIONS = [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".wma"];
+
+function isAudioUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase().split("?")[0];
+  return AUDIO_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
 interface SermonVideoPlayerProps {
@@ -12,6 +20,7 @@ interface SermonVideoPlayerProps {
   thumbnailUrl?: string | null;
   storagePath?: string | null;
   duration?: string | null;
+  mediaType?: string | null;
 }
 
 function extractYouTubeId(url: string): string | null {
@@ -20,22 +29,31 @@ function extractYouTubeId(url: string): string | null {
 }
 
 const SermonVideoPlayer = forwardRef<SermonVideoPlayerHandle, SermonVideoPlayerProps>(
-  ({ videoUrl, sourceUrl, sourceType, thumbnailUrl, storagePath, duration }, ref) => {
+  ({ videoUrl, sourceUrl, sourceType, thumbnailUrl, storagePath, duration, mediaType }, ref) => {
     const [playing, setPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     const playableUrl = videoUrl || sourceUrl;
     const youtubeId = sourceType === "youtube" && playableUrl ? extractYouTubeId(playableUrl) : null;
 
+    // Detect audio: check mediaType prop, then fallback to file extension
+    const isAudio =
+      mediaType?.startsWith("audio/") ||
+      isAudioUrl(storagePath) ||
+      isAudioUrl(playableUrl);
+
     useImperativeHandle(ref, () => ({
       seekTo: (seconds: number) => {
-        if (videoRef.current) {
+        if (audioRef.current) {
+          audioRef.current.currentTime = seconds;
+          if (audioRef.current.paused) audioRef.current.play();
+        } else if (videoRef.current) {
           videoRef.current.currentTime = seconds;
           if (videoRef.current.paused) videoRef.current.play();
           setPlaying(true);
         } else if (youtubeId && iframeRef.current?.contentWindow) {
-          // YouTube postMessage API
           iframeRef.current.contentWindow.postMessage(
             JSON.stringify({ event: "command", func: "seekTo", args: [seconds, true] }),
             "*"
@@ -44,6 +62,46 @@ const SermonVideoPlayer = forwardRef<SermonVideoPlayerHandle, SermonVideoPlayerP
         }
       },
     }));
+
+    // Audio player
+    if (isAudio && (playableUrl || storagePath)) {
+      const src = playableUrl || "";
+      return (
+        <div className="relative rounded-3xl overflow-hidden">
+          <div
+            className="w-full flex flex-col items-center justify-center px-6 py-10"
+            style={{
+              background: "linear-gradient(135deg, hsl(207, 55%, 35%) 0%, hsl(220, 50%, 25%) 100%)",
+            }}
+          >
+            {/* Cross watermark */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
+              <div style={{ width: 60, height: 4, background: "white", position: "absolute" }} />
+              <div style={{ width: 4, height: 80, background: "white", position: "absolute" }} />
+            </div>
+
+            <div className="w-14 h-14 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center mb-4 z-10">
+              <Music size={24} className="text-white" />
+            </div>
+
+            {duration && (
+              <p className="text-white/50 text-xs mb-4 z-10 flex items-center gap-1">
+                <Clock size={11} />
+                {duration}
+              </p>
+            )}
+
+            <audio
+              ref={audioRef}
+              src={src}
+              controls
+              className="w-full z-10 rounded-lg"
+              style={{ maxWidth: "100%" }}
+            />
+          </div>
+        </div>
+      );
+    }
 
     // YouTube embed
     if (youtubeId) {

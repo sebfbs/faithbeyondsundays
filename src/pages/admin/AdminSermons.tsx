@@ -37,7 +37,6 @@ import {
   Plus,
   Loader2,
   Upload,
-  Link as LinkIcon,
   CheckCircle2,
   Clock,
   AlertCircle,
@@ -60,7 +59,13 @@ import {
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 
-type SourceMode = "upload" | "youtube";
+const AUDIO_EXTENSIONS = [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".wma"];
+
+function isAudioFile(storagePath: string | null | undefined): boolean {
+  if (!storagePath) return false;
+  const ext = storagePath.substring(storagePath.lastIndexOf(".")).toLowerCase();
+  return AUDIO_EXTENSIONS.includes(ext);
+}
 
 const CONTENT_TYPE_LABELS: Record<string, string> = {
   spark: "Daily Sparks",
@@ -94,35 +99,6 @@ const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
   chapters: "Sermon Chapters",
   confirm: "Confirm",
 };
-
-function PendingProgress({ createdAt }: { createdAt: string }) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const startTime = new Date(createdAt).getTime();
-    const estimatedDuration = 2 * 60 * 1000; // ~2 minutes
-
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min(85, (elapsed / estimatedDuration) * 85);
-      setProgress(Math.round(pct));
-    };
-
-    tick();
-    const interval = setInterval(tick, 2000);
-    return () => clearInterval(interval);
-  }, [createdAt]);
-
-  return (
-    <div className="mt-3 space-y-1.5">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-blue-700">Processing YouTube video…</p>
-        <span className="text-xs font-medium text-blue-700">{progress}%</span>
-      </div>
-      <Progress value={progress} className="h-2 bg-blue-100 [&>div]:bg-blue-500" />
-    </div>
-  );
-}
 
 function TranscribingProgress({ createdAt }: { createdAt: string }) {
   const [progress, setProgress] = useState(0);
@@ -295,7 +271,6 @@ export default function AdminSermons() {
     const StatusIcon = status.icon;
     const doneTypes = contentProgress?.[sermon.id];
     const uploadedAgo = formatDistanceToNow(new Date(sermon.created_at), { addSuffix: true });
-    const sourceLabel = sermon.source_type === "youtube" ? "YouTube" : "File Upload";
 
     return (
       <Card
@@ -338,14 +313,7 @@ export default function AdminSermons() {
               {/* Upload timestamp */}
               <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                 <span>Uploaded {uploadedAgo}</span>
-                <span>·</span>
-                <span>{sourceLabel}</span>
               </div>
-
-              {/* YouTube pending progress */}
-              {sermon.status === "pending" && sermon.source_type === "youtube" && (
-                <PendingProgress createdAt={sermon.created_at} />
-              )}
 
               {/* Transcribing progress */}
               {sermon.status === "transcribing" && (
@@ -633,17 +601,6 @@ function ReviewWizard({
 
   const currentStep = WIZARD_STEPS[step];
 
-  // Reset on open
-  useEffect(() => {
-    if (open) {
-      setStep(0);
-      setEditedContent({});
-      setEditMode({});
-      setRegeneratingItem(null);
-      setThumbnailSeed(0);
-    }
-  }, [open, sermonId]);
-
   const { data: sermon } = useQuery({
     queryKey: ["admin", "sermon-detail", sermonId],
     enabled: !!sermonId,
@@ -657,6 +614,18 @@ function ReviewWizard({
       return data;
     },
   });
+
+  // Reset on open — skip thumbnail step for audio files
+  useEffect(() => {
+    if (open) {
+      const startStep = sermon && isAudioFile(sermon.storage_path) ? 1 : 0;
+      setStep(startStep);
+      setEditedContent({});
+      setEditMode({});
+      setRegeneratingItem(null);
+      setThumbnailSeed(0);
+    }
+  }, [open, sermonId, sermon?.storage_path]);
 
   const { data: content, isLoading } = useQuery({
     queryKey: ["admin", "sermon-review-content", sermonId],
@@ -678,15 +647,13 @@ function ReviewWizard({
     setSelectedThumb(null);
     setLoadingThumbnails(true);
 
-    if (sermon.source_type === "youtube" && sermon.source_url) {
-      const match = sermon.source_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-      if (match?.[1]) {
-        const id = match[1];
-        setThumbnails([`https://img.youtube.com/vi/${id}/maxresdefault.jpg`]);
-        setSelectedThumb(0);
-        setLoadingThumbnails(false);
-      }
-    } else if (sermon.source_type === "upload" && sermon.storage_path) {
+    // Skip thumbnail generation for audio files
+    if (isAudioFile(sermon.storage_path)) {
+      setLoadingThumbnails(false);
+      return;
+    }
+
+    if (sermon.storage_path) {
       (async () => {
         try {
           const { data } = await supabase.storage
@@ -706,7 +673,6 @@ function ReviewWizard({
           });
 
           const dur = video.duration;
-          // Use thumbnailSeed to generate different positions each time
           const basePositions = [0.15, 0.35, 0.55, 0.75];
           const offset = (thumbnailSeed * 0.07) % 0.12;
           const positions = basePositions.map(p => Math.min(Math.max(p + offset, 0.05), 0.95));
@@ -882,7 +848,6 @@ function ReviewWizard({
                   selectedThumb={selectedThumb}
                   onSelect={setSelectedThumb}
                   onRegenerate={handleRegenerateThumbnails}
-                  isYoutube={sermon?.source_type === "youtube"}
                   loading={loadingThumbnails}
                 />
               )}
@@ -1009,14 +974,12 @@ function ThumbnailStep({
   selectedThumb,
   onSelect,
   onRegenerate,
-  isYoutube,
   loading,
 }: {
   thumbnails: string[];
   selectedThumb: number | null;
   onSelect: (i: number) => void;
   onRegenerate: () => void;
-  isYoutube: boolean;
   loading: boolean;
 }) {
   if (thumbnails.length === 0) {
@@ -1038,36 +1001,14 @@ function ThumbnailStep({
     );
   }
 
-  if (isYoutube && thumbnails.length === 1) {
-    return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground text-center">YouTube thumbnail auto-selected</p>
-        <div className="flex justify-center">
-          <div className="relative rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/30 max-w-sm">
-            <img
-              src={thumbnails[0]}
-              alt="YouTube thumbnail"
-              className="w-full aspect-video object-cover"
-            />
-            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-              <Check className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Choose a thumbnail for this sermon:</p>
-        {!isYoutube && (
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onRegenerate}>
-            <RefreshCw className="h-3 w-3" />
-            New Frames
-          </Button>
-        )}
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onRegenerate}>
+          <RefreshCw className="h-3 w-3" />
+          New Frames
+        </Button>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {thumbnails.map((thumb, i) => (
@@ -1423,12 +1364,10 @@ function UploadSermonForm({
   churchId: string;
   onSuccess: () => void;
 }) {
-  const [mode, setMode] = useState<SourceMode>("upload");
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [sermonDate, setSermonDate] = useState(new Date().toISOString().split("T")[0]);
   const [file, setFile] = useState<File | null>(null);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [uploadPercent, setUploadPercent] = useState(0);
@@ -1441,7 +1380,10 @@ function UploadSermonForm({
     setSubmitting(true);
 
     try {
-      if (mode === "upload" && file) {
+      if (!file) {
+        toast.error("Please select a file");
+        return;
+      }
         setUploadStep("uploading");
         setUploadPercent(0);
         setFriendlyMessage(getUploadMessage("uploading", 0));
@@ -1497,6 +1439,7 @@ function UploadSermonForm({
             speaker,
             sermon_date: sermonDate,
             storage_path: storagePath,
+            media_type: file.type || null,
           },
         });
 
@@ -1509,35 +1452,6 @@ function UploadSermonForm({
 
         toast.success("Sermon uploaded! Processing will begin shortly.");
         onSuccess();
-      } else if (mode === "youtube" && youtubeUrl) {
-        const { data: sermonRow, error } = await supabase.from("sermons").insert({
-          title,
-          speaker: speaker || null,
-          sermon_date: sermonDate,
-          church_id: churchId,
-          source_type: "youtube",
-          source_url: youtubeUrl,
-          status: "pending",
-          is_published: false,
-          is_current: false,
-        }).select().single();
-        if (error) throw error;
-
-        // Create processing job
-        await supabase.from("sermon_jobs").insert({
-          sermon_id: sermonRow.id,
-          church_id: churchId,
-          job_type: "full_pipeline",
-          status: "queued",
-          priority: 0,
-        });
-
-        // Trigger processing
-        supabase.functions.invoke("process-sermon", { body: {} }).catch(() => {});
-
-        toast.success("Sermon added! Processing will begin shortly.");
-        onSuccess();
-      }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
     } finally {
@@ -1551,28 +1465,6 @@ function UploadSermonForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={mode === "upload" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setMode("upload")}
-          className="flex-1"
-          disabled={isUploading}
-        >
-          <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload File
-        </Button>
-        <Button
-          type="button"
-          variant={mode === "youtube" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setMode("youtube")}
-          className="flex-1"
-          disabled={isUploading}
-        >
-          <LinkIcon className="h-3.5 w-3.5 mr-1.5" /> YouTube Link
-        </Button>
-      </div>
 
       <div className="space-y-2">
         <Label>Title *</Label>
@@ -1607,30 +1499,17 @@ function UploadSermonForm({
         })()}
       </div>
 
-      {mode === "upload" ? (
-        <div className="space-y-2">
+      <div className="space-y-2">
           <Label>Audio/Video File *</Label>
           <Input
             type="file"
             accept="audio/*,video/*"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            required={mode === "upload"}
+            required
             disabled={isUploading}
           />
           <p className="text-xs text-muted-foreground">MP3, MP4, WAV, M4A supported</p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <Label>YouTube URL *</Label>
-          <Input
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-            placeholder="https://youtube.com/watch?v=..."
-            required={mode === "youtube"}
-            disabled={isUploading}
-          />
-        </div>
-      )}
 
       {isUploading ? (
         <div className="space-y-3 py-2">
@@ -1649,7 +1528,7 @@ function UploadSermonForm({
       ) : (
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          {mode === "upload" ? "Upload & Process" : "Add Sermon"}
+          Upload & Process
         </Button>
       )}
     </form>
