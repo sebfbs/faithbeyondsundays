@@ -73,7 +73,7 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
 const TRACKED_CONTENT_TYPES = ["spark", "takeaways", "reflection_questions", "scriptures", "chapters"];
 
 const statusConfig: Record<string, { label: string; icon: any; className: string; animate?: boolean }> = {
-  pending: { label: "Pending", icon: Clock, className: "bg-muted text-muted-foreground" },
+  pending: { label: "Queued", icon: Loader2, className: "bg-muted text-muted-foreground", animate: true },
   uploading: { label: "Uploading", icon: Loader2, className: "bg-muted text-muted-foreground", animate: true },
   transcribing: { label: "Transcribing", icon: Loader2, className: "bg-blue-100 text-blue-700", animate: true },
   generating: { label: "Generating Content", icon: Loader2, className: "bg-amber-100 text-amber-700", animate: true },
@@ -94,6 +94,35 @@ const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
   chapters: "Sermon Chapters",
   confirm: "Confirm",
 };
+
+function PendingProgress({ createdAt }: { createdAt: string }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const startTime = new Date(createdAt).getTime();
+    const estimatedDuration = 2 * 60 * 1000; // ~2 minutes
+
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(85, (elapsed / estimatedDuration) * 85);
+      setProgress(Math.round(pct));
+    };
+
+    tick();
+    const interval = setInterval(tick, 2000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-blue-700">Processing YouTube video…</p>
+        <span className="text-xs font-medium text-blue-700">{progress}%</span>
+      </div>
+      <Progress value={progress} className="h-2 bg-blue-100 [&>div]:bg-blue-500" />
+    </div>
+  );
+}
 
 function TranscribingProgress({ createdAt }: { createdAt: string }) {
   const [progress, setProgress] = useState(0);
@@ -302,6 +331,11 @@ export default function AdminSermons() {
                 <span>·</span>
                 <span>{sourceLabel}</span>
               </div>
+
+              {/* YouTube pending progress */}
+              {sermon.status === "pending" && sermon.source_type === "youtube" && (
+                <PendingProgress createdAt={sermon.created_at} />
+              )}
 
               {/* Transcribing progress */}
               {sermon.status === "transcribing" && (
