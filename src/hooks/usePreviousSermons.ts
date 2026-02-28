@@ -4,6 +4,12 @@ import { useProfile } from "./useProfile";
 import type { SermonUIData } from "./useCurrentSermon";
 import type { Json } from "@/integrations/supabase/types";
 
+async function resolveStorageUrl(storagePath: string | null): Promise<string | null> {
+  if (!storagePath) return null;
+  const { data } = await supabase.storage.from("sermon-media").createSignedUrl(storagePath, 3600);
+  return data?.signedUrl || null;
+}
+
 function formatSermonDate(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -92,7 +98,7 @@ export function usePreviousSermons() {
         contentBySermon[row.sermon_id].push(row);
       }
 
-      return sermons.map((sermon) => {
+      return Promise.all(sermons.map(async (sermon) => {
         const content = transformContent(contentBySermon[sermon.id] || []);
         return {
           id: sermon.id,
@@ -102,14 +108,16 @@ export function usePreviousSermons() {
           speaker: sermon.speaker,
           church: profile?.church_name || "",
           duration: sermon.duration,
-          videoUrl: sermon.video_url,
+          videoUrl: sermon.video_url || await resolveStorageUrl(sermon.storage_path),
           sourceUrl: sermon.source_url,
           sourceType: sermon.source_type,
-          thumbnailUrl: sermon.thumbnail_url,
+          thumbnailUrl: sermon.thumbnail_url && !sermon.thumbnail_url.startsWith("http")
+            ? await resolveStorageUrl(sermon.thumbnail_url)
+            : sermon.thumbnail_url,
           storagePath: sermon.storage_path,
           ...content,
         };
-      });
+      }));
     },
     enabled: !!churchId,
     staleTime: 5 * 60 * 1000,
