@@ -682,12 +682,8 @@ function ReviewWizard({
       const match = sermon.source_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
       if (match?.[1]) {
         const id = match[1];
-        setThumbnails([
-          `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
-          `https://img.youtube.com/vi/${id}/sddefault.jpg`,
-          `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
-          `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-        ]);
+        setThumbnails([`https://img.youtube.com/vi/${id}/maxresdefault.jpg`]);
+        setSelectedThumb(0);
         setLoadingThumbnails(false);
       }
     } else if (sermon.source_type === "upload" && sermon.storage_path) {
@@ -1038,6 +1034,26 @@ function ThumbnailStep({
         <Image className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
         <p className="text-sm text-muted-foreground">No thumbnails available for this sermon.</p>
         <p className="text-xs text-muted-foreground mt-1">You can skip this step.</p>
+      </div>
+    );
+  }
+
+  if (isYoutube && thumbnails.length === 1) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground text-center">YouTube thumbnail auto-selected</p>
+        <div className="flex justify-center">
+          <div className="relative rounded-xl overflow-hidden border-2 border-primary ring-2 ring-primary/30 max-w-sm">
+            <img
+              src={thumbnails[0]}
+              alt="YouTube thumbnail"
+              className="w-full aspect-video object-cover"
+            />
+            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <Check className="h-3.5 w-3.5 text-primary-foreground" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
