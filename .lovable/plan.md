@@ -1,45 +1,32 @@
 
 
-## Fix: YouTube Sermon Processing Stuck at "Pending"
+## Auto-Pick YouTube Thumbnail
 
-### Root Cause
-The `sermon_jobs` table has Row Level Security (RLS) enabled with only a SELECT policy for church admins. There is **no INSERT policy**, so when the admin uploads a YouTube sermon and the frontend tries to create a processing job, the insert silently fails. Without a job in the queue, the `process-sermon` function has nothing to pick up, and the sermon stays at "pending" indefinitely.
+### Problem
+When uploading a YouTube sermon, the thumbnail picker shows 4 identical-looking options (maxresdefault, sddefault, hqdefault, mqdefault) -- they're all the same YouTube thumbnail at different resolutions.
 
-The 85% cap on the progress bar is by design (simulated progress), but the real issue is the backend never starts.
+### Solution
+For YouTube sermons, auto-select the best quality thumbnail and show a simple preview instead of a 4-option grid.
 
-### Fix
+### Changes
 
-**1. Add INSERT policy for sermon_jobs (database migration)**
+**File: `src/pages/admin/AdminSermons.tsx`**
 
-Add an RLS policy allowing church admins/owners/pastors to insert jobs for their church:
+1. **Thumbnail generation `useEffect` (lines 681-692)**: Instead of setting 4 URLs, set only 1 (maxresdefault) and auto-select it:
+   ```typescript
+   if (sermon.source_type === "youtube" && sermon.source_url) {
+     const match = ...;
+     if (match?.[1]) {
+       setThumbnails([`https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`]);
+       setSelectedThumb(0); // Auto-select
+       setLoadingThumbnails(false);
+     }
+   }
+   ```
 
-```sql
-CREATE POLICY "Admins can create jobs in their church"
-  ON public.sermon_jobs FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    public.has_role_in_church(auth.uid(), church_id, 'admin')
-    OR public.has_role_in_church(auth.uid(), church_id, 'owner')
-    OR public.has_role_in_church(auth.uid(), church_id, 'pastor')
-  );
-```
+2. **`ThumbnailStep` component (lines 1011-1081)**: When `isYoutube` is true and there's 1 thumbnail, show a single centered preview with a checkmark and "YouTube thumbnail auto-selected" message instead of a 2x2 grid. Hide the "New Frames" button (already hidden for YouTube).
 
-**2. Fix the stuck sermon**
+### Result
+- YouTube uploads: Admin sees one auto-selected thumbnail preview, just clicks "Next"
+- File uploads: Unchanged behavior (4 extracted frames, "New Frames" button)
 
-Run a one-time migration to create the missing job for the currently stuck sermon so it can be processed without needing to delete and re-upload:
-
-```sql
-INSERT INTO public.sermon_jobs (sermon_id, church_id, job_type, status, priority)
-SELECT id, church_id, 'full_pipeline', 'queued', 0
-FROM public.sermons
-WHERE status = 'pending'
-  AND source_type = 'youtube'
-  AND id NOT IN (SELECT sermon_id FROM public.sermon_jobs);
-```
-
-**3. Re-trigger processing**
-
-After the migration, the admin page's polling will detect the job exists. We should also ensure the `process-sermon` function is invoked. The existing code already calls `supabase.functions.invoke("process-sermon")` after insert -- once the INSERT policy is in place, this will work on future uploads automatically.
-
-### Files Changed
-- **Database migration only** -- no frontend code changes needed. The UI code is already correct; it just needs the RLS policy to allow the insert to succeed.
