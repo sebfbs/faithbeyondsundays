@@ -1,70 +1,70 @@
 
 
-## Make YouTube Transcript Fetching Bulletproof
+## Remove YouTube Upload Flow + Add Audio-Only Player Support
 
-### The Problem
+### Overview
+Remove the entire YouTube sermon upload path from both the admin UI and backend processing. Keep only file upload (video or audio). For audio-only uploads, skip the thumbnail step in the review wizard and show a styled audio player on the member-facing app instead of a video player.
 
-The current code scrapes YouTube's full HTML watch page and tries to regex out caption data. YouTube actively blocks this with bot detection, making it fundamentally unreliable from a server environment.
+### Changes
 
-### Why "Tries" Keeps Failing
+**1. Admin Upload Form (`src/pages/admin/AdminSermons.tsx`)**
+- Delete the `SourceMode` type, `mode` state, and `youtubeUrl` state
+- Remove the "Upload File" / "YouTube Link" toggle buttons (lines 1554-1575)
+- Remove the YouTube URL input (lines 1622-1632)
+- Remove the YouTube submit branch (lines 1512-1539)
+- Remove `PendingProgress` component (lines 98-125, YouTube-specific)
+- Remove YouTube source label in sermon cards (line 298)
+- Remove YouTube pending progress check (lines 345-348)
+- Remove `LinkIcon` import
+- Change submit button text from conditional to just "Upload & Process"
 
-YouTube serves different HTML to server requests vs browsers. The `ytInitialPlayerResponse` JSON blob that contains caption URLs is often stripped or obfuscated when the request comes from a server IP. No amount of User-Agent spoofing fixes this reliably.
+**2. Thumbnail Step -- Skip for Audio (`src/pages/admin/AdminSermons.tsx`)**
+- Detect if the uploaded file is audio-only by checking `storage_path` extension (`.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`, `.flac`)
+- In the `ReviewWizard`, auto-skip the thumbnail step when the sermon is audio-only (start wizard at step 1 instead of 0)
+- Remove YouTube thumbnail logic (lines 681-688) and `isYoutube` prop from `ThumbnailStep`
+- When thumbnail extraction fails for video files (e.g., CORS issues), still show the step but with a "Skip" option
 
-### The Fix: Two Guaranteed Paths
+**3. Sermon Player -- Audio Mode (`src/components/fbs/SermonVideoPlayer.tsx`)**
+- Add a `mediaType` prop (optional) to detect audio files
+- Also detect audio from the URL/storagePath extension as a fallback
+- When audio is detected, render a styled audio player instead of the video player:
+  - A gradient card (Horizon blue theme) with a subtle cross watermark
+  - Native HTML5 `<audio controls>` element
+  - Duration displayed if available
+  - No aspect-video container, no thumbnail needed
+- Keep YouTube embed support for backward compatibility with any existing YouTube sermons
 
-**Path 1 (Primary) -- YouTube Innertube API**
+**4. Database -- Track Media Type**
+- Add a nullable `media_type` text column to the `sermons` table via migration
+- This stores the MIME type (e.g., "audio/mpeg", "video/mp4") so the frontend knows what player to show
 
-YouTube's own internal API endpoint (`POST /youtubei/v1/player`) returns structured JSON with caption track URLs. This is what every major YouTube transcript library (youtube-transcript, youtubei.js) uses under the hood. It does NOT require authentication or an API key. It works reliably from servers because it's a proper API endpoint, not HTML scraping.
+**5. Upload Sermon Edge Function (`supabase/functions/upload-sermon/index.ts`)**
+- Accept the `media_type` parameter from the frontend and save it to the sermon row on insert
 
-- Send a POST request with the video ID and a standard web client context
-- Get back structured JSON with `captions.playerCaptionsTracklistRenderer.captionTracks`
-- Fetch the caption XML from the track URL
-- Parse segments into timestamped transcript
+**6. Process Sermon Edge Function (`supabase/functions/process-sermon/index.ts`)**
+- Delete the entire YouTube processing branch (lines 120-224)
+- Delete all YouTube helper functions (lines 964-1269): `extractYouTubeId`, `fetchYouTubeTranscript`, `downloadYouTubeAudio`, `parseTimedTextXml`, `fetchAndParseCaptionXml`, `_lastStreamingData`
+- Keep only the file upload transcription path
+- This removes approximately 350 lines of code
 
-This works for any video that has captions enabled (manual or auto-generated).
+**7. Member-Facing Screens**
+- `SermonTab.tsx` and `PreviousSermonDetailScreen.tsx` already delegate to `SermonVideoPlayer` -- no changes needed since the player component will handle audio/video distinction automatically
 
-**Path 2 (Fallback) -- Download Audio, Transcribe with ElevenLabs**
+### Audio Player Design
+A compact, themed card replacing the video player for audio files:
+- Blue gradient background matching the app's Horizon theme
+- Subtle cross icon watermark (same as the "Video coming soon" fallback)
+- Native `<audio controls>` with full-width styling
+- Duration badge if available
+- No play-button overlay -- native audio controls handle everything
 
-For videos where captions genuinely don't exist (rare but possible), we download the audio and run it through ElevenLabs Scribe -- the same proven flow that already works for file uploads.
+### Migration
+```sql
+ALTER TABLE public.sermons ADD COLUMN media_type text;
+```
 
-To download YouTube audio server-side, we'll use the Cobalt API (`cobalt.tools`), an open-source media extraction service with a public API. It returns a direct download URL for the audio track.
+### Code Reduction
+- ~350 lines removed from process-sermon edge function
+- ~80 lines removed from AdminSermons.tsx
+- Net simpler, more reliable system
 
-If Cobalt is unavailable, the system will clearly tell the admin: "This video has no captions. Please upload the audio/video file directly instead."
-
-### What Changes
-
-**File: `supabase/functions/process-sermon/index.ts`**
-
-Replace the `fetchYouTubeTranscript` function (~lines 918-1053) with:
-
-1. **`fetchYouTubeTranscript(videoId)` rewritten** to:
-   - Call YouTube Innertube API (`POST https://www.youtube.com/youtubei/v1/player`) with proper client context
-   - Extract caption tracks from the structured JSON response
-   - Find English track (prefer manual over auto-generated)
-   - Fetch caption XML and parse into timestamped transcript
-   - On success: return the transcript text with timing markers (same format as before)
-
-2. **New `downloadYouTubeAudio(videoId)` function** as fallback:
-   - Call Cobalt API (`POST https://api.cobalt.tools/`) requesting audio-only extraction
-   - Download the returned audio file as a Blob
-   - Return the Blob for transcription
-
-3. **Updated YouTube processing block** (~lines 120-170):
-   - Try `fetchYouTubeTranscript` first (Innertube captions)
-   - If it fails (no captions on the video), try `downloadYouTubeAudio` then transcribe with ElevenLabs Scribe (reusing the exact same ElevenLabs logic from the file upload path)
-   - If both fail, set sermon status to `"failed"` with a clear error message: "Could not extract transcript. Please upload the video file directly."
-   - Never silently fall back to title-only generation
-
-4. **Remove the title-only fallback** (~lines 141-143): No more generating fake content from just a title. If we can't get a real transcript, we fail explicitly so the admin knows and can take action.
-
-### Why This Works
-
-- The Innertube API is YouTube's own internal API -- it's what the YouTube website itself calls. It returns clean JSON, not HTML to parse.
-- ElevenLabs Scribe is already proven in the file upload flow -- we're just reusing it as a safety net.
-- Clear failure messaging means admins are never left wondering why content looks wrong.
-
-### No New Dependencies or API Keys Needed
-
-- Innertube API: No key required (public endpoint)
-- Cobalt API: No key required (open-source public API)
-- ElevenLabs: Already configured (`ELEVENLABS_API_KEY` secret exists)
