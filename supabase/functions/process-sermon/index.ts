@@ -117,70 +117,125 @@ serve(async (req) => {
         .update({ status: "transcribing" })
         .eq("id", sermon.id);
 
-      console.log("Downloading file from storage:", sermon.storage_path);
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("sermon-media")
-        .download(sermon.storage_path!);
+      if (sermon.source_type === "youtube" && sermon.source_url) {
+        // ─── YouTube: fetch transcript from YouTube captions ───
+        console.log("Fetching YouTube transcript for:", sermon.source_url);
+        const videoId = extractYouTubeId(sermon.source_url);
+        if (!videoId) {
+          await failJob(supabase, job.id, "Could not extract YouTube video ID");
+          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+          return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
-      if (downloadError || !fileData) {
-        await failJob(supabase, job.id, "Failed to download file from storage");
-        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-        return new Response(JSON.stringify({ error: "Download failed" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        try {
+          transcriptText = await fetchYouTubeTranscript(videoId);
+          if (!transcriptText || transcriptText.length < 100) {
+            throw new Error("Transcript too short or empty");
+          }
+          console.log(`YouTube transcript fetched: ${transcriptText.length} chars`);
+        } catch (ytErr) {
+          console.error("YouTube transcript fetch failed:", ytErr);
+          // Fallback: use AI to generate content from title alone (no transcript)
+          console.log("Falling back to title-only content generation");
+          transcriptText = `[No transcript available. Sermon title: "${sermon.title}"${sermon.speaker ? `, Speaker: ${sermon.speaker}` : ""}]`;
+        }
+
+        const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+        const { error: transcriptError } = await supabase
+          .from("sermon_transcripts")
+          .insert({
+            sermon_id: sermon.id,
+            full_text: transcriptText,
+            word_count: wordCount,
+            language: "en",
+          });
+
+        if (transcriptError) {
+          console.error("Transcript save error:", transcriptError);
+          await failJob(supabase, job.id, "Failed to save transcript");
+          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+          return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Set video_url for playback
+        await supabase
+          .from("sermons")
+          .update({ video_url: sermon.source_url })
+          .eq("id", sermon.id);
+
+      } else {
+        // ─── File upload: download from storage and transcribe ───
+        console.log("Downloading file from storage:", sermon.storage_path);
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from("sermon-media")
+          .download(sermon.storage_path!);
+
+        if (downloadError || !fileData) {
+          await failJob(supabase, job.id, "Failed to download file from storage");
+          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+          return new Response(JSON.stringify({ error: "Download failed" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        console.log("Transcribing with ElevenLabs...");
+        const transcribeFormData = new FormData();
+        transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
+        transcribeFormData.append("model_id", "scribe_v2");
+        transcribeFormData.append("tag_audio_events", "false");
+        transcribeFormData.append("diarize", "false");
+
+        const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+          method: "POST",
+          headers: { "xi-api-key": elevenlabsKey },
+          body: transcribeFormData,
         });
-      }
 
-      console.log("Transcribing with ElevenLabs...");
-      const transcribeFormData = new FormData();
-      transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
-      transcribeFormData.append("model_id", "scribe_v2");
-      transcribeFormData.append("tag_audio_events", "false");
-      transcribeFormData.append("diarize", "false");
+        if (!transcribeResponse.ok) {
+          const errText = await transcribeResponse.text();
+          console.error("ElevenLabs error:", transcribeResponse.status, errText);
+          await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
+          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+          return new Response(JSON.stringify({ error: "Transcription failed" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
-      const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-        method: "POST",
-        headers: { "xi-api-key": elevenlabsKey },
-        body: transcribeFormData,
-      });
+        const transcription = await transcribeResponse.json();
+        transcriptText = transcription.text || "";
+        wordTimings = (transcription.words || []).map((w: any) => ({
+          text: w.text,
+          start: w.start,
+          end: w.end,
+        }));
+        const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
 
-      if (!transcribeResponse.ok) {
-        const errText = await transcribeResponse.text();
-        console.error("ElevenLabs error:", transcribeResponse.status, errText);
-        await failJob(supabase, job.id, `Transcription failed: ${transcribeResponse.status}`);
-        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-        return new Response(JSON.stringify({ error: "Transcription failed" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        const { error: transcriptError } = await supabase
+          .from("sermon_transcripts")
+          .insert({
+            sermon_id: sermon.id,
+            full_text: transcriptText,
+            word_count: wordCount,
+            language: "en",
+          });
 
-      const transcription = await transcribeResponse.json();
-      transcriptText = transcription.text || "";
-      wordTimings = (transcription.words || []).map((w: any) => ({
-        text: w.text,
-        start: w.start,
-        end: w.end,
-      }));
-      const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
-
-      const { error: transcriptError } = await supabase
-        .from("sermon_transcripts")
-        .insert({
-          sermon_id: sermon.id,
-          full_text: transcriptText,
-          word_count: wordCount,
-          language: "en",
-        });
-
-      if (transcriptError) {
-        console.error("Transcript save error:", transcriptError);
-        await failJob(supabase, job.id, "Failed to save transcript");
-        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-        return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (transcriptError) {
+          console.error("Transcript save error:", transcriptError);
+          await failJob(supabase, job.id, "Failed to save transcript");
+          await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
+          return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 
@@ -851,4 +906,107 @@ CRITICAL RULES:
 - Chapters MUST span the ENTIRE sermon from start to finish. The first chapter should start at or near 0:00, and the last chapter MUST begin in the final portion of the sermon.
 - Do NOT cluster all chapters in the first half. Distribute chapters across the full duration based on where natural topic shifts occur.
 - Use the timing markers embedded in the transcript to determine accurate timestamps for each chapter boundary.`;
+}
+
+// ─── YouTube helpers ───
+
+function extractYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match?.[1] || null;
+}
+
+async function fetchYouTubeTranscript(videoId: string): Promise<string> {
+  // Fetch the YouTube watch page to get caption track info
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const pageResponse = await fetch(watchUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  });
+
+  if (!pageResponse.ok) {
+    throw new Error(`Failed to fetch YouTube page: ${pageResponse.status}`);
+  }
+
+  const html = await pageResponse.text();
+
+  // Extract captions player response
+  const captionMatch = html.match(/"captions":\s*(\{.*?"playerCaptionsTracklistRenderer".*?\})\s*,\s*"videoDetails"/s);
+  if (!captionMatch) {
+    throw new Error("No captions found for this video");
+  }
+
+  let captionsJson: any;
+  try {
+    captionsJson = JSON.parse(captionMatch[1]);
+  } catch {
+    throw new Error("Failed to parse captions data");
+  }
+
+  const tracks = captionsJson?.playerCaptionsTracklistRenderer?.captionTracks;
+  if (!tracks || tracks.length === 0) {
+    throw new Error("No caption tracks available");
+  }
+
+  // Prefer English, then auto-generated English, then first available
+  const enTrack = tracks.find((t: any) => t.languageCode === "en" && !t.kind) ||
+                  tracks.find((t: any) => t.languageCode === "en") ||
+                  tracks[0];
+
+  const captionUrl = enTrack.baseUrl;
+  if (!captionUrl) {
+    throw new Error("No caption URL found");
+  }
+
+  // Fetch the XML transcript
+  const captionResponse = await fetch(captionUrl);
+  if (!captionResponse.ok) {
+    throw new Error(`Failed to fetch captions: ${captionResponse.status}`);
+  }
+
+  const xml = await captionResponse.text();
+
+  // Parse XML to extract text with timestamps
+  const segments: { start: number; text: string }[] = [];
+  const regex = /<text start="([\d.]+)"[^>]*>(.*?)<\/text>/gs;
+  let match;
+  while ((match = regex.exec(xml)) !== null) {
+    const start = parseFloat(match[1]);
+    let text = match[2]
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (text) {
+      segments.push({ start, text });
+    }
+  }
+
+  if (segments.length === 0) {
+    throw new Error("No text segments found in captions");
+  }
+
+  // Build transcript with timing markers
+  let result = "";
+  let lastMarkerTime = -60;
+  for (const seg of segments) {
+    if (seg.start - lastMarkerTime >= 30) {
+      const totalSec = Math.floor(seg.start);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      const marker = h > 0
+        ? `[${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}]`
+        : `[${m}:${String(s).padStart(2, "0")}]`;
+      result += `\n${marker} `;
+      lastMarkerTime = seg.start;
+    }
+    result += seg.text + " ";
+  }
+
+  return result.trim();
 }
