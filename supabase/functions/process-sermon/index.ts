@@ -184,7 +184,6 @@ serve(async (req) => {
         });
       }
     }
-    }
 
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
 
