@@ -599,8 +599,6 @@ function ReviewWizard({
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [loadingThumbnails, setLoadingThumbnails] = useState(false);
 
-  const currentStep = WIZARD_STEPS[step];
-
   const { data: sermon } = useQuery({
     queryKey: ["admin", "sermon-detail", sermonId],
     enabled: !!sermonId,
@@ -615,17 +613,20 @@ function ReviewWizard({
     },
   });
 
+  const isAudio = sermon ? isAudioFile(sermon.storage_path) : false;
+  const wizardSteps = isAudio ? WIZARD_STEPS.filter(s => s !== "thumbnail") : [...WIZARD_STEPS];
+  const currentStep = wizardSteps[step];
+
   // Reset on open — skip thumbnail step for audio files
   useEffect(() => {
     if (open) {
-      const startStep = sermon && isAudioFile(sermon.storage_path) ? 1 : 0;
-      setStep(startStep);
+      setStep(0);
       setEditedContent({});
       setEditMode({});
       setRegeneratingItem(null);
       setThumbnailSeed(0);
     }
-  }, [open, sermonId, sermon?.storage_path]);
+  }, [open, sermonId]);
 
   const { data: content, isLoading } = useQuery({
     queryKey: ["admin", "sermon-review-content", sermonId],
@@ -755,7 +756,7 @@ function ReviewWizard({
     if (currentStep !== "thumbnail" && currentStep !== "confirm") {
       await saveEdits(currentStep);
     }
-    setStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
+    setStep((s) => Math.min(s + 1, wizardSteps.length - 1));
   };
 
   const handleBack = () => {
@@ -778,10 +779,11 @@ function ReviewWizard({
             .from("sermon-media")
             .upload(path, blob, { contentType: "image/jpeg", upsert: true });
           if (!uploadError) {
-            const { data: urlData } = supabase.storage
+            // Private bucket — use a long-lived signed URL (1 year)
+            const { data: signedData } = await supabase.storage
               .from("sermon-media")
-              .getPublicUrl(path);
-            thumbnailUrl = urlData?.publicUrl || thumbData;
+              .createSignedUrl(path, 60 * 60 * 24 * 365);
+            thumbnailUrl = signedData?.signedUrl || thumbData;
           }
         }
 
@@ -812,7 +814,7 @@ function ReviewWizard({
         {/* Progress dots */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center justify-center gap-2 mb-3">
-            {WIZARD_STEPS.map((s, i) => (
+            {wizardSteps.map((s, i) => (
               <button
                 key={s}
                 onClick={() => i <= step && setStep(i)}
@@ -827,10 +829,10 @@ function ReviewWizard({
             ))}
           </div>
           <h2 className="text-lg font-bold text-foreground text-center">
-            {WIZARD_STEP_LABELS[currentStep]}
+            {currentStep ? WIZARD_STEP_LABELS[currentStep] : ""}
           </h2>
           <p className="text-sm text-muted-foreground text-center mt-0.5">
-            Step {step + 1} of {WIZARD_STEPS.length}
+            Step {step + 1} of {wizardSteps.length}
           </p>
         </div>
 
