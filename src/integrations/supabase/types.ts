@@ -871,6 +871,8 @@ export type Database = {
           updated_at: string
           uploaded_by: string | null
           video_url: string | null
+          week_end: string | null
+          week_start: string | null
         }
         Insert: {
           audio_url?: string | null
@@ -892,6 +894,8 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           video_url?: string | null
+          week_end?: string | null
+          week_start?: string | null
         }
         Update: {
           audio_url?: string | null
@@ -913,6 +917,8 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
           video_url?: string | null
+          week_end?: string | null
+          week_start?: string | null
         }
         Relationships: [
           {

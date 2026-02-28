@@ -104,13 +104,46 @@ export function useCurrentSermon() {
     queryFn: async (): Promise<SermonUIData | null> => {
       if (!churchId) return null;
 
-      const { data: sermon, error } = await supabase
+      const today = new Date().toISOString().split("T")[0];
+
+      // Primary: find published sermon whose week range covers today
+      let { data: sermon, error } = await supabase
         .from("sermons")
         .select("*")
         .eq("church_id", churchId)
         .eq("is_published", true)
-        .eq("is_current", true)
+        .lte("week_start", today)
+        .gte("week_end", today)
+        .order("sermon_date", { ascending: false })
+        .limit(1)
         .maybeSingle();
+
+      // Fallback 1: is_current flag (backward compat for old data without week_start)
+      if (!sermon) {
+        const fallback = await supabase
+          .from("sermons")
+          .select("*")
+          .eq("church_id", churchId)
+          .eq("is_published", true)
+          .eq("is_current", true)
+          .maybeSingle();
+        sermon = fallback.data;
+        error = fallback.error;
+      }
+
+      // Fallback 2: most recent published sermon (graceful degradation)
+      if (!sermon) {
+        const fallback2 = await supabase
+          .from("sermons")
+          .select("*")
+          .eq("church_id", churchId)
+          .eq("is_published", true)
+          .order("sermon_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        sermon = fallback2.data;
+        error = fallback2.error;
+      }
 
       if (error || !sermon) return null;
 
