@@ -95,6 +95,35 @@ const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
   confirm: "Confirm",
 };
 
+function TranscribingProgress({ createdAt }: { createdAt: string }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const startTime = new Date(createdAt).getTime();
+    const estimatedDuration = 3 * 60 * 1000; // ~3 minutes estimated
+
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(92, (elapsed / estimatedDuration) * 90);
+      setProgress(Math.round(pct));
+    };
+
+    tick();
+    const interval = setInterval(tick, 2000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-blue-700">Transcribing audio…</p>
+        <span className="text-xs font-medium text-blue-700">{progress}%</span>
+      </div>
+      <Progress value={progress} className="h-2 bg-blue-100 [&>div]:bg-blue-500" />
+    </div>
+  );
+}
+
 export default function AdminSermons() {
   const { churchId } = useOutletContext<{ churchId: string }>();
   const queryClient = useQueryClient();
@@ -273,6 +302,11 @@ export default function AdminSermons() {
                 <span>·</span>
                 <span>{sourceLabel}</span>
               </div>
+
+              {/* Transcribing progress */}
+              {sermon.status === "transcribing" && (
+                <TranscribingProgress createdAt={sermon.created_at} />
+              )}
 
               {/* Generating progress */}
               {sermon.status === "generating" && (
