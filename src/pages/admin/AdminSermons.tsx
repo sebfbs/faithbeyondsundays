@@ -1460,7 +1460,7 @@ function UploadSermonForm({
         toast.success("Sermon uploaded! Processing will begin shortly.");
         onSuccess();
       } else if (mode === "youtube" && youtubeUrl) {
-        const { error } = await supabase.from("sermons").insert({
+        const { data: sermonRow, error } = await supabase.from("sermons").insert({
           title,
           speaker: speaker || null,
           sermon_date: sermonDate,
@@ -1470,9 +1470,22 @@ function UploadSermonForm({
           status: "pending",
           is_published: false,
           is_current: false,
-        });
+        }).select().single();
         if (error) throw error;
-        toast.success("Sermon added with YouTube link.");
+
+        // Create processing job
+        await supabase.from("sermon_jobs").insert({
+          sermon_id: sermonRow.id,
+          church_id: churchId,
+          job_type: "full_pipeline",
+          status: "queued",
+          priority: 0,
+        });
+
+        // Trigger processing
+        supabase.functions.invoke("process-sermon", { body: {} }).catch(() => {});
+
+        toast.success("Sermon added! Processing will begin shortly.");
         onSuccess();
       }
     } catch (err: any) {
