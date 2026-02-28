@@ -40,7 +40,7 @@ serve(async (req) => {
     }
 
     if (reqBody.regenerate_type && reqBody.sermon_id) {
-      return await handleRegeneration(supabase, lovableApiKey, reqBody.sermon_id, reqBody.regenerate_type);
+      return await handleRegeneration(supabase, lovableApiKey, reqBody.sermon_id, reqBody.regenerate_type, reqBody.item_index);
     }
 
     // ─── Normal job queue processing ───
@@ -355,7 +355,7 @@ serve(async (req) => {
 
 // ─── Regeneration handler ───
 
-async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId: string, contentType: string) {
+async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId: string, contentType: string, itemIndex?: number) {
   try {
     const { data: sermon } = await supabase
       .from("sermons")
@@ -384,7 +384,6 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
     }
 
     const transcriptText = transcript.full_text;
-    const transcriptWithTimings = contentType === "chapters" ? transcriptText : transcriptText;
 
     const promptBuilders: Record<string, (title: string, text: string) => string> = {
       spark: buildSparkPrompt,
@@ -402,7 +401,113 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       });
     }
 
-    const prompt = builder(sermon.title, contentType === "chapters" ? transcriptWithTimings : transcriptText);
+    // If item_index is provided, we regenerate only that single item
+    if (itemIndex !== undefined) {
+      // Get existing content first
+      const { data: existingRow } = await supabase
+        .from("sermon_content")
+        .select("content")
+        .eq("sermon_id", sermonId)
+        .eq("content_type", contentType)
+        .single();
+
+      if (!existingRow) {
+        return new Response(JSON.stringify({ error: "No existing content to update" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const existingContent = existingRow.content;
+      const arrayKey = contentType === "spark" ? "sparks" : contentType === "takeaways" ? "takeaways" : contentType === "reflection_questions" ? "questions" : contentType === "scriptures" ? "scriptures" : "chapters";
+      const existingArray = existingContent[arrayKey] || [];
+
+      if (itemIndex < 0 || itemIndex >= existingArray.length) {
+        return new Response(JSON.stringify({ error: "Invalid item index" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Build a prompt that asks for just ONE item
+      const currentItem = existingArray[itemIndex];
+      let singlePrompt = "";
+      if (contentType === "spark") {
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate a SINGLE new daily spark for ${currentItem.day}. It must be different from: "${currentItem.title} - ${currentItem.summary}". Provide a fresh, unique angle on the sermon's spiritual message for that day. Focus only on spiritual, biblical, and faith-based content.`;
+      } else if (contentType === "takeaways") {
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new key spiritual takeaway from this sermon. It must be different from: "${currentItem.title}". Provide a fresh insight. Focus EXCLUSIVELY on biblical truths and spiritual growth.`;
+      } else if (contentType === "reflection_questions") {
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new reflection question for personal spiritual study. It must be different from: "${currentItem.question}". Include brief context connecting it to the sermon.`;
+      } else if (contentType === "scriptures") {
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture reference from the sermon that is different from: "${currentItem.reference}". Provide the reference, a brief context note, and how it connects to the sermon.`;
+      } else {
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.`;
+      }
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Return valid JSON only. No markdown, no code fences." },
+            { role: "user", content: singlePrompt },
+          ],
+          tools: [buildToolSchema(contentType)],
+          tool_choice: { type: "function", function: { name: `generate_${contentType}` } },
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errText = await aiResponse.text();
+        console.error(`Single item regen AI error:`, errText);
+        return new Response(JSON.stringify({ error: "AI generation failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const aiResult = await aiResponse.json();
+      const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+      let newContent: any = {};
+
+      if (toolCall?.function?.arguments) {
+        newContent = JSON.parse(toolCall.function.arguments);
+      }
+
+      // Extract the single new item from the response array
+      const newArray = newContent[arrayKey] || [];
+      const newItem = newArray[0] || newContent;
+
+      // Merge back into existing array
+      const updatedArray = [...existingArray];
+      if (contentType === "spark" && newItem.day) {
+        updatedArray[itemIndex] = { ...newItem, day: currentItem.day }; // preserve day
+      } else {
+        updatedArray[itemIndex] = newItem;
+      }
+
+      const updatedContent = { ...existingContent, [arrayKey]: updatedArray };
+
+      await supabase
+        .from("sermon_content")
+        .update({ content: updatedContent })
+        .eq("sermon_id", sermonId)
+        .eq("content_type", contentType);
+
+      console.log(`Regenerated single ${contentType} item ${itemIndex} for sermon ${sermonId}`);
+
+      return new Response(JSON.stringify({ success: true, content_type: contentType, content: updatedContent, item_index: itemIndex }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Full regeneration (existing behavior)
+    const prompt = builder(sermon.title, transcriptText);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -438,7 +543,6 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       content = JSON.parse(toolCall.function.arguments);
     }
 
-    // Delete old content and insert new
     await supabase
       .from("sermon_content")
       .delete()
