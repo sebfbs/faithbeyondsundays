@@ -920,8 +920,9 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string> {
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const pageResponse = await fetch(watchUrl, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       "Accept-Language": "en-US,en;q=0.9",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     },
   });
 
@@ -931,32 +932,71 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string> {
 
   const html = await pageResponse.text();
 
-  // Extract captions player response
-  const captionMatch = html.match(/"captions":\s*(\{.*?"playerCaptionsTracklistRenderer".*?\})\s*,\s*"videoDetails"/s);
-  if (!captionMatch) {
-    throw new Error("No captions found for this video");
+  // Try multiple strategies to extract captions data from YouTube's HTML
+  let captionUrl: string | null = null;
+
+  // Strategy 1: Look for captionTracks in the ytInitialPlayerResponse
+  const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var\s|<\/script)/s);
+  if (playerResponseMatch) {
+    try {
+      const playerData = JSON.parse(playerResponseMatch[1]);
+      const tracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (tracks && tracks.length > 0) {
+        const enTrack = tracks.find((t: any) => t.languageCode === "en" && !t.kind) ||
+                        tracks.find((t: any) => t.languageCode === "en") ||
+                        tracks[0];
+        captionUrl = enTrack?.baseUrl || null;
+        console.log("Caption URL found via ytInitialPlayerResponse");
+      }
+    } catch (e) {
+      console.log("Failed to parse ytInitialPlayerResponse, trying next strategy");
+    }
   }
 
-  let captionsJson: any;
-  try {
-    captionsJson = JSON.parse(captionMatch[1]);
-  } catch {
-    throw new Error("Failed to parse captions data");
-  }
-
-  const tracks = captionsJson?.playerCaptionsTracklistRenderer?.captionTracks;
-  if (!tracks || tracks.length === 0) {
-    throw new Error("No caption tracks available");
-  }
-
-  // Prefer English, then auto-generated English, then first available
-  const enTrack = tracks.find((t: any) => t.languageCode === "en" && !t.kind) ||
-                  tracks.find((t: any) => t.languageCode === "en") ||
-                  tracks[0];
-
-  const captionUrl = enTrack.baseUrl;
+  // Strategy 2: Search for timedtext URL directly in the HTML
   if (!captionUrl) {
-    throw new Error("No caption URL found");
+    const timedtextMatch = html.match(/"(https?:\/\/www\.youtube\.com\/api\/timedtext[^"]+)"/);
+    if (timedtextMatch) {
+      captionUrl = timedtextMatch[1].replace(/\\u0026/g, "&");
+      console.log("Caption URL found via direct timedtext URL match");
+    }
+  }
+
+  // Strategy 3: Search for baseUrl in captions block with a more flexible regex
+  if (!captionUrl) {
+    const baseUrlMatch = html.match(/"captionTracks":\s*\[\s*\{[^}]*"baseUrl":\s*"([^"]+)"/s);
+    if (baseUrlMatch) {
+      captionUrl = baseUrlMatch[1].replace(/\\u0026/g, "&");
+      console.log("Caption URL found via captionTracks baseUrl match");
+    }
+  }
+
+  // Strategy 4: Broad search for any captions JSON block
+  if (!captionUrl) {
+    const captionMatch = html.match(/"captions"\s*:\s*\{[^}]*"playerCaptionsTracklistRenderer"\s*:\s*\{[^}]*"captionTracks"\s*:\s*(\[.*?\])/s);
+    if (captionMatch) {
+      try {
+        const tracks = JSON.parse(captionMatch[1]);
+        const enTrack = tracks.find((t: any) => t.languageCode === "en" && !t.kind) ||
+                        tracks.find((t: any) => t.languageCode === "en") ||
+                        tracks[0];
+        captionUrl = enTrack?.baseUrl?.replace(/\\u0026/g, "&") || null;
+        console.log("Caption URL found via broad captions block match");
+      } catch {
+        console.log("Failed to parse broad captions match");
+      }
+    }
+  }
+
+  if (!captionUrl) {
+    // Log a snippet of the HTML around "captions" for debugging
+    const captionsIdx = html.indexOf('"captions"');
+    if (captionsIdx !== -1) {
+      console.error("Found 'captions' key at index", captionsIdx, "context:", html.substring(captionsIdx, captionsIdx + 300));
+    } else {
+      console.error("No 'captions' key found in YouTube HTML at all. Video may have no captions enabled.");
+    }
+    throw new Error("No captions found for this video");
   }
 
   // Fetch the XML transcript
@@ -966,6 +1006,7 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string> {
   }
 
   const xml = await captionResponse.text();
+  console.log(`Fetched caption XML: ${xml.length} chars`);
 
   // Parse XML to extract text with timestamps
   const segments: { start: number; text: string }[] = [];
