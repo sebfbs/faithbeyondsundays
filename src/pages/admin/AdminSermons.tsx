@@ -18,6 +18,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Plus,
   Loader2,
   Upload,
@@ -36,9 +53,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Image,
+  MoreVertical,
+  Trash2,
+  Radio,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 type SourceMode = "upload" | "youtube";
 
@@ -80,6 +101,8 @@ export default function AdminSermons() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reviewSermonId, setReviewSermonId] = useState<string | null>(null);
+  const [reviewMode, setReviewMode] = useState<"review" | "view">("review");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string; storagePath: string | null } | null>(null);
 
   const { data: sermons, isLoading } = useQuery({
     queryKey: ["admin", "sermons", churchId],
@@ -89,7 +112,7 @@ export default function AdminSermons() {
         .from("sermons")
         .select("*")
         .eq("church_id", churchId)
-        .order("sermon_date", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -154,6 +177,28 @@ export default function AdminSermons() {
     },
   });
 
+  const deleteSermon = useMutation({
+    mutationFn: async ({ id, storagePath }: { id: string; storagePath: string | null }) => {
+      // Delete sermon_content rows
+      await supabase.from("sermon_content").delete().eq("sermon_id", id);
+      // Delete storage file if exists
+      if (storagePath) {
+        await supabase.storage.from("sermon-media").remove([storagePath]);
+      }
+      // Delete sermon row
+      const { error } = await supabase.from("sermons").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "sermons"] });
+      toast.success("Sermon deleted");
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete sermon");
+    },
+  });
+
   const approveSermon = useMutation({
     mutationFn: async (id: string) => {
       await supabase
@@ -174,6 +219,185 @@ export default function AdminSermons() {
       toast.success("Sermon approved and scheduled!");
     },
   });
+
+  // Section sermons
+  const liveSermon = sermons?.find((s) => s.is_current) || null;
+  const needsAttention = sermons?.filter((s) => !s.is_current && (s.status === "review" || s.status === "failed")) || [];
+  const processing = sermons?.filter((s) => !s.is_current && ["pending", "uploading", "transcribing", "generating"].includes(s.status)) || [];
+  const allSermons = sermons?.filter((s) => !s.is_current && s.status === "complete") || [];
+
+  const openWizard = (sermonId: string, mode: "review" | "view") => {
+    setReviewSermonId(sermonId);
+    setReviewMode(mode);
+  };
+
+  const renderSermonCard = (sermon: any, isLive = false) => {
+    const status = statusConfig[sermon.status] || statusConfig.pending;
+    const StatusIcon = status.icon;
+    const doneTypes = contentProgress?.[sermon.id];
+    const uploadedAgo = formatDistanceToNow(new Date(sermon.created_at), { addSuffix: true });
+    const sourceLabel = sermon.source_type === "youtube" ? "YouTube" : "File Upload";
+
+    return (
+      <Card
+        key={sermon.id}
+        className={`shadow-card transition-all ${isLive ? "border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10" : "cursor-pointer hover:shadow-md"}`}
+        onClick={() => {
+          if (sermon.status === "complete") openWizard(sermon.id, "view");
+          else if (sermon.status === "review") openWizard(sermon.id, "review");
+        }}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              {/* Title row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-foreground truncate">{sermon.title}</h3>
+                {isLive && (
+                  <Badge className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 gap-1 animate-pulse">
+                    <Radio className="h-3 w-3" />
+                    LIVE ON YOUR APP
+                  </Badge>
+                )}
+              </div>
+
+              {/* Meta row */}
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                {sermon.speaker && <span>{sermon.speaker}</span>}
+                {sermon.speaker && <span>·</span>}
+                <span>{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</span>
+              </div>
+
+              {/* Upload timestamp */}
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                <span>Uploaded {uploadedAgo}</span>
+                <span>·</span>
+                <span>{sourceLabel}</span>
+              </div>
+
+              {/* Generating progress */}
+              {sermon.status === "generating" && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium text-amber-700">Generating content…</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    {TRACKED_CONTENT_TYPES.map((ct) => {
+                      const done = doneTypes?.has(ct);
+                      return (
+                        <div key={ct} className="flex items-center gap-1.5 text-xs">
+                          {done ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <CircleDot className="h-3 w-3 text-muted-foreground animate-pulse" />
+                          )}
+                          <span className={done ? "text-foreground" : "text-muted-foreground"}>
+                            {CONTENT_TYPE_LABELS[ct]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Status + primary action */}
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <Badge variant="secondary" className={`${status.className} text-xs gap-1`}>
+                  <StatusIcon className={`h-3 w-3 ${status.animate ? "animate-spin" : ""}`} />
+                  {status.label}
+                </Badge>
+
+                {sermon.is_published && (
+                  <Badge variant="outline" className="text-xs gap-1 text-emerald-700 border-emerald-300">
+                    <Eye className="h-3 w-3" /> Published
+                  </Badge>
+                )}
+
+                {sermon.status === "review" && (
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs ml-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openWizard(sermon.id, "review");
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Review & Approve
+                  </Button>
+                )}
+
+                {sermon.status === "complete" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs ml-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openWizard(sermon.id, "view");
+                    }}
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    View Content
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Three-dot menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {sermon.status === "complete" && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openWizard(sermon.id, "view"); }}>
+                    <FileText className="h-4 w-4 mr-2" /> View Content
+                  </DropdownMenuItem>
+                )}
+                {["complete", "review"].includes(sermon.status) && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePublish.mutate({ id: sermon.id, is_published: !sermon.is_published });
+                    }}
+                  >
+                    {sermon.is_published ? (
+                      <><EyeOff className="h-4 w-4 mr-2" /> Unpublish</>
+                    ) : (
+                      <><Eye className="h-4 w-4 mr-2" /> Publish</>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {sermon.status === "complete" && sermon.is_published && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCurrent.mutate({ id: sermon.id, is_current: !sermon.is_current });
+                    }}
+                  >
+                    <Radio className="h-4 w-4 mr-2" />
+                    {sermon.is_current ? "Remove from Live" : "Set as Live"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteTarget({ id: sermon.id, title: sermon.title, storagePath: sermon.storage_path });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
@@ -216,115 +440,85 @@ export default function AdminSermons() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {sermons.map((sermon) => {
-            const status = statusConfig[sermon.status] || statusConfig.pending;
-            const StatusIcon = status.icon;
-            const doneTypes = contentProgress?.[sermon.id];
-            return (
-              <Card key={sermon.id} className="shadow-card">
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-foreground truncate">{sermon.title}</h3>
-                        {sermon.is_current && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0">CURRENT</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        {sermon.speaker && <span>{sermon.speaker}</span>}
-                        <span>{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</span>
-                        {sermon.duration && <span>{sermon.duration}</span>}
-                      </div>
+        <div className="space-y-8">
+          {/* LIVE NOW */}
+          {liveSermon && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                </span>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Live Now</h2>
+              </div>
+              {renderSermonCard(liveSermon, true)}
+            </section>
+          )}
 
-                      {sermon.status === "generating" && (
-                        <div className="mt-3 space-y-1">
-                          <p className="text-xs font-medium text-amber-700">Generating content…</p>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                            {TRACKED_CONTENT_TYPES.map((ct) => {
-                              const done = doneTypes?.has(ct);
-                              return (
-                                <div key={ct} className="flex items-center gap-1.5 text-xs">
-                                  {done ? (
-                                    <Check className="h-3 w-3 text-emerald-600" />
-                                  ) : (
-                                    <CircleDot className="h-3 w-3 text-muted-foreground animate-pulse" />
-                                  )}
-                                  <span className={done ? "text-foreground" : "text-muted-foreground"}>
-                                    {CONTENT_TYPE_LABELS[ct]}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+          {/* NEEDS ATTENTION */}
+          {needsAttention.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Needs Attention</h2>
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">{needsAttention.length}</Badge>
+              </div>
+              <div className="space-y-3">
+                {needsAttention.map((s) => renderSermonCard(s))}
+              </div>
+            </section>
+          )}
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary" className={`${status.className} text-xs gap-1`}>
-                        <StatusIcon className={`h-3 w-3 ${status.animate ? "animate-spin" : ""}`} />
-                        {status.label}
-                      </Badge>
+          {/* PROCESSING */}
+          {processing.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Processing</h2>
+                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">{processing.length}</Badge>
+              </div>
+              <div className="space-y-3">
+                {processing.map((s) => renderSermonCard(s))}
+              </div>
+            </section>
+          )}
 
-                      {sermon.status === "review" && (
-                        <Button
-                          size="sm"
-                          className="h-8 text-xs"
-                          onClick={() => setReviewSermonId(sermon.id)}
-                        >
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Review & Approve
-                        </Button>
-                      )}
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-xs"
-                        disabled={!["complete", "review"].includes(sermon.status)}
-                        onClick={() =>
-                          togglePublish.mutate({
-                            id: sermon.id,
-                            is_published: !sermon.is_published,
-                          })
-                        }
-                      >
-                        {sermon.is_published ? (
-                          <>
-                            <Eye className="h-3 w-3 mr-1" /> Published
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="h-3 w-3 mr-1" /> Draft
-                          </>
-                        )}
-                      </Button>
-
-                      {sermon.status === "complete" && sermon.is_published && (
-                        <Button
-                          variant={sermon.is_current ? "default" : "outline"}
-                          size="sm"
-                          className="h-8 text-xs"
-                          onClick={() =>
-                            toggleCurrent.mutate({
-                              id: sermon.id,
-                              is_current: !sermon.is_current,
-                            })
-                          }
-                        >
-                          {sermon.is_current ? "★ Current" : "Set Current"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {/* ALL SERMONS */}
+          {allSermons.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">All Sermons</h2>
+                <Badge variant="secondary" className="text-xs">{allSermons.length}</Badge>
+              </div>
+              <div className="space-y-3">
+                {allSermons.map((s) => renderSermonCard(s))}
+              </div>
+            </section>
+          )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this sermon?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove "{deleteTarget?.title}" and all generated content. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && deleteSermon.mutate({ id: deleteTarget.id, storagePath: deleteTarget.storagePath })}
+            >
+              {deleteSermon.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Review Wizard Dialog */}
       <ReviewWizard
@@ -334,6 +528,7 @@ export default function AdminSermons() {
         onClose={() => setReviewSermonId(null)}
         onApprove={(id) => approveSermon.mutate(id)}
         approving={approveSermon.isPending}
+        mode={reviewMode}
       />
     </div>
   );
@@ -348,6 +543,7 @@ function ReviewWizard({
   onClose,
   onApprove,
   approving,
+  mode = "review",
 }: {
   sermonId: string | null;
   churchId: string;
@@ -355,6 +551,7 @@ function ReviewWizard({
   onClose: () => void;
   onApprove: (id: string) => void;
   approving: boolean;
+  mode?: "review" | "view";
 }) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
@@ -689,14 +886,32 @@ function ReviewWizard({
           )}
           <div className="flex-1" />
           {currentStep === "confirm" ? (
-            <Button
-              disabled={approving || uploadingThumb}
-              onClick={handleApproveWithThumb}
-              className="gap-2"
-            >
-              {(approving || uploadingThumb) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Approve & Schedule
-            </Button>
+            mode === "review" ? (
+              <Button
+                disabled={approving || uploadingThumb}
+                onClick={handleApproveWithThumb}
+                className="gap-2"
+              >
+                {(approving || uploadingThumb) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Approve & Schedule
+              </Button>
+            ) : (
+              <Button
+                onClick={async () => {
+                  for (const type of TRACKED_CONTENT_TYPES) {
+                    if (editedContent[type] !== undefined) {
+                      await saveEdits(type);
+                    }
+                  }
+                  toast.success("Changes saved");
+                  onClose();
+                }}
+                className="gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {Object.keys(editedContent).length > 0 ? "Save Changes" : "Done"}
+              </Button>
+            )
           ) : (
             <Button onClick={handleNext} className="gap-1">
               Next <ChevronRight className="h-4 w-4" />
