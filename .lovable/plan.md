@@ -1,29 +1,25 @@
 
 
-## Smart Chapter Generation: Remove Fixed Count, Ensure Full Coverage
+## Add Progress Indicator for YouTube "Pending" State
 
 ### Problem
-The current chapter prompt forces "4-8 chapters," which means the AI may stop generating chapters partway through a 45-minute sermon (e.g., last chapter at 18 minutes). It also doesn't instruct the AI to cover the full duration.
+When a YouTube sermon is uploaded, it shows a static "Pending" badge with no visual feedback, making it look like nothing is happening.
+
+### Solution
+Replace the static "Pending" badge for YouTube sermons with a simulated progress bar (similar to the existing `TranscribingProgress` component) that shows "Fetching YouTube transcript..." with a percentage.
 
 ### Changes
 
-**File: `supabase/functions/process-sermon/index.ts`**
+**File: `src/pages/admin/AdminSermons.tsx`**
 
-**1. Rewrite `buildChaptersPrompt` (lines 836-849)**
+1. **Update `statusConfig`** (line 76): Change the pending label to something more active -- "Queued" with a spinning Loader2 icon instead of a static Clock.
 
-Replace the "4-8 chapters" instruction with smarter guidance:
-- Only create chapters where there is a genuine shift in topic, theme, or focus
-- Do NOT force a specific number -- let the sermon's natural structure dictate
-- Chapters MUST span the entire sermon from start to finish (first chapter near 0:00, last chapter in the final portion)
-- Do NOT cluster chapters in the first half
-- Each chapter should represent a meaningful, distinct section -- not brief asides or transitions
+2. **Create a `PendingProgress` component** (near the existing `TranscribingProgress`): A small component that shows a progress bar with "Processing YouTube video..." text and a simulated percentage (caps at ~85% over ~2 minutes). It will only render when `source_type === "youtube"`.
 
-**2. Update single-item chapter regeneration prompt (line 447)**
+3. **Add the progress bar to the sermon card** (around line 306): Add a condition for `sermon.status === "pending" && sermon.source_type === "youtube"` that renders the new `PendingProgress` component, matching the visual style of the existing transcribing progress bar.
 
-Update the regen prompt to match: no forced count, ensure the regenerated chapter makes sense in context of the full sermon duration.
-
-### What This Fixes
-- Chapters will now naturally cover the full sermon instead of stopping at 18 minutes in a 45-minute video
-- The AI decides how many chapters are appropriate based on the actual content structure
-- No more artificial clustering of chapters in the early portion of the sermon
-
+### Visual Result
+Instead of a plain "Pending" badge, YouTube uploads will show:
+- A spinning loader icon in the badge
+- A blue progress bar with "Processing YouTube video..." and a percentage
+- Smooth animation that fills over ~2 minutes before the status transitions to "generating"
