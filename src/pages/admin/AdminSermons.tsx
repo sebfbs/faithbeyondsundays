@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -557,7 +556,8 @@ function ReviewWizard({
   const [step, setStep] = useState(0);
   const [editedContent, setEditedContent] = useState<Record<string, any>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
-  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [regeneratingItem, setRegeneratingItem] = useState<{ type: string; index: number } | null>(null);
+  const [thumbnailSeed, setThumbnailSeed] = useState(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedThumb, setSelectedThumb] = useState<number | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState(false);
@@ -570,7 +570,8 @@ function ReviewWizard({
       setStep(0);
       setEditedContent({});
       setEditMode({});
-      setRegenerating(null);
+      setRegeneratingItem(null);
+      setThumbnailSeed(0);
     }
   }, [open, sermonId]);
 
@@ -638,7 +639,10 @@ function ReviewWizard({
           });
 
           const dur = video.duration;
-          const positions = [0.15, 0.35, 0.55, 0.75];
+          // Use thumbnailSeed to generate different positions each time
+          const basePositions = [0.15, 0.35, 0.55, 0.75];
+          const offset = (thumbnailSeed * 0.07) % 0.12;
+          const positions = basePositions.map(p => Math.min(Math.max(p + offset, 0.05), 0.95));
           const frames: string[] = [];
 
           for (const pos of positions) {
@@ -658,7 +662,7 @@ function ReviewWizard({
         }
       })();
     }
-  }, [sermon, open]);
+  }, [sermon, open, thumbnailSeed]);
 
   const contentMap = new Map<string, any>((content || []).map((c) => [c.content_type as string, c.content]));
 
@@ -685,27 +689,30 @@ function ReviewWizard({
     }
   };
 
-  const handleRegenerate = async (type: string) => {
+  const handleRegenerateItem = async (type: string, itemIndex: number) => {
     if (!sermonId) return;
-    setRegenerating(type);
+    setRegeneratingItem({ type, index: itemIndex });
     try {
       const { data, error } = await supabase.functions.invoke("process-sermon", {
-        body: { regenerate_type: type, sermon_id: sermonId },
+        body: { regenerate_type: type, sermon_id: sermonId, item_index: itemIndex },
       });
       if (error) throw error;
       if (data?.content) {
         updateContent(type, data.content);
-        // Also refresh from DB
         queryClient.invalidateQueries({ queryKey: ["admin", "sermon-review-content", sermonId] });
       }
-      toast.success(`${CONTENT_TYPE_LABELS[type] || type} regenerated!`);
+      toast.success("Item regenerated!");
     } catch (e: any) {
       toast.error("Failed to regenerate. Please try again.");
       console.error("Regeneration error:", e);
     } finally {
-      setRegenerating(null);
-      setEditMode((prev) => ({ ...prev, [type]: false }));
+      setRegeneratingItem(null);
     }
+  };
+
+  const handleRegenerateThumbnails = () => {
+    setThumbnailSeed((s) => s + 1);
+    setSelectedThumb(null);
   };
 
   const handleNext = async () => {
@@ -793,7 +800,7 @@ function ReviewWizard({
         </div>
 
         {/* Content area */}
-        <ScrollArea className="flex-1 px-6 min-h-0">
+        <div className="flex-1 overflow-y-auto px-6 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -805,6 +812,8 @@ function ReviewWizard({
                   thumbnails={thumbnails}
                   selectedThumb={selectedThumb}
                   onSelect={setSelectedThumb}
+                  onRegenerate={handleRegenerateThumbnails}
+                  isYoutube={sermon?.source_type === "youtube"}
                 />
               )}
               {currentStep === "spark" && (
@@ -814,8 +823,8 @@ function ReviewWizard({
                   editing={editMode.spark || false}
                   onToggleEdit={() => setEditMode((p) => ({ ...p, spark: !p.spark }))}
                   onUpdate={(d) => updateContent("spark", d)}
-                  onRegenerate={() => handleRegenerate("spark")}
-                  regenerating={regenerating === "spark"}
+                  onRegenerateItem={(index) => handleRegenerateItem("spark", index)}
+                  regeneratingItem={regeneratingItem?.type === "spark" ? regeneratingItem.index : null}
                 />
               )}
               {currentStep === "takeaways" && (
@@ -825,8 +834,8 @@ function ReviewWizard({
                   editing={editMode.takeaways || false}
                   onToggleEdit={() => setEditMode((p) => ({ ...p, takeaways: !p.takeaways }))}
                   onUpdate={(d) => updateContent("takeaways", d)}
-                  onRegenerate={() => handleRegenerate("takeaways")}
-                  regenerating={regenerating === "takeaways"}
+                  onRegenerateItem={(index) => handleRegenerateItem("takeaways", index)}
+                  regeneratingItem={regeneratingItem?.type === "takeaways" ? regeneratingItem.index : null}
                 />
               )}
               {currentStep === "reflection_questions" && (
@@ -836,8 +845,8 @@ function ReviewWizard({
                   editing={editMode.reflection_questions || false}
                   onToggleEdit={() => setEditMode((p) => ({ ...p, reflection_questions: !p.reflection_questions }))}
                   onUpdate={(d) => updateContent("reflection_questions", d)}
-                  onRegenerate={() => handleRegenerate("reflection_questions")}
-                  regenerating={regenerating === "reflection_questions"}
+                  onRegenerateItem={(index) => handleRegenerateItem("reflection_questions", index)}
+                  regeneratingItem={regeneratingItem?.type === "reflection_questions" ? regeneratingItem.index : null}
                 />
               )}
               {currentStep === "scriptures" && (
@@ -847,8 +856,8 @@ function ReviewWizard({
                   editing={editMode.scriptures || false}
                   onToggleEdit={() => setEditMode((p) => ({ ...p, scriptures: !p.scriptures }))}
                   onUpdate={(d) => updateContent("scriptures", d)}
-                  onRegenerate={() => handleRegenerate("scriptures")}
-                  regenerating={regenerating === "scriptures"}
+                  onRegenerateItem={(index) => handleRegenerateItem("scriptures", index)}
+                  regeneratingItem={regeneratingItem?.type === "scriptures" ? regeneratingItem.index : null}
                 />
               )}
               {currentStep === "chapters" && (
@@ -858,8 +867,8 @@ function ReviewWizard({
                   editing={editMode.chapters || false}
                   onToggleEdit={() => setEditMode((p) => ({ ...p, chapters: !p.chapters }))}
                   onUpdate={(d) => updateContent("chapters", d)}
-                  onRegenerate={() => handleRegenerate("chapters")}
-                  regenerating={regenerating === "chapters"}
+                  onRegenerateItem={(index) => handleRegenerateItem("chapters", index)}
+                  regeneratingItem={regeneratingItem?.type === "chapters" ? regeneratingItem.index : null}
                 />
               )}
               {currentStep === "confirm" && (
@@ -871,7 +880,7 @@ function ReviewWizard({
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         {/* Navigation */}
         <div className="px-6 py-4 border-t flex items-center gap-3">
@@ -929,10 +938,14 @@ function ThumbnailStep({
   thumbnails,
   selectedThumb,
   onSelect,
+  onRegenerate,
+  isYoutube,
 }: {
   thumbnails: string[];
   selectedThumb: number | null;
   onSelect: (i: number) => void;
+  onRegenerate: () => void;
+  isYoutube: boolean;
 }) {
   if (thumbnails.length === 0) {
     return (
@@ -946,7 +959,15 @@ function ThumbnailStep({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Choose a thumbnail for this sermon:</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Choose a thumbnail for this sermon:</p>
+        {!isYoutube && (
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onRegenerate}>
+            <RefreshCw className="h-3 w-3" />
+            New Frames
+          </Button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {thumbnails.map((thumb, i) => (
           <button
@@ -980,26 +1001,17 @@ function ContentEditStep({
   editing,
   onToggleEdit,
   onUpdate,
-  onRegenerate,
-  regenerating,
+  onRegenerateItem,
+  regeneratingItem,
 }: {
   type: string;
   data: any;
   editing: boolean;
   onToggleEdit: () => void;
   onUpdate: (d: any) => void;
-  onRegenerate: () => void;
-  regenerating: boolean;
+  onRegenerateItem: (index: number) => void;
+  regeneratingItem: number | null;
 }) {
-  if (regenerating) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Regenerating content…</p>
-      </div>
-    );
-  }
-
   if (!data) {
     return (
       <div className="text-center py-8">
@@ -1020,58 +1032,39 @@ function ContentEditStep({
           <Pencil className="h-3 w-3" />
           {editing ? "Done Editing" : "Edit"}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={onRegenerate}
-        >
-          <RefreshCw className="h-3 w-3" />
-          Regenerate
-        </Button>
       </div>
 
-      {type === "spark" && <SparkEditor data={data} editing={editing} onUpdate={onUpdate} />}
-      {type === "takeaways" && <TakeawaysEditor data={data} editing={editing} onUpdate={onUpdate} />}
-      {type === "reflection_questions" && <ReflectionEditor data={data} editing={editing} onUpdate={onUpdate} />}
-      {type === "scriptures" && <ScripturesEditor data={data} editing={editing} onUpdate={onUpdate} />}
-      {type === "chapters" && <ChaptersEditor data={data} editing={editing} onUpdate={onUpdate} />}
+      {type === "spark" && <SparkEditor data={data} editing={editing} onUpdate={onUpdate} onRegenerateItem={onRegenerateItem} regeneratingItem={regeneratingItem} />}
+      {type === "takeaways" && <TakeawaysEditor data={data} editing={editing} onUpdate={onUpdate} onRegenerateItem={onRegenerateItem} regeneratingItem={regeneratingItem} />}
+      {type === "reflection_questions" && <ReflectionEditor data={data} editing={editing} onUpdate={onUpdate} onRegenerateItem={onRegenerateItem} regeneratingItem={regeneratingItem} />}
+      {type === "scriptures" && <ScripturesEditor data={data} editing={editing} onUpdate={onUpdate} onRegenerateItem={onRegenerateItem} regeneratingItem={regeneratingItem} />}
+      {type === "chapters" && <ChaptersEditor data={data} editing={editing} onUpdate={onUpdate} onRegenerateItem={onRegenerateItem} regeneratingItem={regeneratingItem} />}
     </div>
   );
 }
 
-function SparkEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
-  // Support both new (sparks array) and legacy (single spark) format
+function SparkEditor({ data, editing, onUpdate, onRegenerateItem, regeneratingItem }: { data: any; editing: boolean; onUpdate: (d: any) => void; onRegenerateItem: (index: number) => void; regeneratingItem: number | null }) {
   const sparks = data?.sparks || [{ day: "Daily", title: data?.title || "", summary: data?.summary || "" }];
-
   const updateSpark = (index: number, field: string, value: string) => {
     const updated = [...sparks];
     updated[index] = { ...updated[index], [field]: value };
     onUpdate({ sparks: updated });
   };
-
   return (
     <div className="space-y-3">
       {sparks.map((spark: any, i: number) => (
-        <Card key={i} className="bg-muted/30">
+        <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <Badge variant="secondary" className="text-xs font-medium">{spark.day}</Badge>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+                {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              </Button>
             </div>
             {editing ? (
               <div className="space-y-2">
-                <Input
-                  value={spark.title}
-                  onChange={(e) => updateSpark(i, "title", e.target.value)}
-                  placeholder="Spark title"
-                  className="text-sm"
-                />
-                <Textarea
-                  value={spark.summary}
-                  onChange={(e) => updateSpark(i, "summary", e.target.value)}
-                  placeholder="Spark summary"
-                  className="text-sm min-h-[60px]"
-                />
+                <Input value={spark.title} onChange={(e) => updateSpark(i, "title", e.target.value)} placeholder="Spark title" className="text-sm" />
+                <Textarea value={spark.summary} onChange={(e) => updateSpark(i, "summary", e.target.value)} placeholder="Spark summary" className="text-sm min-h-[60px]" />
               </div>
             ) : (
               <>
@@ -1086,34 +1079,27 @@ function SparkEditor({ data, editing, onUpdate }: { data: any; editing: boolean;
   );
 }
 
-function TakeawaysEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+function TakeawaysEditor({ data, editing, onUpdate, onRegenerateItem, regeneratingItem }: { data: any; editing: boolean; onUpdate: (d: any) => void; onRegenerateItem: (index: number) => void; regeneratingItem: number | null }) {
   const takeaways = data?.takeaways || [];
-
   const updateItem = (index: number, field: string, value: string) => {
     const updated = [...takeaways];
     updated[index] = { ...updated[index], [field]: value };
     onUpdate({ takeaways: updated });
   };
-
   return (
     <div className="space-y-3">
       {takeaways.map((t: any, i: number) => (
-        <Card key={i} className="bg-muted/30">
+        <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-4">
+            <div className="flex items-center justify-end mb-2">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+                {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
             {editing ? (
               <div className="space-y-2">
-                <Input
-                  value={t.title}
-                  onChange={(e) => updateItem(i, "title", e.target.value)}
-                  placeholder="Takeaway title"
-                  className="text-sm"
-                />
-                <Textarea
-                  value={t.description}
-                  onChange={(e) => updateItem(i, "description", e.target.value)}
-                  placeholder="Takeaway description"
-                  className="text-sm min-h-[60px]"
-                />
+                <Input value={t.title} onChange={(e) => updateItem(i, "title", e.target.value)} placeholder="Takeaway title" className="text-sm" />
+                <Textarea value={t.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Takeaway description" className="text-sm min-h-[60px]" />
               </div>
             ) : (
               <>
@@ -1128,34 +1114,27 @@ function TakeawaysEditor({ data, editing, onUpdate }: { data: any; editing: bool
   );
 }
 
-function ReflectionEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+function ReflectionEditor({ data, editing, onUpdate, onRegenerateItem, regeneratingItem }: { data: any; editing: boolean; onUpdate: (d: any) => void; onRegenerateItem: (index: number) => void; regeneratingItem: number | null }) {
   const questions = data?.questions || [];
-
   const updateItem = (index: number, field: string, value: string) => {
     const updated = [...questions];
     updated[index] = { ...updated[index], [field]: value };
     onUpdate({ questions: updated });
   };
-
   return (
     <div className="space-y-3">
       {questions.map((q: any, i: number) => (
-        <Card key={i} className="bg-muted/30">
+        <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-4">
+            <div className="flex items-center justify-end mb-2">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+                {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
             {editing ? (
               <div className="space-y-2">
-                <Textarea
-                  value={q.question}
-                  onChange={(e) => updateItem(i, "question", e.target.value)}
-                  placeholder="Question"
-                  className="text-sm min-h-[60px]"
-                />
-                <Input
-                  value={q.context}
-                  onChange={(e) => updateItem(i, "context", e.target.value)}
-                  placeholder="Context"
-                  className="text-sm"
-                />
+                <Textarea value={q.question} onChange={(e) => updateItem(i, "question", e.target.value)} placeholder="Question" className="text-sm min-h-[60px]" />
+                <Input value={q.context} onChange={(e) => updateItem(i, "context", e.target.value)} placeholder="Context" className="text-sm" />
               </div>
             ) : (
               <>
@@ -1170,34 +1149,27 @@ function ReflectionEditor({ data, editing, onUpdate }: { data: any; editing: boo
   );
 }
 
-function ScripturesEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+function ScripturesEditor({ data, editing, onUpdate, onRegenerateItem, regeneratingItem }: { data: any; editing: boolean; onUpdate: (d: any) => void; onRegenerateItem: (index: number) => void; regeneratingItem: number | null }) {
   const scriptures = data?.scriptures || [];
-
   const updateItem = (index: number, field: string, value: string) => {
     const updated = [...scriptures];
     updated[index] = { ...updated[index], [field]: value };
     onUpdate({ scriptures: updated });
   };
-
   return (
     <div className="space-y-3">
       {scriptures.map((s: any, i: number) => (
-        <Card key={i} className="bg-muted/30">
+        <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-4">
+            <div className="flex items-center justify-end mb-2">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+                {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
             {editing ? (
               <div className="space-y-2">
-                <Input
-                  value={s.reference}
-                  onChange={(e) => updateItem(i, "reference", e.target.value)}
-                  placeholder="Reference (e.g. Luke 5:1-7)"
-                  className="text-sm"
-                />
-                <Input
-                  value={s.text}
-                  onChange={(e) => updateItem(i, "text", e.target.value)}
-                  placeholder="Context note"
-                  className="text-sm"
-                />
+                <Input value={s.reference} onChange={(e) => updateItem(i, "reference", e.target.value)} placeholder="Reference (e.g. Luke 5:1-7)" className="text-sm" />
+                <Input value={s.text} onChange={(e) => updateItem(i, "text", e.target.value)} placeholder="Context note" className="text-sm" />
               </div>
             ) : (
               <>
@@ -1212,42 +1184,30 @@ function ScripturesEditor({ data, editing, onUpdate }: { data: any; editing: boo
   );
 }
 
-function ChaptersEditor({ data, editing, onUpdate }: { data: any; editing: boolean; onUpdate: (d: any) => void }) {
+function ChaptersEditor({ data, editing, onUpdate, onRegenerateItem, regeneratingItem }: { data: any; editing: boolean; onUpdate: (d: any) => void; onRegenerateItem: (index: number) => void; regeneratingItem: number | null }) {
   const chapters = data?.chapters || [];
-
   const updateItem = (index: number, field: string, value: string) => {
     const updated = [...chapters];
     updated[index] = { ...updated[index], [field]: value };
     onUpdate({ chapters: updated });
   };
-
   return (
     <div className="space-y-2">
       {chapters.map((c: any, i: number) => (
-        <Card key={i} className="bg-muted/30">
+        <Card key={i} className={`bg-muted/30 ${regeneratingItem === i ? "opacity-60" : ""}`}>
           <CardContent className="p-3">
+            <div className="flex items-center justify-end mb-1">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onRegenerateItem(i)} disabled={regeneratingItem !== null}>
+                {regeneratingItem === i ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
             {editing ? (
               <div className="space-y-2">
                 <div className="flex gap-2">
-                  <Input
-                    value={c.title}
-                    onChange={(e) => updateItem(i, "title", e.target.value)}
-                    placeholder="Chapter title"
-                    className="text-sm flex-1"
-                  />
-                  <Input
-                    value={c.timestamp || ""}
-                    onChange={(e) => updateItem(i, "timestamp", e.target.value)}
-                    placeholder="0:00"
-                    className="text-sm w-20"
-                  />
+                  <Input value={c.title} onChange={(e) => updateItem(i, "title", e.target.value)} placeholder="Chapter title" className="text-sm flex-1" />
+                  <Input value={c.timestamp || ""} onChange={(e) => updateItem(i, "timestamp", e.target.value)} placeholder="0:00" className="text-sm w-20" />
                 </div>
-                <Textarea
-                  value={c.summary || ""}
-                  onChange={(e) => updateItem(i, "summary", e.target.value)}
-                  placeholder="Summary"
-                  className="text-sm min-h-[50px]"
-                />
+                <Textarea value={c.summary || ""} onChange={(e) => updateItem(i, "summary", e.target.value)} placeholder="Summary" className="text-sm min-h-[50px]" />
               </div>
             ) : (
               <div className="flex items-center justify-between">
