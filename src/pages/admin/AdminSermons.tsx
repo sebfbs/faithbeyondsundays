@@ -258,15 +258,10 @@ export default function AdminSermons() {
 
   const approveSermon = useMutation({
     mutationFn: async (id: string) => {
-      await supabase
-        .from("sermons")
-        .update({ is_current: false })
-        .eq("church_id", churchId)
-        .eq("is_current", true);
-
+      // No longer toggle is_current — week_start/week_end handles scheduling automatically
       const { error } = await supabase
         .from("sermons")
-        .update({ status: "complete", is_published: true, is_current: true })
+        .update({ status: "complete", is_published: true })
         .eq("id", id);
       if (error) throw error;
     },
@@ -277,11 +272,18 @@ export default function AdminSermons() {
     },
   });
 
-  // Section sermons
-  const liveSermon = sermons?.find((s) => s.is_current) || null;
-  const needsAttention = sermons?.filter((s) => !s.is_current && (s.status === "review" || s.status === "failed")) || [];
-  const processing = sermons?.filter((s) => !s.is_current && ["pending", "uploading", "transcribing", "generating"].includes(s.status)) || [];
-  const allSermons = sermons?.filter((s) => !s.is_current && s.status === "complete") || [];
+  // Section sermons — use week_start/week_end to determine "live"
+  const today = new Date().toISOString().split("T")[0];
+  const liveSermon = sermons?.find((s) => {
+    if (s.week_start && s.week_end) {
+      return s.is_published && s.week_start <= today && s.week_end >= today;
+    }
+    return s.is_current; // backward compat
+  }) || null;
+  const liveId = liveSermon?.id;
+  const needsAttention = sermons?.filter((s) => s.id !== liveId && (s.status === "review" || s.status === "failed")) || [];
+  const processing = sermons?.filter((s) => s.id !== liveId && ["pending", "uploading", "transcribing", "generating"].includes(s.status)) || [];
+  const allSermons = sermons?.filter((s) => s.id !== liveId && s.status === "complete") || [];
 
   const openWizard = (sermonId: string, mode: "review" | "view") => {
     setReviewSermonId(sermonId);
@@ -322,7 +324,15 @@ export default function AdminSermons() {
               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                 {sermon.speaker && <span>{sermon.speaker}</span>}
                 {sermon.speaker && <span>·</span>}
-                <span>{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</span>
+              <span>{format(new Date(sermon.sermon_date), "MMM d, yyyy")}</span>
+              {sermon.week_start && sermon.week_end && (
+                <>
+                  <span>·</span>
+                  <span className="text-muted-foreground">
+                    Week of {format(new Date(sermon.week_start + "T12:00:00"), "MMM d")} – {format(new Date(sermon.week_end + "T12:00:00"), "MMM d")}
+                  </span>
+                </>
+              )}
               </div>
 
               {/* Upload timestamp */}
@@ -437,17 +447,7 @@ export default function AdminSermons() {
                     )}
                   </DropdownMenuItem>
                 )}
-                {sermon.status === "complete" && sermon.is_published && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCurrent.mutate({ id: sermon.id, is_current: !sermon.is_current });
-                    }}
-                  >
-                    <Radio className="h-4 w-4 mr-2" />
-                    {sermon.is_current ? "Remove from Live" : "Set as Live"}
-                  </DropdownMenuItem>
-                )}
+                {/* Week-based scheduling replaces manual "Set as Live" */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -1585,8 +1585,25 @@ function UploadSermonForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Date</Label>
+        <Label>Sermon Date</Label>
         <Input type="date" value={sermonDate} onChange={(e) => setSermonDate(e.target.value)} disabled={isUploading} />
+        {sermonDate && (() => {
+          const d = new Date(sermonDate + "T12:00:00");
+          const dow = d.getDay();
+          const mondayOffset = dow === 0 ? 1 : -(dow - 1);
+          const mon = new Date(d);
+          mon.setDate(d.getDate() + mondayOffset);
+          const sun = new Date(mon);
+          sun.setDate(mon.getDate() + 6);
+          return (
+            <p className="text-xs text-muted-foreground">
+              📅 This sermon will go live for the week of{" "}
+              <span className="font-medium text-foreground">
+                {format(mon, "MMM d")} – {format(sun, "MMM d")}
+              </span>
+            </p>
+          );
+        })()}
       </div>
 
       {mode === "upload" ? (

@@ -75,12 +75,20 @@ export function usePreviousSermons() {
     queryFn: async (): Promise<SermonUIData[]> => {
       if (!churchId) return [];
 
+      // Get the current week's Monday
+      const now = new Date();
+      const dow = now.getDay(); // 0=Sun
+      const mondayOffset = dow === 0 ? 1 : -(dow - 1);
+      const currentWeekStart = new Date(now);
+      currentWeekStart.setDate(now.getDate() + mondayOffset);
+      const weekStartStr = currentWeekStart.toISOString().split("T")[0];
+
       const { data: sermons, error } = await supabase
         .from("sermons")
         .select("*")
         .eq("church_id", churchId)
         .eq("is_published", true)
-        .eq("is_current", false)
+        .lt("week_end", weekStartStr)
         .order("sermon_date", { ascending: false })
         .limit(50);
 
