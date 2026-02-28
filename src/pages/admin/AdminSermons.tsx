@@ -1589,8 +1589,9 @@ function UploadSermonForm({
         <Input type="date" value={sermonDate} onChange={(e) => setSermonDate(e.target.value)} disabled={isUploading} />
         {sermonDate && (() => {
           const d = new Date(sermonDate + "T12:00:00");
-          const dow = d.getDay();
-          const mondayOffset = dow === 0 ? 1 : -(dow - 1);
+          const dow = d.getDay(); // 0=Sun, 6=Sat
+          // Weekend uploads (Sat/Sun) schedule for NEXT week
+          const mondayOffset = dow === 0 ? 1 : dow === 6 ? 2 : -(dow - 1);
           const mon = new Date(d);
           mon.setDate(d.getDate() + mondayOffset);
           const sun = new Date(mon);

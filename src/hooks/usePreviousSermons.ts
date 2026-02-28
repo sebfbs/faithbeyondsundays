@@ -77,8 +77,9 @@ export function usePreviousSermons() {
 
       // Get the current week's Monday
       const now = new Date();
-      const dow = now.getDay(); // 0=Sun
-      const mondayOffset = dow === 0 ? 1 : -(dow - 1);
+      const dow = now.getDay(); // 0=Sun, 6=Sat
+      // Weekend days belong to the next week
+      const mondayOffset = dow === 0 ? 1 : dow === 6 ? 2 : -(dow - 1);
       const currentWeekStart = new Date(now);
       currentWeekStart.setDate(now.getDate() + mondayOffset);
       const weekStartStr = currentWeekStart.toISOString().split("T")[0];
