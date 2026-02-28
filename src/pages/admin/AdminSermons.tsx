@@ -561,6 +561,7 @@ function ReviewWizard({
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedThumb, setSelectedThumb] = useState<number | null>(null);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [loadingThumbnails, setLoadingThumbnails] = useState(false);
 
   const currentStep = WIZARD_STEPS[step];
 
@@ -607,6 +608,7 @@ function ReviewWizard({
     if (!sermon || !open) return;
     setThumbnails([]);
     setSelectedThumb(null);
+    setLoadingThumbnails(true);
 
     if (sermon.source_type === "youtube" && sermon.source_url) {
       const match = sermon.source_url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -618,6 +620,7 @@ function ReviewWizard({
           `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
           `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
         ]);
+        setLoadingThumbnails(false);
       }
     } else if (sermon.source_type === "upload" && sermon.storage_path) {
       (async () => {
@@ -657,8 +660,10 @@ function ReviewWizard({
             frames.push(canvas.toDataURL("image/jpeg", 0.8));
           }
           setThumbnails(frames);
+          setLoadingThumbnails(false);
         } catch (e) {
           console.error("Failed to extract thumbnails:", e);
+          setLoadingThumbnails(false);
         }
       })();
     }
@@ -814,6 +819,7 @@ function ReviewWizard({
                   onSelect={setSelectedThumb}
                   onRegenerate={handleRegenerateThumbnails}
                   isYoutube={sermon?.source_type === "youtube"}
+                  loading={loadingThumbnails}
                 />
               )}
               {currentStep === "spark" && (
@@ -940,14 +946,25 @@ function ThumbnailStep({
   onSelect,
   onRegenerate,
   isYoutube,
+  loading,
 }: {
   thumbnails: string[];
   selectedThumb: number | null;
   onSelect: (i: number) => void;
   onRegenerate: () => void;
   isYoutube: boolean;
+  loading: boolean;
 }) {
   if (thumbnails.length === 0) {
+    if (loading) {
+      return (
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 text-primary mx-auto mb-3 animate-spin" />
+          <p className="text-sm text-muted-foreground">Generating thumbnail options...</p>
+          <p className="text-xs text-muted-foreground mt-1">Extracting frames from your video</p>
+        </div>
+      );
+    }
     return (
       <div className="text-center py-8">
         <Image className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
