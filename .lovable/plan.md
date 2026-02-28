@@ -1,66 +1,70 @@
 
 
-## Smart Week-Based Sermon Scheduling
+## Make YouTube Transcript Fetching Bulletproof
 
-### Current Behavior
-Right now, when an admin approves a sermon through the wizard, it **immediately** becomes the live sermon (`is_current = true`). There's no concept of scheduling -- it's a manual toggle. This means if an admin uploads on Sunday, the sermon instantly replaces whatever is currently live, even though the intent is for it to go live the following week.
+### The Problem
 
-### New Behavior
-Sermons will be tied to a **week range** (Mon-Sun) based on their `sermon_date`. The system will automatically determine which sermon is "current" based on the current date, removing the need for manual "Set as Live" toggling.
+The current code scrapes YouTube's full HTML watch page and tries to regex out caption data. YouTube actively blocks this with bot detection, making it fundamentally unreliable from a server environment.
 
-### How It Works
+### Why "Tries" Keeps Failing
 
-1. **When an admin uploads a sermon on Sunday with that day's date**, the sermon's `sermon_date` falls in the upcoming Mon-Sun week. The member app will automatically show it starting Monday.
+YouTube serves different HTML to server requests vs browsers. The `ytInitialPlayerResponse` JSON blob that contains caption URLs is often stripped or obfuscated when the request comes from a server IP. No amount of User-Agent spoofing fixes this reliably.
 
-2. **The member app query** (`useCurrentSermon`) will change from filtering by `is_current = true` to finding the published sermon whose `sermon_date` falls within the current Mon-Sun week.
+### The Fix: Two Guaranteed Paths
 
-3. **Previous sermons** will be any published sermon whose week has already passed.
+**Path 1 (Primary) -- YouTube Innertube API**
 
-### Database Changes
+YouTube's own internal API endpoint (`POST /youtubei/v1/player`) returns structured JSON with caption track URLs. This is what every major YouTube transcript library (youtube-transcript, youtubei.js) uses under the hood. It does NOT require authentication or an API key. It works reliably from servers because it's a proper API endpoint, not HTML scraping.
 
-**Add two new columns to `sermons` table:**
-- `week_start` (date) -- computed from `sermon_date`, representing the Monday of that sermon's week
-- `week_end` (date) -- the Sunday of that sermon's week
+- Send a POST request with the video ID and a standard web client context
+- Get back structured JSON with `captions.playerCaptionsTracklistRenderer.captionTracks`
+- Fetch the caption XML from the track URL
+- Parse segments into timestamped transcript
 
-These are set automatically via a trigger whenever `sermon_date` is inserted or updated.
+This works for any video that has captions enabled (manual or auto-generated).
 
-> Note: `is_current` is kept for backward compatibility but will no longer be the primary mechanism for determining what's live.
+**Path 2 (Fallback) -- Download Audio, Transcribe with ElevenLabs**
 
-**New trigger: `set_sermon_week_range`**
-```sql
--- On INSERT or UPDATE of sermon_date, compute week_start (Monday) and week_end (Sunday)
-NEW.week_start = date_trunc('week', NEW.sermon_date + interval '1 day')::date - interval '1 day'::interval + interval '1 day';
-NEW.week_end = NEW.week_start + interval '6 days';
-```
+For videos where captions genuinely don't exist (rare but possible), we download the audio and run it through ElevenLabs Scribe -- the same proven flow that already works for file uploads.
 
-**Backfill existing sermons** with computed `week_start` / `week_end` values.
+To download YouTube audio server-side, we'll use the Cobalt API (`cobalt.tools`), an open-source media extraction service with a public API. It returns a direct download URL for the audio track.
 
-### Frontend Changes
+If Cobalt is unavailable, the system will clearly tell the admin: "This video has no captions. Please upload the audio/video file directly instead."
 
-**`src/hooks/useCurrentSermon.ts`**
-- Instead of `.eq("is_current", true)`, query for the published sermon where today's date falls between `week_start` and `week_end`
-- Fallback: if no sermon matches the current week, show the most recent published sermon (graceful degradation)
+### What Changes
 
-**`src/hooks/usePreviousSermons.ts`**
-- Filter to published sermons whose `week_end` is before the current week's `week_start` (i.e., past weeks only)
-- This prevents showing the "current week" sermon in the previous list
+**File: `supabase/functions/process-sermon/index.ts`**
 
-**`src/pages/admin/AdminSermons.tsx`**
-- **Approve mutation**: Still sets `is_published = true` and `status = 'complete'`, but no longer needs to toggle `is_current`. The week range handles it automatically.
-- **Upload form date field**: Add helper text showing "This sermon will go live for the week of Mon [date] - Sun [date]" based on the selected date
-- **Week Timeline component** (from the previous plan): Now powered by real `week_start`/`week_end` data from the database, making it accurate
-- **"Set as Live" menu item**: Replace with "Change Sermon Week" -- lets admin reassign a sermon to a different week if needed
-- Keep backward compat: if `week_start` is null (old data), fall back to `is_current` logic
+Replace the `fetchYouTubeTranscript` function (~lines 918-1053) with:
 
-### Technical Summary
+1. **`fetchYouTubeTranscript(videoId)` rewritten** to:
+   - Call YouTube Innertube API (`POST https://www.youtube.com/youtubei/v1/player`) with proper client context
+   - Extract caption tracks from the structured JSON response
+   - Find English track (prefer manual over auto-generated)
+   - Fetch caption XML and parse into timestamped transcript
+   - On success: return the transcript text with timing markers (same format as before)
 
-| Change | File/Location |
-|--------|--------------|
-| Add `week_start`, `week_end` columns + trigger | Database migration |
-| Backfill existing sermons | Database migration |
-| Update current sermon query to use week range | `src/hooks/useCurrentSermon.ts` |
-| Update previous sermons query | `src/hooks/usePreviousSermons.ts` |
-| Remove `is_current` toggling from approve flow | `src/pages/admin/AdminSermons.tsx` |
-| Add week helper text to upload form | `src/pages/admin/AdminSermons.tsx` |
-| Add Week Timeline visual component | `src/pages/admin/AdminSermons.tsx` |
+2. **New `downloadYouTubeAudio(videoId)` function** as fallback:
+   - Call Cobalt API (`POST https://api.cobalt.tools/`) requesting audio-only extraction
+   - Download the returned audio file as a Blob
+   - Return the Blob for transcription
 
+3. **Updated YouTube processing block** (~lines 120-170):
+   - Try `fetchYouTubeTranscript` first (Innertube captions)
+   - If it fails (no captions on the video), try `downloadYouTubeAudio` then transcribe with ElevenLabs Scribe (reusing the exact same ElevenLabs logic from the file upload path)
+   - If both fail, set sermon status to `"failed"` with a clear error message: "Could not extract transcript. Please upload the video file directly."
+   - Never silently fall back to title-only generation
+
+4. **Remove the title-only fallback** (~lines 141-143): No more generating fake content from just a title. If we can't get a real transcript, we fail explicitly so the admin knows and can take action.
+
+### Why This Works
+
+- The Innertube API is YouTube's own internal API -- it's what the YouTube website itself calls. It returns clean JSON, not HTML to parse.
+- ElevenLabs Scribe is already proven in the file upload flow -- we're just reusing it as a safety net.
+- Clear failure messaging means admins are never left wondering why content looks wrong.
+
+### No New Dependencies or API Keys Needed
+
+- Innertube API: No key required (public endpoint)
+- Cobalt API: No key required (open-source public API)
+- ElevenLabs: Already configured (`ELEVENLABS_API_KEY` secret exists)
