@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "./useProfile";
 import type { Json } from "@/integrations/supabase/types";
 
+async function resolveStorageUrl(storagePath: string | null): Promise<string | null> {
+  if (!storagePath) return null;
+  const { data } = await supabase.storage.from("sermon-media").createSignedUrl(storagePath, 3600);
+  return data?.signedUrl || null;
+}
+
 export interface SermonUIData {
   id: string;
   title: string;
@@ -115,6 +121,12 @@ export function useCurrentSermon() {
 
       const content = transformContent(contentRows || []);
 
+      // Resolve video URL: prefer video_url, then generate from storage_path
+      const videoUrl = sermon.video_url || await resolveStorageUrl(sermon.storage_path);
+      const thumbnailUrl = sermon.thumbnail_url && !sermon.thumbnail_url.startsWith("http")
+        ? await resolveStorageUrl(sermon.thumbnail_url)
+        : sermon.thumbnail_url;
+
       return {
         id: sermon.id,
         title: sermon.title,
@@ -123,10 +135,10 @@ export function useCurrentSermon() {
         speaker: sermon.speaker,
         church: profile?.church_name || "",
         duration: sermon.duration,
-        videoUrl: sermon.video_url,
+        videoUrl,
         sourceUrl: sermon.source_url,
         sourceType: sermon.source_type,
-        thumbnailUrl: sermon.thumbnail_url,
+        thumbnailUrl,
         storagePath: sermon.storage_path,
         ...content,
       };
