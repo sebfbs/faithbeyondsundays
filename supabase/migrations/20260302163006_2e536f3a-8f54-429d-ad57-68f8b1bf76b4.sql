@@ -1,0 +1,1 @@
+ALTER TABLE public.sermon_jobs ADD COLUMN IF NOT EXISTS current_stage text DEFAULT null;

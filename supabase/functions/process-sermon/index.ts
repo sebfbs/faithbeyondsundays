@@ -46,9 +46,48 @@ serve(async (req) => {
       return await handleRegeneration(supabase, lovableApiKey, reqBody.sermon_id, reqBody.regenerate_type, reqBody.item_index);
     }
 
+    // ─── Stale job recovery ───
+    // Reset any jobs stuck in "processing" past their locked_until
+    const { data: staleJobs } = await supabase
+      .from("sermon_jobs")
+      .select("id, attempts, max_attempts")
+      .eq("status", "processing")
+      .not("locked_until", "is", null)
+      .lt("locked_until", new Date().toISOString());
+
+    if (staleJobs && staleJobs.length > 0) {
+      for (const stale of staleJobs) {
+        if (stale.attempts >= stale.max_attempts) {
+          await supabase
+            .from("sermon_jobs")
+            .update({
+              status: "failed",
+              error_message: "Stale job exceeded max attempts",
+              failed_at: new Date().toISOString(),
+              current_stage: null,
+            })
+            .eq("id", stale.id);
+        } else {
+          await supabase
+            .from("sermon_jobs")
+            .update({
+              status: "queued",
+              worker_id: null,
+              locked_until: null,
+              current_stage: null,
+              error_message: "Auto-recovered from stale processing state",
+            })
+            .eq("id", stale.id);
+        }
+        console.log(`Recovered stale job ${stale.id}`);
+      }
+    }
+
     // ─── Normal job queue processing ───
     const workerId = crypto.randomUUID();
     const now = new Date().toISOString();
+    const leaseMinutes = 10;
+    const leaseUntil = new Date(Date.now() + leaseMinutes * 60 * 1000).toISOString();
 
     const { data: jobs, error: claimError } = await supabase
       .from("sermon_jobs")
@@ -76,6 +115,8 @@ serve(async (req) => {
         worker_id: workerId,
         started_at: isRetry ? job.started_at : now,
         attempts: job.attempts + 1,
+        locked_until: leaseUntil,
+        current_stage: "claiming",
       })
       .eq("id", job.id)
       .in("status", ["queued", "retrying"])
@@ -102,6 +143,15 @@ serve(async (req) => {
       });
     }
 
+    // Helper to extend the lease before long operations
+    const refreshLease = async (stage: string) => {
+      const newLease = new Date(Date.now() + leaseMinutes * 60 * 1000).toISOString();
+      await supabase
+        .from("sermon_jobs")
+        .update({ locked_until: newLease, current_stage: stage })
+        .eq("id", job.id);
+    };
+
     const { data: existingTranscript } = await supabase
       .from("sermon_transcripts")
       .select("id, full_text")
@@ -112,37 +162,40 @@ serve(async (req) => {
     let wordTimings: { text: string; start: number; end: number }[] = [];
 
     if (!existingTranscript) {
+      await refreshLease("transcribing");
       await supabase
         .from("sermons")
         .update({ status: "transcribing" })
         .eq("id", sermon.id);
 
-      // ─── File upload: download from storage and transcribe ───
-      console.log("Downloading file from storage:", sermon.storage_path);
-      const { data: fileData, error: downloadError } = await supabase.storage
+      // ─── Signed URL approach: no file download needed ───
+      console.log("Generating signed URL for:", sermon.storage_path);
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from("sermon-media")
-        .download(sermon.storage_path!);
+        .createSignedUrl(sermon.storage_path!, 3600); // 1 hour expiry
 
-      if (downloadError || !fileData) {
-        await failJob(supabase, job.id, "Failed to download file from storage");
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        await failJob(supabase, job.id, "Failed to generate signed URL for media file");
         await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-        return new Response(JSON.stringify({ error: "Download failed" }), {
+        return new Response(JSON.stringify({ error: "Signed URL generation failed" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      console.log("Transcribing with ElevenLabs...");
-      const transcribeFormData = new FormData();
-      transcribeFormData.append("file", fileData, sermon.storage_path!.split("/").pop()!);
-      transcribeFormData.append("model_id", "scribe_v2");
-      transcribeFormData.append("tag_audio_events", "false");
-      transcribeFormData.append("diarize", "false");
-
+      console.log("Transcribing with ElevenLabs via signed URL...");
       const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
         method: "POST",
-        headers: { "xi-api-key": elevenlabsKey },
-        body: transcribeFormData,
+        headers: {
+          "xi-api-key": elevenlabsKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model_id: "scribe_v2",
+          file_url: signedUrlData.signedUrl,
+          tag_audio_events: false,
+          diarize: false,
+        }),
       });
 
       if (!transcribeResponse.ok) {
@@ -188,6 +241,7 @@ serve(async (req) => {
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
 
     console.log("Generating AI content...");
+    await refreshLease("generating");
     await supabase.from("sermons").update({ status: "generating" }).eq("id", sermon.id);
 
     const { data: existingContent } = await supabase
@@ -212,8 +266,9 @@ serve(async (req) => {
       console.log("All content types already generated");
     }
 
-    for (const ct of missingTypes) {
-      try {
+    // ─── Parallel AI content generation ───
+    const results = await Promise.allSettled(
+      missingTypes.map(async (ct) => {
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -233,9 +288,7 @@ serve(async (req) => {
 
         if (!aiResponse.ok) {
           const errText = await aiResponse.text();
-          console.error(`AI error for ${ct.type}:`, aiResponse.status, errText);
-          failedTypes.push(ct.type);
-          continue;
+          throw new Error(`AI error for ${ct.type}: ${aiResponse.status} ${errText}`);
         }
 
         const aiResult = await aiResponse.json();
@@ -246,9 +299,7 @@ serve(async (req) => {
           try {
             content = JSON.parse(toolCall.function.arguments);
           } catch {
-            console.error(`Failed to parse AI response for ${ct.type}`);
-            failedTypes.push(ct.type);
-            continue;
+            throw new Error(`Failed to parse AI response for ${ct.type}`);
           }
         }
 
@@ -259,9 +310,16 @@ serve(async (req) => {
         });
 
         console.log(`Generated ${ct.type} successfully`);
-      } catch (err) {
-        console.error(`Error generating ${ct.type}:`, err);
-        failedTypes.push(ct.type);
+        return ct.type;
+      })
+    );
+
+    // Collect failures
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === "rejected") {
+        console.error(result.reason);
+        failedTypes.push(missingTypes[i].type);
       }
     }
 
@@ -276,6 +334,7 @@ serve(async (req) => {
         .update({
           status: "retrying",
           locked_until: retryAfter,
+          current_stage: null,
           error_message: `Failed content types: ${failedTypes.join(", ")}. Retrying in ${delayMinutes}min.`,
           error_details: { failed_types: failedTypes, attempt: job.attempts },
         })
@@ -301,6 +360,7 @@ serve(async (req) => {
           error_message: `Failed after ${job.max_attempts} attempts. Missing: ${failedTypes.join(", ")}`,
           error_details: { failed_types: failedTypes, attempt: job.attempts },
           failed_at: new Date().toISOString(),
+          current_stage: null,
         })
         .eq("id", job.id);
 
@@ -334,6 +394,7 @@ serve(async (req) => {
         completed_at: new Date().toISOString(),
         error_message: null,
         error_details: null,
+        current_stage: null,
       })
       .eq("id", job.id);
 
@@ -581,6 +642,7 @@ async function failJob(supabase: any, jobId: string, message: string) {
       status: "failed",
       error_message: message,
       failed_at: new Date().toISOString(),
+      current_stage: null,
     })
     .eq("id", jobId);
 }
@@ -853,4 +915,3 @@ CRITICAL RULES:
 - Do NOT cluster all chapters in the first half. Distribute chapters across the full duration based on where natural topic shifts occur.
 - Use the timing markers embedded in the transcript to determine accurate timestamps for each chapter boundary.`;
 }
-

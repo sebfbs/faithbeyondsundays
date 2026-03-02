@@ -100,33 +100,75 @@ const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
   confirm: "Confirm",
 };
 
-function TranscribingProgress({ createdAt }: { createdAt: string }) {
-  const [progress, setProgress] = useState(0);
+function ProcessingProgress({ sermonId, status, createdAt }: { sermonId: string; status: string; createdAt: string }) {
+  const isStale = Date.now() - new Date(createdAt).getTime() > 10 * 60 * 1000; // 10 minutes
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const startTime = new Date(createdAt).getTime();
-    const estimatedDuration = 3 * 60 * 1000; // ~3 minutes estimated
+  const { data: contentCount } = useQuery({
+    queryKey: ["admin", "processing-progress", sermonId],
+    enabled: status === "generating",
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("sermon_content")
+        .select("*", { count: "exact", head: true })
+        .eq("sermon_id", sermonId);
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 3000,
+  });
 
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min(92, (elapsed / estimatedDuration) * 90);
-      setProgress(Math.round(pct));
-    };
+  const retrySermon = async () => {
+    try {
+      // Reset sermon status to pending and re-trigger
+      await supabase.from("sermons").update({ status: "pending" }).eq("id", sermonId);
+      // Find and reset the job
+      const { data: jobs } = await supabase
+        .from("sermon_jobs")
+        .select("id")
+        .eq("sermon_id", sermonId)
+        .in("status", ["processing", "failed"])
+        .limit(1);
+      if (jobs && jobs.length > 0) {
+        await supabase.functions.invoke("process-sermon", { body: {} });
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin", "sermons"] });
+      toast.success("Retry triggered");
+    } catch {
+      toast.error("Failed to retry");
+    }
+  };
 
-    tick();
-    const interval = setInterval(tick, 2000);
-    return () => clearInterval(interval);
-  }, [createdAt]);
-
-  return (
-    <div className="mt-3 space-y-1.5">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-blue-700">Transcribing audio…</p>
-        <span className="text-xs font-medium text-blue-700">{progress}%</span>
+  if (status === "transcribing") {
+    return (
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-blue-700">Transcribing audio…</p>
+          {isStale && (
+            <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={(e) => { e.stopPropagation(); retrySermon(); }}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Retry
+            </Button>
+          )}
+        </div>
+        <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: "100%" }} />
+        </div>
       </div>
-      <Progress value={progress} className="h-2 bg-blue-100 [&>div]:bg-blue-500" />
-    </div>
-  );
+    );
+  }
+
+  if (status === "pending" || status === "uploading") {
+    return (
+      <div className="mt-3 space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">Waiting in queue…</p>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-full bg-muted-foreground/30 rounded-full animate-pulse" style={{ width: "100%" }} />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default function AdminSermons() {
@@ -151,7 +193,7 @@ export default function AdminSermons() {
     },
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.some((s) => !["complete", "failed", "review"].includes(s.status)) ? 10000 : false;
+      return data?.some((s) => !["complete", "failed", "review"].includes(s.status)) ? 3000 : false;
     },
   });
 
@@ -172,7 +214,7 @@ export default function AdminSermons() {
       }
       return map;
     },
-    refetchInterval: 10000,
+    refetchInterval: 3000,
   });
 
   const togglePublish = useMutation({
@@ -315,9 +357,9 @@ export default function AdminSermons() {
                 <span>Uploaded {uploadedAgo}</span>
               </div>
 
-              {/* Transcribing progress */}
-              {sermon.status === "transcribing" && (
-                <TranscribingProgress createdAt={sermon.created_at} />
+              {/* Processing progress (transcribing / pending / uploading) */}
+              {["transcribing", "pending", "uploading"].includes(sermon.status) && (
+                <ProcessingProgress sermonId={sermon.id} status={sermon.status} createdAt={sermon.created_at} />
               )}
 
               {/* Generating progress */}
