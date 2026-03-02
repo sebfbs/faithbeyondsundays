@@ -216,7 +216,19 @@ serve(async (req) => {
         start: w.start,
         end: w.end,
       }));
+
+      // Debug: log transcript stats and timing coverage
       const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+      const lastWord = wordTimings.length > 0 ? wordTimings[wordTimings.length - 1] : null;
+      const firstWord = wordTimings.length > 0 ? wordTimings[0] : null;
+      console.log(`Transcript stats: ${wordCount} words in text, ${wordTimings.length} words with timings`);
+      console.log(`Timing range: ${firstWord ? firstWord.start + 's' : 'none'} → ${lastWord ? lastWord.end + 's' : 'none'} (${lastWord ? (lastWord.end / 60).toFixed(1) + ' min' : '0 min'})`);
+      console.log(`First 3 timed words:`, JSON.stringify(wordTimings.slice(0, 3)));
+      console.log(`Last 3 timed words:`, JSON.stringify(wordTimings.slice(-3)));
+      if (wordTimings.length > 0) {
+        const withZeroStart = wordTimings.filter((w: any) => w.start === 0 || w.start === undefined || w.start === null).length;
+        console.log(`Words with zero/null start time: ${withZeroStart} of ${wordTimings.length}`);
+      }
 
       const { error: transcriptError } = await supabase
         .from("sermon_transcripts")
