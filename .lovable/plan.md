@@ -1,81 +1,46 @@
 
 
-# Fix Sermon Processing: Under 2 Minutes Every Time
+## Fix Chapter Generation: Full Duration Coverage + New Prompt
 
-## What's Actually Wrong
+### Problem
+The `embedTimingMarkers` function builds the timestamped transcript by splitting the plain text transcript into words and trying to align them with the ElevenLabs word-timing array by index. Because word counts drift (punctuation, contractions), timestamps become inaccurate or stuck after the first ~15 minutes. The AI then has no timing context for the rest of the sermon, so it stops generating chapters.
 
-Your edge function currently **downloads the entire 400MB video into its own memory** (which only has ~150MB), causing it to crash silently. The job then sits in "processing" forever.
+### Changes
 
-## The Fix (Simple and Elegant)
+#### 1. Rewrite `embedTimingMarkers` (lines 672-698)
 
-ElevenLabs has a `cloud_storage_url` parameter that accepts any HTTPS URL. Instead of downloading the video file, we just generate a temporary signed URL pointing to the file in your storage and hand that URL to ElevenLabs. **ElevenLabs downloads and processes it directly** -- your edge function never touches the file at all.
-
-You don't even need to extract audio separately. ElevenLabs handles video files natively and extracts the audio internally. The HD video stays in storage untouched for church members to watch.
+Instead of splitting the plain text and aligning by index, build the transcript directly from the `wordTimings` array. Each word object already has `.text`, `.start`, and `.end`. Simply iterate through `wordTimings`, inserting a `[MM:SS]` marker whenever 60+ seconds have passed since the last marker. This guarantees 100% accurate timestamps across the entire sermon duration.
 
 ```text
-Current (broken):
-  Storage --[408MB download]--> Edge Function memory (crashes) --> ElevenLabs
+Before (broken):
+  Split transcript.split(/\s+/) -> words[]
+  Try to match words[i] with wordTimings[i] (drifts)
 
-Fixed:
-  Storage --[signed URL string]--> Edge Function --[URL string]--> ElevenLabs downloads directly
-  Edge function memory usage: ~0 MB
+After (correct):
+  Iterate wordTimings[] directly
+  Each word has its own accurate .start time
+  Insert [MM:SS] marker every 60s
 ```
 
-## What This Means for Speed
+#### 2. Update `buildChaptersPrompt` (lines 911-929)
 
-- **Video upload**: Depends on admin's internet speed (unchanged)
-- **Transcription**: ElevenLabs processes a 1-hour sermon in ~30-60 seconds via URL
-- **AI content generation**: 5 parallel calls instead of sequential = ~15-20 seconds total
-- **Total processing after upload completes**: Under 2 minutes
+Replace the current chapter prompt with the user's framework, keeping the tool schema fields (title, summary, order, timestamp):
 
-## Changes
+- Role: "You are a sermon chapter generator"
+- Instruction: Identify only main structural chapters -- introduction, scripture reading, sermon title, each main point, major illustrative stories, closing prayer/altar call
+- Exclusion: Do not include sub-points, illustrations, or transitions as their own chapters
+- Count: Keep total between 6-10 chapters
+- Keep existing rules about using timing markers for timestamps and covering the full duration
 
-### 1. `supabase/functions/process-sermon/index.ts`
+#### 3. Update chapter tool schema (lines 813-840)
 
-**Replace the download + FormData upload block** (lines 121-146) with:
-- Generate a 1-hour signed URL for the file in storage using `supabase.storage.from("sermon-media").createSignedUrl()`
-- Pass the signed URL to ElevenLabs using the `cloud_storage_url` parameter instead of the `file` parameter
-- This eliminates all memory issues regardless of file size (works up to 2GB per ElevenLabs limits)
+Minor tweak to the schema description to align with the new prompt (reinforce 6-10 chapters, structural focus).
 
-**Parallelize AI content generation** (lines 215-266):
-- Currently generates 5 content types sequentially (one after another)
-- Change to `Promise.all()` so all 5 AI calls run simultaneously
-- This cuts ~45 seconds of sequential waiting down to ~10-15 seconds
+### Files Modified
 
-**Add lease heartbeats**:
-- Set `locked_until` when claiming a job
-- Refresh the lease before each major stage so stale job recovery works
+| File | What changes |
+|------|-------------|
+| `supabase/functions/process-sermon/index.ts` | Rewrite `embedTimingMarkers` to use wordTimings directly; update `buildChaptersPrompt` with new instructions; tweak chapter schema description |
 
-### 2. `supabase/functions/process-sermon/index.ts` -- Stale job recovery
-
-At the start of the function (before claiming a new job):
-- Find any jobs stuck in `processing` where `locked_until` has passed
-- Reset them to `queued` so they get retried automatically
-- This prevents permanently stuck jobs
-
-### 3. `src/pages/admin/AdminSermons.tsx` -- Progress display
-
-Replace the fake `TranscribingProgress` timer (lines 103-130) with a real status tracker:
-- Poll the sermon's actual `status` field every 3 seconds
-- During `transcribing`: show "Transcribing audio..." with a pulsing/indeterminate bar
-- During `generating`: show real progress based on `sermon_content` row count (already partially implemented for the generating phase)
-- Add a "Retry" button if a sermon has been stuck for more than 10 minutes
-
-### 4. Database migration
-
-- Add `current_stage` text column to `sermon_jobs` for tracking which step the worker is on (optional but helpful for debugging)
-
-## Scaling to 1,000+ Churches on Sundays
-
-This fix handles the immediate crash and speed problem. The signed URL approach means file size no longer matters -- a 100MB file and a 2GB file take the same edge function resources (near zero).
-
-For the parallel worker fan-out system (pump-sermon-queue) discussed earlier, that remains a future enhancement for when you have hundreds of simultaneous uploads. The current fix ensures each individual sermon processes reliably in under 2 minutes.
-
-## Files to modify
-
-| File | Change |
-|------|--------|
-| `supabase/functions/process-sermon/index.ts` | Signed URL + parallel AI generation + lease heartbeats + stale recovery |
-| `src/pages/admin/AdminSermons.tsx` | Replace fake timer with real status display + retry button |
-| Database migration | Add `current_stage` column to `sermon_jobs` |
+After these changes, the edge function will be redeployed automatically.
 
