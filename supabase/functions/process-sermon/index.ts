@@ -678,21 +678,19 @@ function embedTimingMarkers(
   const INTERVAL = 60;
   let result = "";
   let lastMarkerTime = -INTERVAL;
-  const words = transcript.split(/\s+/);
 
-  let timingIdx = 0;
-  for (let i = 0; i < words.length; i++) {
-    while (timingIdx < wordTimings.length - 1 && timingIdx < i) {
-      timingIdx++;
-    }
-    const currentTime = timingIdx < wordTimings.length ? wordTimings[timingIdx].start : 0;
+  // Build transcript directly from wordTimings to guarantee accurate timestamps
+  for (const word of wordTimings) {
+    const currentTime = word.start;
 
     if (currentTime - lastMarkerTime >= INTERVAL) {
       result += `[${formatTimestamp(currentTime)}] `;
       lastMarkerTime = currentTime;
     }
-    result += words[i] + " ";
+    result += word.text + " ";
   }
+
+  console.log(`embedTimingMarkers: built transcript from ${wordTimings.length} words, last marker at ${formatTimestamp(lastMarkerTime)}`);
 
   return result.trim();
 }
@@ -814,7 +812,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_chapters",
-        description: "Divide the sermon into logical chapters/sections with timestamps",
+        description: "Identify 6-10 main structural chapters of the sermon (introduction, scripture reading, main points, major stories, closing). Do not include sub-points, illustrations, or transitions as separate chapters.",
         parameters: {
           type: "object",
           properties: {
@@ -823,7 +821,7 @@ function buildToolSchema(type: string) {
               items: {
                 type: "object",
                 properties: {
-                  title: { type: "string" },
+                  title: { type: "string", description: "Clear, descriptive chapter title" },
                   summary: { type: "string", description: "1-2 sentence summary of this section" },
                   order: { type: "number" },
                   timestamp: { type: "string", description: "Timestamp in M:SS or H:MM:SS format from the nearest timing marker, e.g. 5:23 or 1:05:23" },
@@ -909,21 +907,31 @@ Only include scriptures that were actually mentioned or directly referenced by t
 }
 
 function buildChaptersPrompt(title: string, transcriptWithTimings: string) {
-  return `Sermon title: "${title}"
+  return `You are a sermon chapter generator. Sermon title: "${title}"
 
 Transcript (with timing markers like [5:23]):
 ${transcriptWithTimings}
 
-Divide this sermon into logical chapters/sections based on its natural structure. For each chapter:
+Identify only the main structural chapters of this sermon. This includes:
+- The introduction
+- Scripture reading
+- Sermon title / thesis statement
+- Each main point
+- Any major illustrative stories
+- The closing prayer or altar call
+
+Do NOT include sub-points, illustrations, or transitions as their own chapters.
+
+For each chapter:
 - Give it a clear, descriptive title
 - Write a 1-2 sentence summary
 - Assign an order number (1, 2, 3, ...)
-- Assign a timestamp from the nearest timing marker [M:SS] or [H:MM:SS] that corresponds to where this chapter begins in the sermon
+- Use the nearest timing marker [M:SS] or [H:MM:SS] as the timestamp for where this chapter begins
 
 CRITICAL RULES:
-- Do NOT force a specific number of chapters. Only create a new chapter where there is a genuine shift in topic, theme, or focus.
-- Each chapter should represent a meaningful, distinct section of the sermon — not brief asides, transitions, or minor sub-points.
-- Chapters MUST span the ENTIRE sermon from start to finish. The first chapter should start at or near 0:00, and the last chapter MUST begin in the final portion of the sermon.
-- Do NOT cluster all chapters in the first half. Distribute chapters across the full duration based on where natural topic shifts occur.
-- Use the timing markers embedded in the transcript to determine accurate timestamps for each chapter boundary.`;
+- Keep the total number of chapters between 6 and 10.
+- The first chapter MUST start at or near 0:00.
+- The last chapter MUST begin in the final portion of the sermon.
+- Chapters MUST span the ENTIRE sermon duration — do NOT cluster them in the first half.
+- Use the timing markers embedded in the transcript to determine accurate timestamps.`;
 }
