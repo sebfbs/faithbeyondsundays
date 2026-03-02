@@ -711,6 +711,7 @@ export type Database = {
           church_id: string
           completed_at: string | null
           created_at: string
+          current_stage: string | null
           error_details: Json | null
           error_message: string | null
           failed_at: string | null
@@ -730,6 +731,7 @@ export type Database = {
           church_id: string
           completed_at?: string | null
           created_at?: string
+          current_stage?: string | null
           error_details?: Json | null
           error_message?: string | null
           failed_at?: string | null
@@ -749,6 +751,7 @@ export type Database = {
           church_id?: string
           completed_at?: string | null
           created_at?: string
+          current_stage?: string | null
           error_details?: Json | null
           error_message?: string | null
           failed_at?: string | null
