@@ -1,42 +1,81 @@
 
 
-## Full-Screen Daily Spark Overlay
+# Fix Sermon Processing: Under 2 Minutes Every Time
 
-### Overview
-On first app open each day, a full-screen overlay displays the Daily Spark message with a typewriter animation over the home screen's sky gradient background. Tap to dismiss; won't appear again until the next day.
+## What's Actually Wrong
 
-### New File: `src/components/fbs/DailySparkOverlay.tsx`
-- Fixed full-screen overlay at `z-50` (covers everything including bottom nav)
-- Background uses `getSkyGradient()` from HomeTab -- same time-of-day sky the user sees on home
-- Evening (after 5pm): render the `Stars` component (extracted/duplicated from HomeTab)
-- "Today's Spark" label with Sparkles icon, centered upper area
-- Large white text for the spark message, centered vertically
-- **Typewriter effect**: characters revealed one at a time (~35ms interval) via `useState`/`useEffect` with a blinking cursor
-- After typing completes, "Tap to continue" hint fades in at the bottom
-- Tap anywhere to dismiss with a fade-out transition (300ms opacity)
-- **Once-per-day logic**: on dismiss, writes today's date (`YYYY-MM-DD`) to `localStorage` key `fbs_spark_seen_date`; on mount, skips rendering if stored date matches today
+Your edge function currently **downloads the entire 400MB video into its own memory** (which only has ~150MB), causing it to crash silently. The job then sits in "processing" forever.
 
-### Modified: `src/pages/Index.tsx`
-- Import and render `DailySparkOverlay` near the top of the component tree
-- Pass the spark message:
-  - Church users: `sermon?.spark` (already available at this level)
-  - Churchless users: lift the `generate-daily-content` query from HomeTab to Index so the overlay can access `spark_message` before HomeTab mounts
-- Pass the fetched `dailyContent` down to HomeTab as a prop to avoid duplicate requests
-- Only render the overlay when spark content is available (not during loading)
+## The Fix (Simple and Elegant)
 
-### Modified: `src/components/fbs/HomeTab.tsx`
-- Accept an optional `dailyContent` prop
-- If provided, skip the internal `useQuery` for `generate-daily-content` and use the prop instead
-- No other changes needed
+ElevenLabs has a `cloud_storage_url` parameter that accepts any HTTPS URL. Instead of downloading the video file, we just generate a temporary signed URL pointing to the file in your storage and hand that URL to ElevenLabs. **ElevenLabs downloads and processes it directly** -- your edge function never touches the file at all.
 
-### Design Details
-- Background: full `getSkyGradient()` covering the viewport
-- Stars rendered in evening only (no sun rays)
-- Text: white, large (~1.25rem-1.5rem), with comfortable padding
-- Sparkles icon + "Today's Spark" label in small caps above the message
-- Blinking cursor: thin white bar with CSS `animate-pulse`
-- "Tap to continue" uses subtle white/70% opacity text
+You don't even need to extract audio separately. ElevenLabs handles video files natively and extracts the audio internally. The HD video stays in storage untouched for church members to watch.
 
-### No database changes needed
-Uses localStorage for persistence and existing data sources for content.
+```text
+Current (broken):
+  Storage --[408MB download]--> Edge Function memory (crashes) --> ElevenLabs
+
+Fixed:
+  Storage --[signed URL string]--> Edge Function --[URL string]--> ElevenLabs downloads directly
+  Edge function memory usage: ~0 MB
+```
+
+## What This Means for Speed
+
+- **Video upload**: Depends on admin's internet speed (unchanged)
+- **Transcription**: ElevenLabs processes a 1-hour sermon in ~30-60 seconds via URL
+- **AI content generation**: 5 parallel calls instead of sequential = ~15-20 seconds total
+- **Total processing after upload completes**: Under 2 minutes
+
+## Changes
+
+### 1. `supabase/functions/process-sermon/index.ts`
+
+**Replace the download + FormData upload block** (lines 121-146) with:
+- Generate a 1-hour signed URL for the file in storage using `supabase.storage.from("sermon-media").createSignedUrl()`
+- Pass the signed URL to ElevenLabs using the `cloud_storage_url` parameter instead of the `file` parameter
+- This eliminates all memory issues regardless of file size (works up to 2GB per ElevenLabs limits)
+
+**Parallelize AI content generation** (lines 215-266):
+- Currently generates 5 content types sequentially (one after another)
+- Change to `Promise.all()` so all 5 AI calls run simultaneously
+- This cuts ~45 seconds of sequential waiting down to ~10-15 seconds
+
+**Add lease heartbeats**:
+- Set `locked_until` when claiming a job
+- Refresh the lease before each major stage so stale job recovery works
+
+### 2. `supabase/functions/process-sermon/index.ts` -- Stale job recovery
+
+At the start of the function (before claiming a new job):
+- Find any jobs stuck in `processing` where `locked_until` has passed
+- Reset them to `queued` so they get retried automatically
+- This prevents permanently stuck jobs
+
+### 3. `src/pages/admin/AdminSermons.tsx` -- Progress display
+
+Replace the fake `TranscribingProgress` timer (lines 103-130) with a real status tracker:
+- Poll the sermon's actual `status` field every 3 seconds
+- During `transcribing`: show "Transcribing audio..." with a pulsing/indeterminate bar
+- During `generating`: show real progress based on `sermon_content` row count (already partially implemented for the generating phase)
+- Add a "Retry" button if a sermon has been stuck for more than 10 minutes
+
+### 4. Database migration
+
+- Add `current_stage` text column to `sermon_jobs` for tracking which step the worker is on (optional but helpful for debugging)
+
+## Scaling to 1,000+ Churches on Sundays
+
+This fix handles the immediate crash and speed problem. The signed URL approach means file size no longer matters -- a 100MB file and a 2GB file take the same edge function resources (near zero).
+
+For the parallel worker fan-out system (pump-sermon-queue) discussed earlier, that remains a future enhancement for when you have hundreds of simultaneous uploads. The current fix ensures each individual sermon processes reliably in under 2 minutes.
+
+## Files to modify
+
+| File | Change |
+|------|--------|
+| `supabase/functions/process-sermon/index.ts` | Signed URL + parallel AI generation + lease heartbeats + stale recovery |
+| `src/pages/admin/AdminSermons.tsx` | Replace fake timer with real status display + retry button |
+| Database migration | Add `current_stage` column to `sermon_jobs` |
 
