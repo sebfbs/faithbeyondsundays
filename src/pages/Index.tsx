@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import BottomNav, { TabId } from "@/components/fbs/BottomNav";
 import HomeTab, { getSkyGradient, getSkyGradientTopColor } from "@/components/fbs/HomeTab";
 import SermonTab from "@/components/fbs/SermonTab";
@@ -17,6 +17,7 @@ import PublicProfileScreen from "@/components/fbs/PublicProfileScreen";
 import AuthScreen from "@/components/fbs/AuthScreen";
 import OnboardingScreen from "@/components/fbs/OnboardingScreen";
 import TabletSidebar, { SidebarNavTarget } from "@/components/fbs/TabletSidebar";
+import DailySparkOverlay from "@/components/fbs/DailySparkOverlay";
 import { GIVING_URL } from "@/components/fbs/data";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import { parseScriptureReference } from "@/components/fbs/ScripturePills";
@@ -62,6 +63,20 @@ export default function Index() {
   const dbFeatureFlags = useFeatureFlags();
   // In demo mode, unlock all features regardless of church connection
   const featureFlags = isDemo ? { community: true, prayer: true, giving: true } : dbFeatureFlags;
+
+  // Fetch daily content for churchless users (lifted from HomeTab so overlay can access it)
+  const hasChurch = !!(isDemo ? "cornerstone" : profile?.church_code);
+  const { data: dailyContent } = useQuery<{ spark_message: string; reflection_prompt: string }>({
+    queryKey: ["daily-content"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-daily-content");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !hasChurch && !isDemo,
+    staleTime: 1000 * 60 * 60,
+    retry: 1,
+  });
 
   // Demo mode data
   const [demoJournalEntries, setDemoJournalEntries] = useState<JournalEntry[]>(DEMO_JOURNAL_ENTRIES);
@@ -303,6 +318,7 @@ export default function Index() {
             churchId={profile?.church_id || undefined}
             userId={authUser?.id}
             isDemo={isDemo}
+            dailyContent={dailyContent || undefined}
           />
         );
       }
@@ -342,13 +358,18 @@ export default function Index() {
             churchId={profile?.church_id || undefined}
             userId={authUser?.id}
             isDemo={isDemo}
+            dailyContent={dailyContent || undefined}
           />
         );
     }
   };
 
+  // Determine spark message for the overlay
+  const sparkMessage = sermon?.spark || dailyContent?.spark_message || "";
+
   return (
     <div className={`app-container relative mx-auto ${!isMobile ? "tablet-layout" : ""}`} style={{ background: "hsl(var(--background))" }}>
+      {sparkMessage && <DailySparkOverlay sparkMessage={sparkMessage} />}
       {!isMobile && (
         <TabletSidebar
           featureFlags={featureFlags}
