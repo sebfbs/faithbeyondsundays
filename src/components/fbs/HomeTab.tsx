@@ -187,27 +187,30 @@ interface HomeTabProps {
   churchId?: string;
   userId?: string;
   isDemo?: boolean;
+  dailyContent?: DailyContent;
 }
 
-export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo }: HomeTabProps) {
+export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo, dailyContent: dailyContentProp }: HomeTabProps) {
   const reflectionCardRef = useRef<HTMLDivElement>(null);
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
   const colors = getAccentColors();
 
-  // Fetch AI-generated daily content for churchless users
-  const { data: dailyContent, isLoading: isDailyContentLoading } = useQuery<DailyContent>({
+  // Fetch AI-generated daily content for churchless users (skip if passed as prop)
+  const { data: dailyContentFetched, isLoading: isDailyContentLoading } = useQuery<DailyContent>({
     queryKey: ["daily-content"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-daily-content");
       if (error) throw error;
       return data as DailyContent;
     },
-    enabled: !hasChurch,
+    enabled: !hasChurch && !dailyContentProp,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 1,
   });
+
+  const dailyContent = dailyContentProp || dailyContentFetched;
 
   const completed = reflectedToday || justSaved;
 
