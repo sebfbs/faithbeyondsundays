@@ -186,7 +186,7 @@ serve(async (req) => {
       console.log("Transcribing with ElevenLabs via signed URL...");
       const transcribeForm = new FormData();
       transcribeForm.append("model_id", "scribe_v2");
-      transcribeForm.append("file_url", signedUrlData.signedUrl);
+      transcribeForm.append("cloud_storage_url", signedUrlData.signedUrl);
       transcribeForm.append("tag_audio_events", "false");
       transcribeForm.append("diarize", "false");
 
