@@ -516,7 +516,7 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       } else if (contentType === "reflection_questions") {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE new reflection question for ${currentItem.day || "this day"}. It must be different from: "${currentItem.question}".\n\nRules:\n- Use SECOND PERSON ("you", "your") — never first person ("I", "my")\n- NEVER reference "the sermon", "the preacher", the speaker, or any meta-framing\n- The question should feel standalone and personal, as if a wise pastor is asking directly\n- Include brief spiritual context (also in second person)`;
       } else if (contentType === "scriptures") {
-        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture reference from the sermon that is different from: "${currentItem.reference}". Provide the reference, a brief context note, and how it connects to the sermon.`;
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture passage from the sermon that is different from: "${currentItem.reference}". It must be a passage the pastor directly quoted or explicitly discussed (not a passing mention). Group consecutive verses from the same chapter. Provide the reference in standard format and one sentence describing how it was used.`;
       } else {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.\n\nRules:\n- Only create a chapter where there is a genuine shift in topic, theme, or focus\n- The chapter should represent a meaningful, distinct section — not a brief aside or transition\n- Make sure the chapter fits naturally within the full sermon duration and doesn't duplicate coverage of existing chapters`;
       }
@@ -785,7 +785,7 @@ function buildToolSchema(type: string) {
       type: "function",
       function: {
         name: "generate_scriptures",
-        description: "Extract scripture references mentioned in the sermon",
+        description: "Extract only scripture passages directly quoted or explicitly discussed by the pastor. Group consecutive verses from the same chapter. Max 5 references unless the pastor explicitly cited more.",
         parameters: {
           type: "object",
           properties: {
@@ -794,11 +794,10 @@ function buildToolSchema(type: string) {
               items: {
                 type: "object",
                 properties: {
-                  reference: { type: "string", description: "Book chapter:verse format, e.g. Luke 5:1-7" },
-                  text: { type: "string", description: "A brief 1-sentence note about how this scripture was used in the sermon" },
-                  context: { type: "string", description: "How this scripture connects to the sermon's message" },
+                  reference: { type: "string", description: "Book chapter:verse range, e.g. Acts 3:1-10, Romans 8:28-30" },
+                  text: { type: "string", description: "One sentence describing how the pastor used this passage" },
                 },
-                required: ["reference", "text", "context"],
+                required: ["reference", "text"],
                 additionalProperties: false,
               },
             },
@@ -893,17 +892,20 @@ Focus only on spiritual, biblical, and faith-based content. Ignore any logistica
 }
 
 function buildScripturesPrompt(title: string, transcript: string) {
-  return `Sermon title: "${title}"
+  return `You are a scripture reference extractor for sermon transcripts. Sermon title: "${title}"
 
 Transcript:
 ${transcript}
 
-Identify all Bible verses referenced or quoted in this sermon. For each, provide:
-- The reference in standard format (e.g. "Luke 5:1-7", "Romans 8:28")
-- A brief 1-sentence note about how this scripture was used in the sermon (NOT the full scripture text — just a short context note)
-- How it connects to the sermon's spiritual message
+Identify only the scripture passages that were directly quoted or explicitly discussed by the pastor. Follow these rules:
 
-Only include scriptures that were actually mentioned or directly referenced by the speaker.`;
+1. A passage qualifies only if the pastor reads it word for word OR references the specific verse number by name AND spends time explaining its meaning.
+2. Group consecutive verses from the same chapter together as one reference (e.g. Acts 3:1-10, not Acts 3:1, Acts 3:6, Acts 3:7 separately).
+3. Do NOT include passing mentions — a passing mention is any biblical person, story, or concept referenced in under 2 sentences without a verse citation (e.g. if the pastor says "like Moses at the burning bush" without citing a verse or reading from it, do not include it).
+4. Do NOT include loose references or implied allusions to scripture.
+5. Do NOT list the same passage more than once.
+6. Return no more than 5 scripture references unless the pastor explicitly cited more.
+7. For each reference, return only the book, chapter and verse range, and one sentence describing how it was used.`;
 }
 
 function buildChaptersPrompt(title: string, transcriptWithTimings: string) {
