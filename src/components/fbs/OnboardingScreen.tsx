@@ -130,7 +130,7 @@ function NotificationSetup({ enabled, days, time, onToggle, onDaysChange, onTime
 export default function OnboardingScreen() {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>("age");
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [churches, setChurches] = useState<ChurchEntry[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -303,7 +303,7 @@ export default function OnboardingScreen() {
 
           <div className="w-full space-y-3 max-w-[320px]">
             <button
-              onClick={() => { setAgeConfirmed(true); setStep("church"); }}
+              onClick={() => setStep("church")}
               className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
             >
               <Check size={18} />
