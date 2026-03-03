@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -449,6 +449,9 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         Sign Out
       </button>
 
+      {/* Delete Account */}
+      <DeleteAccountSection authUser={authUser} onSignOut={onSignOut} isDemo={isDemo} />
+
       <div className="h-2" />
 
       {daysModal && (
@@ -523,6 +526,104 @@ function NotifScheduleRow({ days, time, onDaysPress, onTimePress }: {
           <ChevronRight size={13} className="text-muted-foreground" />
         </div>
       </button>
+    </div>
+  );
+}
+
+/* ---- Delete Account ---- */
+
+function DeleteAccountSection({ authUser, onSignOut, isDemo }: { authUser: any; onSignOut: () => void; isDemo: boolean }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (confirmText !== "DELETE") return;
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError("You must be signed in");
+        setDeleting(false);
+        return;
+      }
+
+      const res = await supabase.functions.invoke("delete-account", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (res.error) {
+        setError("Failed to delete account. Please try again.");
+        setDeleting(false);
+        return;
+      }
+
+      await supabase.auth.signOut();
+      onSignOut();
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setDeleting(false);
+    }
+  };
+
+  if (isDemo) return null;
+
+  return (
+    <div className="pt-2">
+      {!showConfirm ? (
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 text-muted-foreground text-xs py-2 tap-active"
+        >
+          <Trash2 size={13} />
+          Delete Account
+        </button>
+      ) : (
+        <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 space-y-3 animate-fade-in">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={18} className="text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Delete your account?</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                This will permanently delete your profile, journal entries, prayer requests, badges, and all associated data. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground">Type <span className="font-bold text-destructive">DELETE</span> to confirm</label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full mt-1 bg-card rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-destructive/40"
+            />
+          </div>
+
+          {error && <p className="text-xs text-destructive">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setShowConfirm(false); setConfirmText(""); setError(null); }}
+              className="flex-1 text-sm font-medium text-muted-foreground bg-muted rounded-xl py-2.5 tap-active"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={confirmText !== "DELETE" || deleting}
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold text-white bg-destructive rounded-xl py-2.5 tap-active disabled:opacity-40"
+            >
+              {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {deleting ? "Deleting…" : "Delete Forever"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
