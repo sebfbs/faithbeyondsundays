@@ -6,6 +6,7 @@ import { useAuth } from "./AuthProvider";
 import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
 import ReportBlockSheet from "./ReportBlockSheet";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { useCommunityGuidelines } from "@/hooks/useCommunityGuidelines";
 import { getAccentColors } from "./themeColors";
 import { getAvatarColor } from "./avatarColors";
 import { DEMO_GROUP_MESSAGES } from "./demoData";
@@ -32,6 +33,7 @@ export default function GroupChat({ groupId, isMember, isDemo, churchId }: Group
   const [text, setText] = useState("");
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [pendingMessage, setPendingMessage] = useState("");
+  const { accepted: guidelinesAccepted, accept: acceptGuidelines } = useCommunityGuidelines();
   const [reportTarget, setReportTarget] = useState<Message | null>(null);
   const { blockedIds } = useBlockedUsers();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -125,10 +127,11 @@ export default function GroupChat({ groupId, isMember, isDemo, churchId }: Group
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Check acknowledgement
+  // Check acknowledgement — use persistent local + DB
   const { data: hasAcknowledged } = useQuery({
     queryKey: ["chat-ack", user?.id],
     queryFn: async () => {
+      if (guidelinesAccepted) return true;
       const { count } = await supabase
         .from("group_chat_acknowledgements" as any)
         .select("id", { count: "exact", head: true })
@@ -157,7 +160,7 @@ export default function GroupChat({ groupId, isMember, isDemo, churchId }: Group
     const msg = text.trim();
     if (!msg || !user) return;
 
-    if (!hasAcknowledged) {
+    if (!hasAcknowledged && !guidelinesAccepted) {
       setPendingMessage(msg);
       setShowGuidelines(true);
       return;
@@ -165,9 +168,10 @@ export default function GroupChat({ groupId, isMember, isDemo, churchId }: Group
 
     sendMutation.mutate(msg);
     setText("");
-  }, [text, user, hasAcknowledged, sendMutation]);
+  }, [text, user, hasAcknowledged, guidelinesAccepted, sendMutation]);
 
   const handleGuidelinesAccept = async () => {
+    acceptGuidelines();
     await supabase
       .from("group_chat_acknowledgements" as any)
       .insert({ user_id: user!.id });

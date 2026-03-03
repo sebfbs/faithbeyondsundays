@@ -8,6 +8,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
+import { useCommunityGuidelines } from "@/hooks/useCommunityGuidelines";
+import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
 
 interface PrayerRequest {
   id: string;
@@ -42,6 +44,9 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
   const { user: authUser } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const { accepted: guidelinesAccepted, accept: acceptGuidelines } = useCommunityGuidelines();
+  const [showGuidelines, setShowGuidelines] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   // Demo state
   const [demoRequests, setDemoRequests] = useState<PrayerRequest[]>(loadDemoRequests);
@@ -95,13 +100,24 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
 
   const requests = isDemo ? demoRequests : dbRequests;
 
-  const handleSubmit = () => {
+  const doSubmit = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (trimmed.length > 1000) {
       toast({ title: "Request is too long", description: "Please keep it under 1000 characters." });
       return;
     }
+
+    if (!guidelinesAccepted && !isDemo) {
+      setPendingSubmit(true);
+      setShowGuidelines(true);
+      return;
+    }
+
+    executeSubmit(trimmed);
+  };
+
+  const executeSubmit = (trimmed: string) => {
 
     if (isDemo) {
       const newRequest: PrayerRequest = {
@@ -144,7 +160,7 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
           <Switch checked={anonymous} onCheckedChange={setAnonymous} />
         </div>
         <button
-          onClick={handleSubmit}
+          onClick={doSubmit}
           disabled={!text.trim() || submitMutation.isPending}
           className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-40"
           style={{
@@ -183,6 +199,20 @@ export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
           </div>
         </div>
       )}
+
+      <CommunityGuidelinesDialog
+        open={showGuidelines}
+        context="prayer"
+        onAccept={() => {
+          acceptGuidelines();
+          setShowGuidelines(false);
+          if (pendingSubmit) {
+            setPendingSubmit(false);
+            const trimmed = text.trim();
+            if (trimmed) executeSubmit(trimmed);
+          }
+        }}
+      />
     </div>
   );
 }
