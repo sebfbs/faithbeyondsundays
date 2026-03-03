@@ -95,7 +95,7 @@ export default function DailySparkOverlay({ sparkMessage }: DailySparkOverlayPro
   return (
     <div
       onClick={dismiss}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer select-none"
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center cursor-pointer select-none"
       style={{
         background: getSkyGradient(),
         opacity: fadingOut ? 0 : 1,
