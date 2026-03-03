@@ -1,13 +1,22 @@
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 export default function Privacy() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen px-6 py-14 max-w-2xl mx-auto" style={{ background: "hsl(var(--background))" }}>
+      <button onClick={() => navigate(-1)} className="mb-6 tap-active flex items-center gap-2 text-sm text-muted-foreground">
+        <ArrowLeft size={18} />
+        Back
+      </button>
       <h1 className="text-2xl font-bold text-foreground mb-6">Privacy Policy</h1>
       <p className="text-xs text-muted-foreground mb-8">Last updated: February 22, 2026</p>
 
       <div className="space-y-6 text-sm text-foreground/85 leading-relaxed">
         <section>
           <h2 className="text-base font-semibold text-foreground mb-2">1. Information We Collect</h2>
-          <p>When you create an account, we collect your name, email address, and username. If you sign in with Google, we receive your name, email, and profile picture from Google. We also collect data you create within the app, such as journal entries and prayer requests.</p>
+          <p>When you create an account, we collect your name, email address, and username. If you sign in with Google or Apple, we receive your name and email (and profile picture from Google) from the respective provider. We also collect data you create within the app, such as journal entries and prayer requests.</p>
         </section>
 
         <section>
@@ -36,12 +45,17 @@ export default function Privacy() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground mb-2">7. Changes to This Policy</h2>
+          <h2 className="text-base font-semibold text-foreground mb-2">7. Children's Privacy</h2>
+          <p>Faith Beyond Sundays is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you are under 13, please do not use the app.</p>
+        </section>
+
+        <section>
+          <h2 className="text-base font-semibold text-foreground mb-2">8. Changes to This Policy</h2>
           <p>We may update this policy from time to time. We will notify you of significant changes through the app or via email.</p>
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-foreground mb-2">8. Contact Us</h2>
+          <h2 className="text-base font-semibold text-foreground mb-2">9. Contact Us</h2>
           <p>If you have questions about this privacy policy, contact us at support@faithbeyondsundays.app.</p>
         </section>
       </div>

@@ -11,6 +11,7 @@ import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const PlatformLogin = lazy(() => import("./pages/platform/PlatformLogin"));
@@ -69,6 +70,7 @@ const App = () => {
               <Route path="/demo/*" element={<Index />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Platform Owner routes */}
               <Route path="/platform/login" element={<Suspense fallback={<div className="min-h-screen bg-slate-950" />}><PlatformLogin /></Suspense>} />

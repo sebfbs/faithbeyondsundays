@@ -54,6 +54,10 @@ Deno.serve(async (req) => {
       { table: "follows", column: "following_id" },
       { table: "reflection_badges", column: "user_id" },
       { table: "analytics_events", column: "user_id" },
+      { table: "content_reports", column: "reporter_id" },
+      { table: "content_reports", column: "reported_user_id" },
+      { table: "blocked_users", column: "blocker_id" },
+      { table: "blocked_users", column: "blocked_id" },
       { table: "user_roles", column: "user_id" },
       { table: "profiles", column: "user_id" },
     ];
