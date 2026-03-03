@@ -28,6 +28,18 @@ export default function AuthScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    const { error } = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (error) {
+      setError(error.message || "Apple sign-in failed");
+      setLoading(false);
+    }
+  };
+
   const handleEmailSignUp = async () => {
     setError(null);
     if (!email.trim() || !password.trim()) {
@@ -99,6 +111,22 @@ export default function AuthScreen() {
             Continue with Google
           </button>
 
+          {/* Apple Sign In */}
+          <button
+            onClick={handleAppleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-black text-white font-semibold text-base py-4 rounded-2xl tap-active shadow-card transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+            )}
+            Continue with Apple
+          </button>
+
           {/* Divider */}
           <div className="flex items-center gap-3 py-1">
             <div className="flex-1 h-px bg-gray-400/40" />
@@ -128,6 +156,14 @@ export default function AuthScreen() {
           >
             Just exploring? <span className="underline">Try the Demo</span>
           </button>
+
+          {/* Terms & Privacy */}
+          <p className="text-[10px] text-center text-gray-500 leading-relaxed pt-1">
+            By continuing, you agree to our{" "}
+            <a href="/terms" className="underline" onClick={(e) => { e.stopPropagation(); }}>Terms of Service</a>{" "}
+            and{" "}
+            <a href="/privacy" className="underline" onClick={(e) => { e.stopPropagation(); }}>Privacy Policy</a>
+          </p>
         </div>
       </div>
     );
@@ -193,8 +229,8 @@ export default function AuthScreen() {
           <p className="text-xs text-destructive ml-1">{error}</p>
         )}
 
-        {/* Google option here too */}
-        <div className="pt-2">
+        {/* Social sign-in options */}
+        <div className="pt-2 space-y-2">
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
@@ -207,6 +243,16 @@ export default function AuthScreen() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             Continue with Google
+          </button>
+          <button
+            onClick={handleAppleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-foreground text-background font-medium text-sm py-3.5 rounded-2xl tap-active shadow-card transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+            </svg>
+            Continue with Apple
           </button>
         </div>
       </div>
@@ -231,6 +277,15 @@ export default function AuthScreen() {
             <>Don't have an account? <span className="font-medium text-amber">Sign Up</span></>
           )}
         </button>
+
+        {isSignUp && (
+          <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+            By creating an account, you agree to our{" "}
+            <a href="/terms" className="underline" onClick={(e) => e.stopPropagation()}>Terms of Service</a>{" "}
+            and{" "}
+            <a href="/privacy" className="underline" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>
+          </p>
+        )}
       </div>
     </div>
   );
