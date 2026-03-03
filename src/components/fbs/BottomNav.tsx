@@ -36,8 +36,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             >
               <Icon
                 size={24}
-                strokeWidth={isActive ? 2.2 : 1.5}
-                fill={isActive ? colors.accent : "none"}
+                strokeWidth={isActive ? 2 : 1.5}
                 className={isActive ? undefined : "text-muted-foreground"}
                 style={isActive ? { color: colors.accent } : undefined}
               />
