@@ -99,7 +99,7 @@ export default function ReportBlockSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center animate-fade-in" onClick={() => { reset(); onClose(); }}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center animate-fade-in" style={{ top: "env(safe-area-inset-top, 0px)" }} onClick={() => { reset(); onClose(); }}>
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-lg bg-card rounded-t-3xl p-5 space-y-4 animate-slide-up"
