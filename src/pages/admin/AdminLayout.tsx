@@ -17,6 +17,7 @@ import {
   Heart,
   Bell,
   UserCog,
+  Flag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ const navItems = [
   { title: "Members", url: "/admin/members", icon: Users },
   { title: "Groups & Flags", url: "/admin/groups", icon: Users2 },
   { title: "Prayer", url: "/admin/prayer", icon: Heart },
+  { title: "Moderation", url: "/admin/moderation", icon: Flag },
   { title: "Notifications", url: "/admin/notifications", icon: Bell },
   { title: "Team", url: "/admin/team", icon: UserCog },
   { title: "Settings", url: "/admin/settings", icon: Settings },
@@ -51,6 +53,20 @@ export default function AdminLayout() {
         .select("*", { count: "exact", head: true })
         .eq("church_id", churchId!)
         .eq("is_answered", false);
+      return count ?? 0;
+    },
+  });
+
+  const { data: reportCount = 0 } = useQuery({
+    queryKey: ["admin-pending-reports", churchId],
+    enabled: !!churchId,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("content_reports" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("church_id", churchId!)
+        .eq("status", "pending");
       return count ?? 0;
     },
   });
@@ -157,8 +173,13 @@ export default function AdminLayout() {
               <item.icon className="h-4 w-4" />
               <span>{item.title}</span>
               {item.title === "Prayer" && prayerCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center ml-auto">
+                <span className="bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center ml-auto">
                   {prayerCount > 99 ? "99+" : prayerCount}
+                </span>
+              )}
+              {item.title === "Moderation" && reportCount > 0 && (
+                <span className="bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center ml-auto">
+                  {reportCount > 99 ? "99+" : reportCount}
                 </span>
               )}
             </NavLink>

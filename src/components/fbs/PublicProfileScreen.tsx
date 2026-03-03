@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, BookOpen } from "lucide-react";
+import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, BookOpen, MoreHorizontal } from "lucide-react";
+import ReportBlockSheet from "./ReportBlockSheet";
 import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { getBadgeTier } from "./badgeConfig";
@@ -21,6 +22,7 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
   const [followingCount, setFollowingCount] = useState(0);
   const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const [viewingMember, setViewingMember] = useState<CommunityMember | null>(null);
+  const [showReport, setShowReport] = useState(false);
   const colors = getAccentColors();
 
   useEffect(() => {
@@ -141,7 +143,13 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
         >
           <ArrowLeft size={18} className="text-foreground" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Profile</h1>
+        <h1 className="text-xl font-bold text-foreground flex-1">Profile</h1>
+        <button
+          onClick={() => setShowReport(true)}
+          className="w-9 h-9 rounded-full bg-card shadow-card flex items-center justify-center tap-active"
+        >
+          <MoreHorizontal size={18} className="text-muted-foreground" />
+        </button>
       </div>
 
       {/* Avatar & Name */}
@@ -248,6 +256,17 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
           ))}
         </div>
       </section>
+
+      <ReportBlockSheet
+        open={showReport}
+        onClose={() => setShowReport(false)}
+        reportedUserId={member.userId || member.username}
+        reportedUserName={member.firstName}
+        contentType="profile"
+        churchId=""
+        onBlock={onBack}
+        isDemo={isDemo}
+      />
     </div>
   );
 }
