@@ -6,6 +6,7 @@ export type TabId = "home" | "sermon" | "journal" | "more";
 interface BottomNavProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  moreOpen?: boolean;
 }
 
 const tabs = [
@@ -15,7 +16,7 @@ const tabs = [
   { id: "more" as TabId, label: "More", Icon: MoreHorizontal },
 ];
 
-export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+export default function BottomNav({ activeTab, onTabChange, moreOpen }: BottomNavProps) {
   const colors = getAccentColors();
   return (
     <nav
@@ -27,7 +28,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
     >
       <div className="flex items-stretch h-[52px] pt-1">
         {tabs.map(({ id, label, Icon }) => {
-          const isActive = activeTab === id;
+          const isActive = moreOpen ? id === "more" : activeTab === id;
           return (
             <button
               key={id}
