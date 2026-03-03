@@ -452,7 +452,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
       {/* Delete Account */}
       <DeleteAccountSection authUser={authUser} onSignOut={onSignOut} isDemo={isDemo} />
 
-      <div className="h-24" />
+      <div className="h-4" />
 
       {daysModal && (
         <NotificationDaysModal
