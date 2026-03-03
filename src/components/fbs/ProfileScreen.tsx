@@ -539,6 +539,10 @@ function DeleteAccountSection({ authUser, onSignOut, isDemo }: { authUser: any; 
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
+    if (isDemo) {
+      setError("Delete account is disabled in demo mode.");
+      return;
+    }
     if (confirmText !== "DELETE") return;
     setDeleting(true);
     setError(null);
@@ -569,7 +573,7 @@ function DeleteAccountSection({ authUser, onSignOut, isDemo }: { authUser: any; 
     }
   };
 
-  if (isDemo) return null;
+  
 
   return (
     <div className="pt-2">
