@@ -411,7 +411,7 @@ export default function Index() {
         </div>
       </main>
 
-      {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />}
+      {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
 
       {isMobile && moreOpen && (
         <MoreSheet
