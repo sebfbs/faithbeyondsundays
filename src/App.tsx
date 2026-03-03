@@ -31,6 +31,7 @@ const AdminTeam = lazy(() => import("./pages/admin/AdminTeam"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
 const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
+const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
@@ -89,6 +90,7 @@ const App = () => {
                 <Route path="members" element={<AdminMembers />} />
                 <Route path="groups" element={<AdminGroups />} />
                 <Route path="prayer" element={<AdminPrayer />} />
+                <Route path="moderation" element={<AdminModeration />} />
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="team" element={<AdminTeam />} />
                 <Route path="settings" element={<AdminSettings />} />

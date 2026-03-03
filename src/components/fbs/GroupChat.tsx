@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, MoreHorizontal } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
+import ReportBlockSheet from "./ReportBlockSheet";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { getAccentColors } from "./themeColors";
 import { getAvatarColor } from "./avatarColors";
 import { DEMO_GROUP_MESSAGES } from "./demoData";
@@ -29,6 +31,8 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
   const [text, setText] = useState("");
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [pendingMessage, setPendingMessage] = useState("");
+  const [reportTarget, setReportTarget] = useState<Message | null>(null);
+  const { blockedIds } = useBlockedUsers();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
@@ -88,7 +92,8 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
   });
 
   const demoMessages = isDemo ? (DEMO_GROUP_MESSAGES[groupId] || []) : [];
-  const displayMessages = isDemo ? demoMessages : messages;
+  const allMessages = isDemo ? demoMessages : messages;
+  const displayMessages = allMessages.filter((m) => !blockedIds.includes(m.user_id));
 
   // Realtime subscription
   useEffect(() => {
@@ -248,15 +253,33 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
                     {msg.sender?.first_name}
                   </p>
                 )}
-                <div
-                  className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
-                    isMe
-                      ? "rounded-br-md text-white"
-                      : "bg-card shadow-card rounded-bl-md text-foreground"
-                  }`}
-                  style={isMe ? { background: colors.accent } : undefined}
-                >
-                  {msg.content}
+                <div className="flex items-center gap-1">
+                  {isMe && (
+                    <div className="w-5" /> 
+                  )}
+                  <div
+                    className={`rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                      isMe
+                        ? "rounded-br-md text-white"
+                        : "bg-card shadow-card rounded-bl-md text-foreground"
+                    }`}
+                    style={isMe ? { background: colors.accent } : undefined}
+                  >
+                    {msg.content}
+                  </div>
+                  {!isMe && (
+                    <button
+                      onClick={() => setReportTarget(msg)}
+                      className="w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:!opacity-100 tap-active shrink-0"
+                      style={{ opacity: undefined }}
+                      onPointerDown={(e) => {
+                        // Make visible on tap for mobile
+                        (e.currentTarget as HTMLElement).style.opacity = '1';
+                      }}
+                    >
+                      <MoreHorizontal size={13} className="text-muted-foreground" />
+                    </button>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5 px-1">
                   {formatTime(msg.created_at)}
@@ -299,6 +322,18 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
         open={showGuidelines}
         onAccept={handleGuidelinesAccept}
       />
+
+      {reportTarget && (
+        <ReportBlockSheet
+          open={!!reportTarget}
+          onClose={() => setReportTarget(null)}
+          reportedUserId={reportTarget.user_id}
+          reportedUserName={reportTarget.sender?.first_name || "User"}
+          contentType="group_message"
+          contentId={reportTarget.id}
+          isDemo={isDemo}
+        />
+      )}
     </div>
   );
 }
