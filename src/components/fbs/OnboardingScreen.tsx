@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User, Sparkles, BookOpen, PenLine, Users, Bell, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User, Sparkles, BookOpen, PenLine, Users, Bell, Clock, ShieldCheck } from "lucide-react";
 import AnimatedLogo from "./AnimatedLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
@@ -15,9 +15,9 @@ interface ChurchEntry {
   state: string | null;
 }
 
-type Step = "church" | "details" | "username" | "tour1" | "tour2" | "tour4" | "tour5";
+type Step = "age" | "church" | "details" | "username" | "tour1" | "tour2" | "tour4" | "tour5";
 
-const STEPS: Step[] = ["church", "details", "username", "tour1", "tour2", "tour4", "tour5"];
+const STEPS: Step[] = ["age", "church", "details", "username", "tour1", "tour2", "tour4", "tour5"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_OPTIONS = [
   { label: "Morning", time: "8 AM" },
@@ -129,7 +129,8 @@ function NotificationSetup({ enabled, days, time, onToggle, onDaysChange, onTime
 
 export default function OnboardingScreen() {
   const { user } = useAuth();
-  const [step, setStep] = useState<Step>("church");
+  const [step, setStep] = useState<Step>("age");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [churches, setChurches] = useState<ChurchEntry[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -270,6 +271,61 @@ export default function OnboardingScreen() {
   };
 
   const displayUsername = username || "yourname";
+
+  // ─── Age verification step ───
+  if (step === "age") {
+    return (
+      <div
+        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
+        style={{ background: "hsl(var(--background))" }}
+      >
+        <div className="pt-14 pb-6">
+          <ProgressDots current="age" />
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
+              <ShieldCheck size={18} className="text-amber" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Age Verification</h1>
+              <p className="text-xs text-muted-foreground">We need to confirm your age</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+          <div className="w-20 h-20 rounded-3xl bg-amber-bg flex items-center justify-center mb-6">
+            <ShieldCheck size={36} className="text-amber" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-3">Are you 13 or older?</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mb-8">
+            Faith Beyond Sundays is designed for users ages 13 and up. By continuing, you confirm that you meet this age requirement.
+          </p>
+
+          <div className="w-full space-y-3 max-w-[320px]">
+            <button
+              onClick={() => { setAgeConfirmed(true); setStep("church"); }}
+              className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+            >
+              <Check size={18} />
+              Yes, I'm 13 or older
+            </button>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.reload();
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active transition-opacity hover:opacity-90"
+            >
+              No, I'm under 13
+            </button>
+            <p className="text-[10px] text-muted-foreground leading-relaxed pt-1">
+              In compliance with COPPA and App Store guidelines, users under 13 cannot create an account.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Church selection step ───
   if (step === "church") {
