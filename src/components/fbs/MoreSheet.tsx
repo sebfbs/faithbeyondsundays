@@ -1,4 +1,4 @@
-import { Users, Heart, User, BookOpen, HandCoins, X, Lock } from "lucide-react";
+import { Users, Heart, User, BookOpen, HandCoins, X, Lock, ChevronRight } from "lucide-react";
 import { getAccentColors } from "./themeColors";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -37,29 +37,35 @@ export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBibl
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center">
       <div className="absolute inset-0 bg-foreground/15 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-[430px] bg-card rounded-t-3xl px-5 pt-5 pb-28 animate-slide-up shadow-nav">
-        <div className="flex items-center justify-between mb-5">
+      <div className="relative w-full max-w-[430px] bg-card rounded-t-2xl px-5 pt-5 pb-28 animate-slide-up">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-foreground">More</h2>
           <button onClick={onClose} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center tap-active">
             <X size={14} className="text-muted-foreground" />
           </button>
         </div>
-        <div className="space-y-2">
-          {options.map(({ icon: Icon, label, key, featureKey }) => {
+        {/* iOS grouped inset list */}
+        <div className="bg-card rounded-2xl overflow-hidden" style={{ border: "0.5px solid hsl(var(--border))" }}>
+          {options.map(({ icon: Icon, label, key, featureKey }, index) => {
             const locked = featureKey ? !featureFlags[featureKey] : false;
             return (
               <button
                 key={key}
                 onClick={() => !locked && handleOption(key)}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl tap-active transition-colors text-left ${locked ? "opacity-50 cursor-not-allowed bg-muted/30" : "bg-muted/50 hover:bg-muted"}`}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left tap-active transition-colors ${locked ? "opacity-50 cursor-not-allowed" : "active:bg-muted/60"} ${index > 0 ? "" : ""}`}
+                style={index > 0 ? { borderTop: "0.5px solid hsl(var(--border))" } : undefined}
               >
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: locked ? "hsl(var(--muted))" : colors.accentBg }}>
-                  {locked ? <Lock size={18} className="text-muted-foreground" /> : <Icon size={18} style={{ color: colors.accent }} />}
-                </div>
-                <div>
-                  <span className={`text-sm font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
-                  {locked && <p className="text-xs text-muted-foreground">Requires church</p>}
-                </div>
+                {locked ? (
+                  <Lock size={18} className="text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <Icon size={18} style={{ color: colors.accent }} className="flex-shrink-0" />
+                )}
+                <span className={`text-[15px] flex-1 ${locked ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
+                {locked ? (
+                  <span className="text-xs text-muted-foreground">Requires church</span>
+                ) : (
+                  <ChevronRight size={16} className="text-muted-foreground/50 flex-shrink-0" />
+                )}
               </button>
             );
           })}

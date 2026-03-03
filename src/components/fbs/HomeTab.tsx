@@ -264,7 +264,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
           {/* Daily Spark - AI generated */}
           <div style={{ filter: reflectionOpen ? 'blur(6px)' : 'none', opacity: reflectionOpen ? 0.3 : 1, transition: 'filter 0.4s ease, opacity 0.4s ease', pointerEvents: reflectionOpen ? 'none' as const : 'auto' as const }}>
           {isDailyContentLoading ? (
-            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
               <div className="flex items-center gap-2 mb-3">
                 <Skeleton className="w-7 h-7 rounded-full" />
                 <Skeleton className="h-3 w-24" />
@@ -273,7 +273,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
               <Skeleton className="h-4 w-3/4" />
             </div>
           ) : (
-            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
                   <Sparkles size={14} style={{ color: colors.accent }} />
@@ -291,7 +291,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
           {/* Guided Reflection - AI generated */}
           {isDailyContentLoading ? (
-            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
               <div className="flex items-center gap-2 mb-3">
                 <Skeleton className="w-7 h-7 rounded-full" />
                 <Skeleton className="h-3 w-28" />
@@ -301,7 +301,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
             </div>
           ) : (
             <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
-            <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
+            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
                   <BookText size={14} style={{ color: colors.accent }} />
@@ -367,7 +367,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
           <div style={{ filter: reflectionOpen ? 'blur(6px)' : 'none', opacity: reflectionOpen ? 0.3 : 1, transition: 'filter 0.4s ease, opacity 0.4s ease', pointerEvents: reflectionOpen ? 'none' as const : 'auto' as const }}>
           <button
             onClick={() => onNavigate?.("community")}
-            className="w-full rounded-3xl p-5 shadow-card text-left tap-active hover:opacity-90 transition-opacity"
+            className="w-full rounded-2xl p-5 shadow-card text-left tap-active hover:opacity-90 transition-opacity"
             style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
           >
             <div className="flex items-center gap-3">
@@ -386,7 +386,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
       {/* Empty state when no sermon (has church but no sermon yet) */}
       {hasChurch && !isLoading && !sermon && (
-        <div className="rounded-3xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+        <div className="rounded-2xl p-6 shadow-card text-center" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
           <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={24} style={{ color: colors.accent }} />
           </div>
@@ -400,7 +400,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       {/* Today's Spark */}
       {sermon && (
       <div style={{ filter: reflectionOpen ? 'blur(6px)' : 'none', opacity: reflectionOpen ? 0.3 : 1, transition: 'filter 0.4s ease, opacity 0.4s ease', pointerEvents: reflectionOpen ? 'none' as const : 'auto' as const }}>
-      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+      <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={14} style={{ color: colors.accent }} />
@@ -422,7 +422,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       {/* Today's Reflection */}
       {sermon && (
       <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
-      <div className="rounded-3xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
+      <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <BookText size={14} style={{ color: colors.accent }} />
