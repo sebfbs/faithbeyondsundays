@@ -136,10 +136,10 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
     return (
       <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Sermon</h1>
+          <h1 className="text-[34px] font-bold text-foreground leading-tight">Sermon</h1>
           <p className="text-sm text-muted-foreground font-medium mt-0.5">This week's message</p>
         </div>
-        <div className="bg-card rounded-3xl p-8 shadow-card text-center">
+        <div className="bg-card rounded-2xl p-8 shadow-card text-center">
           <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-muted">
             <Church size={24} className="text-muted-foreground" />
           </div>
@@ -157,10 +157,10 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
     return (
       <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Sermon</h1>
+          <h1 className="text-[34px] font-bold text-foreground leading-tight">Sermon</h1>
           <p className="text-sm text-muted-foreground font-medium mt-0.5">This week's message</p>
         </div>
-        <div className="bg-card rounded-3xl p-8 shadow-card text-center">
+        <div className="bg-card rounded-2xl p-8 shadow-card text-center">
           <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-muted">
             <Church size={24} className="text-muted-foreground" />
           </div>
@@ -179,7 +179,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Sermon</h1>
+        <h1 className="text-[34px] font-bold text-foreground leading-tight">Sermon</h1>
         <p className="text-sm text-muted-foreground font-medium mt-0.5">
           This week's message
         </p>
@@ -197,7 +197,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
       />
 
       {/* Main Sermon Card */}
-      <div className="bg-card rounded-3xl p-5 shadow-card">
+      <div className="bg-card rounded-2xl p-5 shadow-card">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-bold text-foreground leading-tight flex-1">
             {sermon.title}
@@ -302,7 +302,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
       {/* Previous Sermons */}
       <button
         onClick={onPreviousSermons}
-        className="w-full bg-card rounded-3xl p-5 shadow-card flex items-center justify-between tap-active text-left"
+        className="w-full bg-card rounded-2xl p-5 shadow-card flex items-center justify-between tap-active text-left"
       >
         <div>
           <p className="text-sm font-semibold text-foreground">

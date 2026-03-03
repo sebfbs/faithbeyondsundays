@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
-@import url("https://fonts.googleapis.com/css2?family=Open+Sans&display=swap");
+/* System font stack — no Google Fonts needed for iOS-native feel */
 
 @tailwind base;
 @tailwind components;
@@ -70,11 +69,11 @@
     --gradient-card-top: linear-gradient(180deg, hsl(207, 65%, 76%) 0%, hsl(207, 50%, 88%) 100%);
 
     /* Shadows */
-    --shadow-card: 0 2px 12px -2px hsl(220 25% 15% / 0.08), 0 1px 3px hsl(220 25% 15% / 0.05);
-    --shadow-card-hover: 0 8px 24px -4px hsl(220 25% 15% / 0.12), 0 2px 8px hsl(220 25% 15% / 0.06);
+    --shadow-card: 0 1px 3px hsl(220 25% 15% / 0.04);
+    --shadow-card-hover: 0 2px 8px hsl(220 25% 15% / 0.06);
     --shadow-amber: 0 4px 16px -2px hsl(38 100% 47% / 0.35);
     --shadow-nav: 0 -2px 20px hsl(220 25% 15% / 0.08);
-    --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji;
   }
 
   .dark {
@@ -105,7 +104,7 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji;
   }
 }
 
@@ -117,7 +116,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -289,12 +288,11 @@
   }
 
   .tap-active {
-    transition: transform 0.12s ease, opacity 0.12s ease;
+    transition: opacity 0.12s ease;
   }
 
   .tap-active:active {
-    transform: scale(0.97);
-    opacity: 0.85;
+    opacity: 0.7;
   }
 
   /* Step 3 aurora background */

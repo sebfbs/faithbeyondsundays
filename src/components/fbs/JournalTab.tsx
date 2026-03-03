@@ -445,7 +445,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           </div>
         )}
 
-        <div className="bg-card rounded-3xl p-5 shadow-card">
+        <div className="bg-card rounded-2xl p-5 shadow-card">
           <div className="flex items-center gap-2 mb-1">
             <span
                     className={
@@ -468,7 +468,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
 
         {selectedEntry.suggestedScripture && (
           <div
-            className="rounded-3xl p-5"
+            className="rounded-2xl p-5"
             style={{ background: "hsl(210 55% 94%)" }}
           >
             <p
@@ -501,7 +501,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-[34px] font-bold text-foreground leading-tight">
             Reflection Journal
           </h1>
           <p className="text-sm text-muted-foreground font-medium mt-0.5">
@@ -552,7 +552,7 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
             onClick={() => setSelected(entry.id)}
             role="button"
             tabIndex={0}
-            className="w-full bg-card rounded-3xl p-5 shadow-card text-left tap-active cursor-pointer"
+            className="w-full bg-card rounded-2xl p-5 shadow-card text-left tap-active cursor-pointer"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">

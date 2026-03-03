@@ -15,14 +15,14 @@ export default {
   	extend: {
   		fontFamily: {
   			sans: [
-  				'Open Sans',
-  				'ui-sans-serif',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'SF Pro Display',
+  				'SF Pro Text',
   				'system-ui',
   				'sans-serif',
   				'Apple Color Emoji',
-  				'Segoe UI Emoji',
-  				'Segoe UI Symbol',
-  				'Noto Color Emoji'
+  				'Segoe UI Emoji'
   			],
   			serif: [
   				'ui-serif',
