@@ -99,11 +99,11 @@ export default function ReportBlockSheet({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" onClick={() => { reset(); onClose(); }}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center animate-fade-in" onClick={() => { reset(); onClose(); }}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-lg bg-card rounded-t-3xl p-5 pb-8 space-y-4 animate-slide-up"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}
+        className="relative w-full max-w-lg bg-card rounded-t-3xl p-5 space-y-4 animate-slide-up"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5rem)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -125,7 +125,7 @@ export default function ReportBlockSheet({
               <Flag size={18} className="text-accent shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">Report</p>
-                <p className="text-xs text-muted-foreground">Flag this content for review</p>
+                <p className="text-xs text-muted-foreground">Report to church leadership</p>
               </div>
             </button>
             <button
