@@ -268,7 +268,7 @@ export default function Index() {
     if (!userData) return null;
 
     if (subOverlay === "public-profile" && selectedMember) {
-      return <PublicProfileScreen member={selectedMember} onBack={() => window.history.back()} isDemo={isDemo} />;
+      return <PublicProfileScreen member={selectedMember} onBack={() => window.history.back()} isDemo={isDemo} churchId={profile?.church_id || undefined} />;
     }
     if (subOverlay === "previous-sermon-detail" && selectedSermon) {
       return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => window.history.back()} onOpenBible={handleOpenBible} />;

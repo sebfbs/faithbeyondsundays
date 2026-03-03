@@ -14,6 +14,7 @@ interface GroupChatProps {
   groupId: string;
   isMember: boolean;
   isDemo?: boolean;
+  churchId?: string;
 }
 
 interface Message {
@@ -24,7 +25,7 @@ interface Message {
   sender?: { first_name: string; last_name: string; avatar_url: string | null };
 }
 
-export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps) {
+export default function GroupChat({ groupId, isMember, isDemo, churchId }: GroupChatProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const colors = getAccentColors();
@@ -231,7 +232,7 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
           return (
             <div
               key={msg.id}
-              className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : ""}`}
+              className={`flex gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}
             >
               {/* Avatar */}
               <div
@@ -331,6 +332,7 @@ export default function GroupChat({ groupId, isMember, isDemo }: GroupChatProps)
           reportedUserName={reportTarget.sender?.first_name || "User"}
           contentType="group_message"
           contentId={reportTarget.id}
+          churchId={churchId}
           isDemo={isDemo}
         />
       )}

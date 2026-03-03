@@ -14,9 +14,10 @@ interface PublicProfileScreenProps {
   member: CommunityMember & { hasInvited?: boolean; reflectionMilestone?: number };
   onBack: () => void;
   isDemo?: boolean;
+  churchId?: string;
 }
 
-export default function PublicProfileScreen({ member, onBack, isDemo }: PublicProfileScreenProps) {
+export default function PublicProfileScreen({ member, onBack, isDemo, churchId }: PublicProfileScreenProps) {
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -263,7 +264,7 @@ export default function PublicProfileScreen({ member, onBack, isDemo }: PublicPr
         reportedUserId={member.userId || member.username}
         reportedUserName={member.firstName}
         contentType="profile"
-        churchId=""
+        churchId={churchId}
         onBlock={onBack}
         isDemo={isDemo}
       />

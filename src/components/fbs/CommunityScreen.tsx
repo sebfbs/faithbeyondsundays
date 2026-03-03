@@ -10,6 +10,7 @@ import { useAuth } from "./AuthProvider";
 import ChurchlessCommunity from "./ChurchlessCommunity";
 import GroupDetailSheet from "./GroupDetailSheet";
 import { getAvatarColor } from "./avatarColors";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 interface CommunityScreenProps {
   onBack: () => void;
@@ -41,6 +42,7 @@ export default function CommunityScreen({
   const colors = getAccentColors();
   const follows = getFollows();
   const { user: authUser } = useAuth();
+  const { blockedIds } = useBlockedUsers();
   const [selectedGroup, setSelectedGroup] = useState<GroupInfo | null>(null);
   const [demoMemberships, setDemoMemberships] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -161,12 +163,14 @@ export default function CommunityScreen({
     const filtered = isDemo
       ? allMembers.filter((m) => m.churchCode === userChurchCode)
       : allMembers;
-    return filtered.sort((a, b) => {
-      if (a.role === "pastor") return -1;
-      if (b.role === "pastor") return 1;
-      return 0;
-    });
-  }, [allMembers, userChurchCode, isDemo]);
+    return filtered
+      .filter((m) => !m.userId || !blockedIds.includes(m.userId))
+      .sort((a, b) => {
+        if (a.role === "pastor") return -1;
+        if (b.role === "pastor") return 1;
+        return 0;
+      });
+  }, [allMembers, userChurchCode, isDemo, blockedIds]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
@@ -174,11 +178,12 @@ export default function CommunityScreen({
     const source = isDemo ? DEMO_MEMBERS : allMembers;
     return source.filter(
       (m) =>
-        m.username.includes(q) ||
+        (!m.userId || !blockedIds.includes(m.userId)) &&
+        (m.username.includes(q) ||
         m.firstName.toLowerCase().includes(q) ||
-        m.lastName.toLowerCase().includes(q)
+        m.lastName.toLowerCase().includes(q))
     );
-  }, [search, isDemo, allMembers]);
+  }, [search, isDemo, allMembers, blockedIds]);
 
   const displayList = searchResults ?? churchMembers;
   const isSearching = searchResults !== null;
@@ -410,6 +415,7 @@ export default function CommunityScreen({
           isMember={selectedGroup.isMember}
           memberCount={selectedGroup.memberCount}
           isDemo={isDemo}
+          churchId={userChurchId}
           onMembershipChange={(isMember) => {
             if (isDemo) {
               setDemoMemberships((prev) => ({ ...prev, [selectedGroup.id]: isMember }));

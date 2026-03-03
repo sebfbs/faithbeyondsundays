@@ -21,6 +21,7 @@ interface GroupDetailSheetProps {
   memberCount: number;
   isDemo?: boolean;
   onMembershipChange?: (isMember: boolean) => void;
+  churchId?: string;
 }
 
 export default function GroupDetailSheet({
@@ -31,6 +32,7 @@ export default function GroupDetailSheet({
   memberCount: initialMemberCount,
   isDemo,
   onMembershipChange,
+  churchId,
 }: GroupDetailSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -183,7 +185,7 @@ export default function GroupDetailSheet({
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
           {isMember && tab === "chat" ? (
-            <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} />
+            <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} churchId={churchId} />
           ) : (
             <div className="overflow-y-auto px-4 py-3 space-y-1">
               {membersLoading && !isDemo && (
