@@ -25,7 +25,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
         borderTop: "0.5px solid hsl(var(--border))",
       }}
     >
-      <div className="flex items-stretch h-[49px]">
+      <div className="flex items-stretch h-[52px] pt-1">
         {tabs.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return (
