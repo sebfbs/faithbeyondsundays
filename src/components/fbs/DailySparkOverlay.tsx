@@ -97,7 +97,7 @@ export default function DailySparkOverlay({ sparkMessage }: DailySparkOverlayPro
       onClick={dismiss}
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center cursor-pointer select-none"
       style={{
-        background: getSkyGradient(),
+        background: `linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.22) 100%), ${getSkyGradient()}`,
         opacity: fadingOut ? 0 : 1,
         transition: "opacity 300ms ease",
       }}
