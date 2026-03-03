@@ -385,11 +385,11 @@ export default function Index() {
           className="fixed top-0 left-0 right-0 z-40 pointer-events-none"
           style={{
             height: "env(safe-area-inset-top, 0px)",
-            backdropFilter: `blur(${12 * topBarRatio}px)`,
-            WebkitBackdropFilter: `blur(${12 * topBarRatio}px)`,
+            backdropFilter: `blur(${(overlay === null && activeTab === "home") ? 12 * topBarRatio : 12}px)`,
+            WebkitBackdropFilter: `blur(${(overlay === null && activeTab === "home") ? 12 * topBarRatio : 12}px)`,
             background: (overlay === null && activeTab === "home")
               ? getSkyGradientTopColor().replace(')', ` / ${0.95 * topBarRatio})`)
-              : `hsl(var(--background) / ${0.95 * topBarRatio})`,
+              : `hsl(var(--background) / 0.95)`,
             transition: "background 0.1s, backdrop-filter 0.1s, -webkit-backdrop-filter 0.1s",
           }}
         />
