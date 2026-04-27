@@ -31,7 +31,6 @@ export default function FollowListSheet({ userId, mode, onClose, onViewProfile, 
   useEffect(() => {
     if (isDemo) {
       // Demo mode: generate list from DEMO_MEMBERS
-      const demoFollows = getFollows();
       const list: FollowListUser[] = DEMO_MEMBERS.slice(0, mode === "followers" ? 5 : 3).map((m) => ({
         userId: m.username, // use username as ID in demo
         username: m.username,
@@ -44,7 +43,9 @@ export default function FollowListSheet({ userId, mode, onClose, onViewProfile, 
       if (mode === "following") {
         list.forEach((u) => { states[u.userId] = true; });
       } else {
-        list.forEach((u) => { states[u.userId] = demoFollows.includes(u.username); });
+        // In demo, the people you follow are always the first 3 DEMO_MEMBERS
+        const demoFollowing = new Set(DEMO_MEMBERS.slice(0, 3).map((m) => m.username));
+        list.forEach((u) => { states[u.userId] = demoFollowing.has(u.username); });
       }
       setFollowStates(states);
       setLoading(false);
