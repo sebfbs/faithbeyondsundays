@@ -233,29 +233,30 @@ export interface FollowListUser {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
+  instagramHandle?: string;
 }
 
 export async function getFollowersList(userId: string): Promise<FollowListUser[]> {
   const { data } = await supabase
     .from("follows")
-    .select("follower_id, profiles!follows_follower_id_fkey(user_id, username, first_name, last_name, avatar_url)")
+    .select("follower_id, profiles!follows_follower_id_fkey(user_id, username, first_name, last_name, avatar_url, instagram_handle)")
     .eq("following_id", userId);
 
   return (data || []).map((row: any) => {
     const p = row.profiles;
-    return { userId: p?.user_id || row.follower_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined };
+    return { userId: p?.user_id || row.follower_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined, instagramHandle: p?.instagram_handle || undefined };
   });
 }
 
 export async function getFollowingList(userId: string): Promise<FollowListUser[]> {
   const { data } = await supabase
     .from("follows")
-    .select("following_id, profiles!follows_following_id_fkey(user_id, username, first_name, last_name, avatar_url)")
+    .select("following_id, profiles!follows_following_id_fkey(user_id, username, first_name, last_name, avatar_url, instagram_handle)")
     .eq("follower_id", userId);
 
   return (data || []).map((row: any) => {
     const p = row.profiles;
-    return { userId: p?.user_id || row.following_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined };
+    return { userId: p?.user_id || row.following_id, username: p?.username || "", firstName: p?.first_name || "", lastName: p?.last_name || "", avatarUrl: p?.avatar_url || undefined, instagramHandle: p?.instagram_handle || undefined };
   });
 }
 

@@ -202,6 +202,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         lastName: u.lastName,
         avatarUrl: u.avatarUrl,
         userId: u.userId,
+        instagramHandle: u.instagramHandle,
         churchName: "",
         churchCode: "",
         memberSince: "",
@@ -269,6 +270,21 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         </div>
         <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
+
+        {user.instagramHandle && (
+          <button
+            onClick={() => window.open(`https://instagram.com/${user.instagramHandle}`, "_blank")}
+            className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full tap-active transition-opacity hover:opacity-80"
+            style={{ background: "hsl(var(--muted))" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-muted-foreground">
+              <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" />
+              <circle cx="18" cy="6" r="1.5" fill="currentColor" />
+            </svg>
+            <span className="text-xs font-medium text-muted-foreground">@{user.instagramHandle}</span>
+          </button>
+        )}
 
         {/* Follower / Following counts */}
         <div className="flex items-center gap-4 mt-2">
