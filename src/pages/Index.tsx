@@ -315,6 +315,7 @@ export default function Index() {
             userName={userData.firstName}
             churchName={userData.churchName}
             hasChurch={!!userData.churchCode}
+            profileReady={isDemo || !profileLoading}
             onNavigate={(screen) => navTo(`/${screen}`)}
             churchId={profile?.church_id || undefined}
             userId={authUser?.id}
@@ -356,6 +357,7 @@ export default function Index() {
             userName={userData.firstName}
             churchName={userData.churchName}
             hasChurch={!!userData.churchCode}
+            profileReady={isDemo || !profileLoading}
             onNavigate={(screen) => navTo(`/${screen}`)}
             churchId={profile?.church_id || undefined}
             userId={authUser?.id}

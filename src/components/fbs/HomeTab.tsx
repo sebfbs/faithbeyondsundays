@@ -183,6 +183,7 @@ interface HomeTabProps {
   userName?: string;
   churchName?: string;
   hasChurch?: boolean;
+  profileReady?: boolean;
   onNavigate?: (screen: string) => void;
   churchId?: string;
   userId?: string;
@@ -190,7 +191,7 @@ interface HomeTabProps {
   dailyContent?: DailyContent;
 }
 
-export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo, dailyContent: dailyContentProp }: HomeTabProps) {
+export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, profileReady = true, onNavigate, churchId, userId, isDemo, dailyContent: dailyContentProp }: HomeTabProps) {
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
@@ -224,7 +225,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
       if (error) throw error;
       return data as DailyContent;
     },
-    enabled: !hasChurch && !dailyContentProp,
+    enabled: profileReady && !hasChurch && !dailyContentProp,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 1,
   });
