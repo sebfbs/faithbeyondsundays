@@ -62,13 +62,13 @@ Deno.serve(async (req) => {
       type: "recovery",
       email: admin_email,
       options: {
-        redirectTo: "https://faithbeyondsundays.lovable.app/admin/setup",
+        redirectTo: "https://faithbeyondsundays.app/admin/setup",
       },
     });
 
     if (linkError) throw linkError;
 
-    const recoveryLink = linkData?.properties?.action_link || "https://faithbeyondsundays.lovable.app/admin/login";
+    const recoveryLink = linkData?.properties?.action_link || "https://faithbeyondsundays.app/admin/login";
 
     // Send branded email via Resend
     const resendKey = Deno.env.get("RESEND_API_KEY");

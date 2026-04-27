@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const SPARK_PROMPT = `Write a 1-2 sentence reflection grounded in Christian faith. Keep it short and to the point — no more than two sentences. It should feel like quiet wisdom -- something you'd read and sit with for a moment. Do NOT start with a greeting like 'Good morning' or 'Hey'. Do NOT address the reader directly as 'buddy', 'friend', or 'you' in a casual way. Do NOT include Bible verse references or citations. Do NOT use hashtags or exclamation marks. The tone should be calm, thoughtful, and grounded -- like something a wise pastor would write in a devotional book, not a text message to a friend. Examples of the right tone: 'God is already in this moment with you. You don't have to go looking for Him.' and 'Never underestimate the impact of a small act of kindness today.' Write one original message in this style. Return ONLY the message text, nothing else.`;
@@ -19,18 +19,17 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
 
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!anthropicApiKey) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Get today's date in UTC
     const today = new Date().toISOString().split("T")[0];
 
-    // Check cache
+    // Return cached content if already generated today
     const { data: cached } = await supabase
       .from("daily_content")
       .select("spark_message, reflection_prompt")
@@ -43,99 +42,68 @@ serve(async (req) => {
       });
     }
 
-    // Generate with AI using tool calling for structured output
-    const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a content generator for a Christian faith app. Generate daily devotional content with the exact tone specified. Never add greetings, Bible citations, hashtags, or exclamation marks.",
-            },
-            {
-              role: "user",
-              content: `Generate today's daily content. For the spark: ${SPARK_PROMPT}\n\nFor the reflection: ${REFLECTION_PROMPT}`,
-            },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "save_daily_content",
-                description:
-                  "Save the generated daily spark message and reflection prompt.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    spark_message: {
-                      type: "string",
-                      description:
-                        "A 2-3 sentence calm, grounded reflection on faith. No greetings, no Bible refs, no exclamation marks.",
-                    },
-                    reflection_prompt: {
-                      type: "string",
-                      description:
-                        "A single thought-provoking question rooted in faith. No greetings, no Bible refs.",
-                    },
-                  },
-                  required: ["spark_message", "reflection_prompt"],
-                  additionalProperties: false,
+    // Generate with Claude using tool calling for structured output
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        system: "You are a content generator for a Christian faith app. Generate daily devotional content with the exact tone specified. Never add greetings, Bible citations, hashtags, or exclamation marks.",
+        messages: [
+          {
+            role: "user",
+            content: `Generate today's daily content. For the spark: ${SPARK_PROMPT}\n\nFor the reflection: ${REFLECTION_PROMPT}`,
+          },
+        ],
+        tools: [
+          {
+            name: "save_daily_content",
+            description: "Save the generated daily spark message and reflection prompt.",
+            input_schema: {
+              type: "object",
+              properties: {
+                spark_message: {
+                  type: "string",
+                  description: "A 1-2 sentence calm, grounded reflection on faith. No greetings, no Bible refs, no exclamation marks.",
+                },
+                reflection_prompt: {
+                  type: "string",
+                  description: "A single thought-provoking question rooted in faith. No greetings, no Bible refs.",
                 },
               },
+              required: ["spark_message", "reflection_prompt"],
             },
-          ],
-          tool_choice: {
-            type: "function",
-            function: { name: "save_daily_content" },
           },
-        }),
-      }
-    );
+        ],
+        tool_choice: { type: "tool", name: "save_daily_content" },
+      }),
+    });
 
     if (!aiResponse.ok) {
       const status = aiResponse.status;
       const text = await aiResponse.text();
-      console.error("AI gateway error:", status, text);
-
-      if (status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limited, please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw new Error(`AI gateway returned ${status}`);
+      console.error("Anthropic API error:", status, text);
+      throw new Error(`Anthropic API returned ${status}`);
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    const toolUse = aiData.content?.find((c: any) => c.type === "tool_use");
 
-    if (!toolCall?.function?.arguments) {
-      throw new Error("No tool call in AI response");
+    if (!toolUse?.input) {
+      throw new Error("No tool use in AI response");
     }
 
-    const generated = JSON.parse(toolCall.function.arguments);
-    const sparkMessage = generated.spark_message;
-    const reflectionPrompt = generated.reflection_prompt;
+    const { spark_message: sparkMessage, reflection_prompt: reflectionPrompt } = toolUse.input;
 
     if (!sparkMessage || !reflectionPrompt) {
       throw new Error("Missing fields in AI response");
     }
 
-    // Insert into cache
     const { error: insertError } = await supabase
       .from("daily_content")
       .insert({
@@ -149,12 +117,7 @@ serve(async (req) => {
       // Still return the content even if caching fails
     }
 
-    const result = {
-      spark_message: sparkMessage,
-      reflection_prompt: reflectionPrompt,
-    };
-
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ spark_message: sparkMessage, reflection_prompt: reflectionPrompt }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

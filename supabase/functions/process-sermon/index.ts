@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -15,7 +15,7 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const elevenlabsKey = Deno.env.get("ELEVENLABS_API_KEY")!;
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+  const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY")!;
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -43,11 +43,10 @@ serve(async (req) => {
     }
 
     if (reqBody.regenerate_type && reqBody.sermon_id) {
-      return await handleRegeneration(supabase, lovableApiKey, reqBody.sermon_id, reqBody.regenerate_type, reqBody.item_index);
+      return await handleRegeneration(supabase, anthropicApiKey, reqBody.sermon_id, reqBody.regenerate_type, reqBody.item_index);
     }
 
     // ─── Stale job recovery ───
-    // Reset any jobs stuck in "processing" past their locked_until
     const { data: staleJobs } = await supabase
       .from("sermon_jobs")
       .select("id, attempts, max_attempts")
@@ -143,7 +142,6 @@ serve(async (req) => {
       });
     }
 
-    // Helper to extend the lease before long operations
     const refreshLease = async (stage: string) => {
       const newLease = new Date(Date.now() + leaseMinutes * 60 * 1000).toISOString();
       await supabase
@@ -168,11 +166,10 @@ serve(async (req) => {
         .update({ status: "transcribing" })
         .eq("id", sermon.id);
 
-      // ─── Signed URL approach: no file download needed ───
       console.log("Generating signed URL for:", sermon.storage_path);
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from("sermon-media")
-        .createSignedUrl(sermon.storage_path!, 3600); // 1 hour expiry
+        .createSignedUrl(sermon.storage_path!, 3600);
 
       if (signedUrlError || !signedUrlData?.signedUrl) {
         await failJob(supabase, job.id, "Failed to generate signed URL for media file");
@@ -192,9 +189,7 @@ serve(async (req) => {
 
       const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
         method: "POST",
-        headers: {
-          "xi-api-key": elevenlabsKey,
-        },
+        headers: { "xi-api-key": elevenlabsKey },
         body: transcribeForm,
       });
 
@@ -217,18 +212,11 @@ serve(async (req) => {
         end: w.end,
       }));
 
-      // Debug: log transcript stats and timing coverage
       const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
       const lastWord = wordTimings.length > 0 ? wordTimings[wordTimings.length - 1] : null;
       const firstWord = wordTimings.length > 0 ? wordTimings[0] : null;
       console.log(`Transcript stats: ${wordCount} words in text, ${wordTimings.length} words with timings`);
       console.log(`Timing range: ${firstWord ? firstWord.start + 's' : 'none'} → ${lastWord ? lastWord.end + 's' : 'none'} (${lastWord ? (lastWord.end / 60).toFixed(1) + ' min' : '0 min'})`);
-      console.log(`First 3 timed words:`, JSON.stringify(wordTimings.slice(0, 3)));
-      console.log(`Last 3 timed words:`, JSON.stringify(wordTimings.slice(-3)));
-      if (wordTimings.length > 0) {
-        const withZeroStart = wordTimings.filter((w: any) => w.start === 0 || w.start === undefined || w.start === null).length;
-        console.log(`Words with zero/null start time: ${withZeroStart} of ${wordTimings.length}`);
-      }
 
       const { error: transcriptError } = await supabase
         .from("sermon_transcripts")
@@ -252,7 +240,7 @@ serve(async (req) => {
 
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
 
-    console.log("Generating AI content...");
+    console.log("Generating AI content with Claude...");
     await refreshLease("generating");
     await supabase.from("sermons").update({ status: "generating" }).eq("id", sermon.id);
 
@@ -278,23 +266,26 @@ serve(async (req) => {
       console.log("All content types already generated");
     }
 
-    // ─── Parallel AI content generation ───
+    // ─── Parallel AI content generation via Anthropic ───
+    const SYSTEM_PROMPT = "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Ignore any logistical announcements, church business, administrative updates, building/location discussions, or non-spiritual content in the sermon. Use the provided tool to return structured output only.";
+
     const results = await Promise.allSettled(
       missingTypes.map(async (ct) => {
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const tool = buildToolSchema(ct.type);
+        const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${lovableApiKey}`,
+            "x-api-key": anthropicApiKey,
+            "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Ignore any logistical announcements, church business, administrative updates, building/location discussions, or non-spiritual content in the sermon. Return valid JSON only. No markdown, no code fences." },
-              { role: "user", content: ct.prompt },
-            ],
-            tools: [buildToolSchema(ct.type)],
-            tool_choice: { type: "function", function: { name: `generate_${ct.type}` } },
+            model: "claude-sonnet-4-6",
+            max_tokens: 4096,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: "user", content: ct.prompt }],
+            tools: [tool],
+            tool_choice: { type: "tool", name: tool.name },
           }),
         });
 
@@ -304,16 +295,13 @@ serve(async (req) => {
         }
 
         const aiResult = await aiResponse.json();
-        const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-        let content = {};
+        const toolUse = aiResult.content?.find((c: any) => c.type === "tool_use");
 
-        if (toolCall?.function?.arguments) {
-          try {
-            content = JSON.parse(toolCall.function.arguments);
-          } catch {
-            throw new Error(`Failed to parse AI response for ${ct.type}`);
-          }
+        if (!toolUse?.input) {
+          throw new Error(`No tool use in AI response for ${ct.type}`);
         }
+
+        const content = toolUse.input;
 
         await supabase.from("sermon_content").insert({
           sermon_id: sermon.id,
@@ -326,7 +314,6 @@ serve(async (req) => {
       })
     );
 
-    // Collect failures
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       if (result.status === "rejected") {
@@ -394,10 +381,7 @@ serve(async (req) => {
       });
     }
 
-    await supabase
-      .from("sermons")
-      .update({ status: "review" })
-      .eq("id", sermon.id);
+    await supabase.from("sermons").update({ status: "review" }).eq("id", sermon.id);
 
     await supabase
       .from("sermon_jobs")
@@ -432,7 +416,9 @@ serve(async (req) => {
 
 // ─── Regeneration handler ───
 
-async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId: string, contentType: string, itemIndex?: number) {
+async function handleRegeneration(supabase: any, anthropicApiKey: string, sermonId: string, contentType: string, itemIndex?: number) {
+  const SYSTEM_PROMPT = "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Return structured output only using the provided tool.";
+
   try {
     const { data: sermon } = await supabase
       .from("sermons")
@@ -478,9 +464,8 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       });
     }
 
-    // If item_index is provided, we regenerate only that single item
+    // Single item regeneration
     if (itemIndex !== undefined) {
-      // Get existing content first
       const { data: existingRow } = await supabase
         .from("sermon_content")
         .select("content")
@@ -506,7 +491,6 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
         });
       }
 
-      // Build a prompt that asks for just ONE item
       const currentItem = existingArray[itemIndex];
       let singlePrompt = "";
       if (contentType === "spark") {
@@ -521,20 +505,21 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.\n\nRules:\n- Only create a chapter where there is a genuine shift in topic, theme, or focus\n- The chapter should represent a meaningful, distinct section — not a brief aside or transition\n- Make sure the chapter fits naturally within the full sermon duration and doesn't duplicate coverage of existing chapters`;
       }
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const tool = buildToolSchema(contentType);
+      const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
+          "x-api-key": anthropicApiKey,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Return valid JSON only. No markdown, no code fences." },
-            { role: "user", content: singlePrompt },
-          ],
-          tools: [buildToolSchema(contentType)],
-          tool_choice: { type: "function", function: { name: `generate_${contentType}` } },
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: singlePrompt }],
+          tools: [tool],
+          tool_choice: { type: "tool", name: tool.name },
         }),
       });
 
@@ -548,21 +533,15 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       }
 
       const aiResult = await aiResponse.json();
-      const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-      let newContent: any = {};
+      const toolUse = aiResult.content?.find((c: any) => c.type === "tool_use");
+      const newContent: any = toolUse?.input || {};
 
-      if (toolCall?.function?.arguments) {
-        newContent = JSON.parse(toolCall.function.arguments);
-      }
-
-      // Extract the single new item from the response array
       const newArray = newContent[arrayKey] || [];
       const newItem = newArray[0] || newContent;
 
-      // Merge back into existing array
       const updatedArray = [...existingArray];
       if ((contentType === "spark" || contentType === "reflection_questions") && currentItem.day) {
-        updatedArray[itemIndex] = { ...newItem, day: currentItem.day }; // preserve day
+        updatedArray[itemIndex] = { ...newItem, day: currentItem.day };
       } else {
         updatedArray[itemIndex] = newItem;
       }
@@ -583,23 +562,24 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
       });
     }
 
-    // Full regeneration (existing behavior)
+    // Full regeneration
     const prompt = builder(sermon.title, transcriptText);
+    const tool = buildToolSchema(contentType);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are a sermon content analyst for a church app. You focus exclusively on spiritual, biblical, and faith-based content. Ignore any logistical announcements, church business, administrative updates, building/location discussions, or non-spiritual content in the sermon. Return valid JSON only. No markdown, no code fences." },
-          { role: "user", content: prompt },
-        ],
-        tools: [buildToolSchema(contentType)],
-        tool_choice: { type: "function", function: { name: `generate_${contentType}` } },
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+        tools: [tool],
+        tool_choice: { type: "tool", name: tool.name },
       }),
     });
 
@@ -613,12 +593,8 @@ async function handleRegeneration(supabase: any, lovableApiKey: string, sermonId
     }
 
     const aiResult = await aiResponse.json();
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-    let content = {};
-
-    if (toolCall?.function?.arguments) {
-      content = JSON.parse(toolCall.function.arguments);
-    }
+    const toolUse = aiResult.content?.find((c: any) => c.type === "tool_use");
+    const content = toolUse?.input || {};
 
     await supabase
       .from("sermon_content")
@@ -659,7 +635,7 @@ async function failJob(supabase: any, jobId: string, message: string) {
     .eq("id", jobId);
 }
 
-// --- Embed timing markers into transcript text ---
+// ─── Embed timing markers into transcript text ───
 
 function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -679,10 +655,8 @@ function embedTimingMarkers(
   let result = "";
   let lastMarkerTime = -INTERVAL;
 
-  // Build transcript directly from wordTimings to guarantee accurate timestamps
   for (const word of wordTimings) {
     const currentTime = word.start;
-
     if (currentTime - lastMarkerTime >= INTERVAL) {
       result += `[${formatTimestamp(currentTime)}] `;
       lastMarkerTime = currentTime;
@@ -691,148 +665,122 @@ function embedTimingMarkers(
   }
 
   console.log(`embedTimingMarkers: built transcript from ${wordTimings.length} words, last marker at ${formatTimestamp(lastMarkerTime)}`);
-
   return result.trim();
 }
 
-// --- Tool schemas for structured output ---
+// ─── Tool schemas for structured output (Anthropic format) ───
 
 function buildToolSchema(type: string) {
   const schemas: Record<string, any> = {
     spark: {
-      type: "function",
-      function: {
-        name: "generate_spark",
-        description: "Generate 7 daily sparks, one for each day of the week (Monday through Sunday)",
-        parameters: {
-          type: "object",
-          properties: {
-            sparks: {
-              type: "array",
-              description: "Array of 7 sparks, one for each day of the week",
-              items: {
-                type: "object",
-                properties: {
-                  day: { type: "string", description: "Day of the week: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday" },
-                  title: { type: "string", description: "A catchy title for this day's spark" },
-                  summary: { type: "string", description: "A 1-2 sentence short summary applying the sermon's spiritual message to this day" },
-                },
-                required: ["day", "title", "summary"],
-                additionalProperties: false,
+      name: "generate_spark",
+      description: "Generate 7 daily sparks, one for each day of the week (Monday through Sunday)",
+      input_schema: {
+        type: "object",
+        properties: {
+          sparks: {
+            type: "array",
+            description: "Array of 7 sparks, one for each day of the week",
+            items: {
+              type: "object",
+              properties: {
+                day: { type: "string", description: "Day of the week: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday" },
+                title: { type: "string", description: "A catchy title for this day's spark" },
+                summary: { type: "string", description: "A 1-2 sentence short summary applying the sermon's spiritual message to this day" },
               },
+              required: ["day", "title", "summary"],
             },
           },
-          required: ["sparks"],
-          additionalProperties: false,
         },
+        required: ["sparks"],
       },
     },
     takeaways: {
-      type: "function",
-      function: {
-        name: "generate_takeaways",
-        description: "Generate key spiritual takeaways from the sermon",
-        parameters: {
-          type: "object",
-          properties: {
-            takeaways: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                },
-                required: ["title", "description"],
-                additionalProperties: false,
+      name: "generate_takeaways",
+      description: "Generate key spiritual takeaways from the sermon",
+      input_schema: {
+        type: "object",
+        properties: {
+          takeaways: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
               },
+              required: ["title", "description"],
             },
           },
-          required: ["takeaways"],
-          additionalProperties: false,
         },
+        required: ["takeaways"],
       },
     },
     reflection_questions: {
-      type: "function",
-      function: {
-        name: "generate_reflection_questions",
-        description: "Generate 7 reflection questions, one for each day of the week (Monday through Sunday)",
-        parameters: {
-          type: "object",
-          properties: {
-            questions: {
-              type: "array",
-              description: "Array of 7 reflection questions, one for each day of the week",
-              items: {
-                type: "object",
-                properties: {
-                  day: { type: "string", description: "Day of the week: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday" },
-                  question: { type: "string", description: "A thought-provoking question in second person (you/your)" },
-                  context: { type: "string", description: "Brief spiritual context in second person (you/your)" },
-                },
-                required: ["day", "question", "context"],
-                additionalProperties: false,
+      name: "generate_reflection_questions",
+      description: "Generate 7 reflection questions, one for each day of the week (Monday through Sunday)",
+      input_schema: {
+        type: "object",
+        properties: {
+          questions: {
+            type: "array",
+            description: "Array of 7 reflection questions, one for each day of the week",
+            items: {
+              type: "object",
+              properties: {
+                day: { type: "string", description: "Day of the week: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday" },
+                question: { type: "string", description: "A thought-provoking question in second person (you/your)" },
+                context: { type: "string", description: "Brief spiritual context in second person (you/your)" },
               },
+              required: ["day", "question", "context"],
             },
           },
-          required: ["questions"],
-          additionalProperties: false,
         },
+        required: ["questions"],
       },
     },
     scriptures: {
-      type: "function",
-      function: {
-        name: "generate_scriptures",
-        description: "Extract only scripture passages directly quoted or explicitly discussed by the pastor. Group consecutive verses from the same chapter. Max 5 references unless the pastor explicitly cited more.",
-        parameters: {
-          type: "object",
-          properties: {
-            scriptures: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  reference: { type: "string", description: "Book chapter:verse range, e.g. Acts 3:1-10, Romans 8:28-30" },
-                  text: { type: "string", description: "One sentence describing how the pastor used this passage" },
-                },
-                required: ["reference", "text"],
-                additionalProperties: false,
+      name: "generate_scriptures",
+      description: "Extract only scripture passages directly quoted or explicitly discussed by the pastor. Group consecutive verses from the same chapter. Max 5 references unless the pastor explicitly cited more.",
+      input_schema: {
+        type: "object",
+        properties: {
+          scriptures: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                reference: { type: "string", description: "Book chapter:verse range, e.g. Acts 3:1-10, Romans 8:28-30" },
+                text: { type: "string", description: "One sentence describing how the pastor used this passage" },
               },
+              required: ["reference", "text"],
             },
           },
-          required: ["scriptures"],
-          additionalProperties: false,
         },
+        required: ["scriptures"],
       },
     },
     chapters: {
-      type: "function",
-      function: {
-        name: "generate_chapters",
-        description: "Identify 6-10 main structural chapters of the sermon (introduction, scripture reading, main points, major stories, closing). Do not include sub-points, illustrations, or transitions as separate chapters.",
-        parameters: {
-          type: "object",
-          properties: {
-            chapters: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Clear, descriptive chapter title" },
-                  summary: { type: "string", description: "1-2 sentence summary of this section" },
-                  order: { type: "number" },
-                  timestamp: { type: "string", description: "Timestamp in M:SS or H:MM:SS format from the nearest timing marker, e.g. 5:23 or 1:05:23" },
-                },
-                required: ["title", "summary", "order", "timestamp"],
-                additionalProperties: false,
+      name: "generate_chapters",
+      description: "Identify 6-10 main structural chapters of the sermon (introduction, scripture reading, main points, major stories, closing). Do not include sub-points, illustrations, or transitions as separate chapters.",
+      input_schema: {
+        type: "object",
+        properties: {
+          chapters: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Clear, descriptive chapter title" },
+                summary: { type: "string", description: "1-2 sentence summary of this section" },
+                order: { type: "number" },
+                timestamp: { type: "string", description: "Timestamp in M:SS or H:MM:SS format from the nearest timing marker, e.g. 5:23 or 1:05:23" },
               },
+              required: ["title", "summary", "order", "timestamp"],
             },
           },
-          required: ["chapters"],
-          additionalProperties: false,
         },
+        required: ["chapters"],
       },
     },
   };
@@ -840,7 +788,7 @@ function buildToolSchema(type: string) {
   return schemas[type];
 }
 
-// --- Prompts (full transcript, spiritual focus) ---
+// ─── Prompts ───
 
 function buildSparkPrompt(title: string, transcript: string) {
   return `Sermon title: "${title}"
@@ -901,7 +849,7 @@ Identify only the scripture passages that were directly quoted or explicitly dis
 
 1. A passage qualifies only if the pastor reads it word for word OR references the specific verse number by name AND spends time explaining its meaning.
 2. Group consecutive verses from the same chapter together as one reference (e.g. Acts 3:1-10, not Acts 3:1, Acts 3:6, Acts 3:7 separately).
-3. Do NOT include passing mentions — a passing mention is any biblical person, story, or concept referenced in under 2 sentences without a verse citation (e.g. if the pastor says "like Moses at the burning bush" without citing a verse or reading from it, do not include it).
+3. Do NOT include passing mentions — a passing mention is any biblical person, story, or concept referenced in under 2 sentences without a verse citation.
 4. Do NOT include loose references or implied allusions to scripture.
 5. Do NOT list the same passage more than once.
 6. Return no more than 5 scripture references unless the pastor explicitly cited more.

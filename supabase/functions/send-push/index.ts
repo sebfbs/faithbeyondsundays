@@ -230,8 +230,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const bundleId =
-      Deno.env.get("APNS_BUNDLE_ID") || "app.lovable.67349056f3e74b9d8798250401b58caa";
+    const bundleId = Deno.env.get("APNS_BUNDLE_ID");
+    if (!bundleId) {
+      console.error("APNS_BUNDLE_ID env var is not configured");
+      return new Response(JSON.stringify({ error: "APNS_BUNDLE_ID not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Check user preferences — skip users who disabled this notification type
     const { data: prefs } = await supabaseAdmin

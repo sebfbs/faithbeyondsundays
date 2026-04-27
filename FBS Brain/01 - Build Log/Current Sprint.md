@@ -1,20 +1,23 @@
 # Current Sprint
 
-## Status: Ready to Build
+## Status: Ready — Vercel Deployment
 
-## Last Session (2026-04-27)
-- Documentation only — no code written
-- Saved PWA Install Flow full game plan to `FBS Brain/02 - Backlog/PWA Install Flow.md`
-- Added Backlog section to Current Sprint
+## Completed This Sprint (2026-04-27)
+
+### Lovable Independence — DONE
+- All frontend Lovable dependencies removed and replaced
+- All 7 edge functions migrated off Lovable gateway → Anthropic API + Resend
+- All 7 edge functions deployed to Supabase
+- Supabase secrets set: `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `HOOK_SECRET`
+- Auth email hook wired in Supabase Auth → Hooks → Send Email
+- App builds clean, zero errors
 
 ## What's Next
-1. Audit Lovable-specific dependencies — especially `@lovable.dev/cloud-auth-js`
-2. Walk through the app end-to-end and document what works vs what's broken
-3. Decide on churchless users flow (keep or cut for V1)
-4. Build QR code → church landing page flow
 
-## Blocking
-- faithbeyondsundays.app domain still propagating (check next session)
+1. **Vercel deployment** — set up project on Vercel, wire production env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`)
+2. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
+3. **Churchless users decision** — cut or keep for V1 (quick call, not a build task)
+4. **QR code → church landing page flow**
 
 ---
 

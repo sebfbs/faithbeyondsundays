@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -44,44 +44,59 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!anthropicApiKey) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+    // Build the image content block for Anthropic's API.
+    // The image field may be a base64 data URL (data:image/jpeg;base64,...) or a plain URL.
+    let imageContent: any;
+    const dataUrlMatch = image.match(/^data:([^;]+);base64,(.+)$/);
+    if (dataUrlMatch) {
+      imageContent = {
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: dataUrlMatch[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+          data: dataUrlMatch[2],
         },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a handwriting transcription assistant. Transcribe the handwritten text in the provided image exactly as written. Return only the transcribed text, preserving paragraph breaks. Do not add commentary.",
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: { url: image },
-                },
-                {
-                  type: "text",
-                  text: "Please transcribe the handwritten text in this image.",
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+      };
+    } else {
+      imageContent = {
+        type: "image",
+        source: {
+          type: "url",
+          url: image,
+        },
+      };
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system: "You are a handwriting transcription assistant. Transcribe the handwritten text in the provided image exactly as written. Return only the transcribed text, preserving paragraph breaks. Do not add commentary.",
+        messages: [
+          {
+            role: "user",
+            content: [
+              imageContent,
+              {
+                type: "text",
+                text: "Please transcribe the handwritten text in this image.",
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -90,14 +105,8 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Anthropic API error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Failed to transcribe image" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -105,7 +114,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || "";
+    const text = data.content?.[0]?.text || "";
 
     return new Response(JSON.stringify({ text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

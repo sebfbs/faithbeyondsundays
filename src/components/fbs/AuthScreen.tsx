@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import fbsLogo from "@/assets/FBS_Logo_white.png";
 
 type Mode = "welcome" | "signin" | "signup";
@@ -24,8 +23,9 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     setError(null);
     setLoading("google");
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
     });
     if (error) {
       setError(error.message || "Google sign-in failed");
@@ -36,8 +36,9 @@ export default function AuthScreen() {
   const handleAppleSignIn = async () => {
     setError(null);
     setLoading("apple");
-    const { error } = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo: window.location.origin },
     });
     if (error) {
       setError(error.message || "Apple sign-in failed");
