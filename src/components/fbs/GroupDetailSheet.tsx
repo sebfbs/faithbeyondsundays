@@ -187,7 +187,7 @@ export default function GroupDetailSheet({
           {isMember && tab === "chat" ? (
             <GroupChat groupId={group.id} isMember={isMember} isDemo={isDemo} churchId={churchId} />
           ) : (
-            <div className="overflow-y-auto px-4 py-3 space-y-1">
+            <div className="overflow-y-auto px-4 py-3 pb-8 space-y-1">
               {membersLoading && !isDemo && (
                 <div className="flex justify-center py-8">
                   <Loader2 size={20} className="animate-spin text-muted-foreground" />

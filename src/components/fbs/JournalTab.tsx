@@ -14,6 +14,7 @@ interface JournalTabProps {
   onUpdateEntry?: (entry: JournalEntry) => void;
   onDeleteEntry?: (id: string) => void;
   isDemo?: boolean;
+  onComposingChange?: (composing: boolean) => void;
 }
 
 const DEMO_TRANSCRIPTION = "Today I'm grateful for the small moments of peace I found during my morning walk. The sunrise reminded me that each day is a fresh start and that God's mercies are new every morning.";
@@ -43,7 +44,7 @@ function checkImageQuality(imageData: ImageData): string | null {
   return null;
 }
 
-const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry, isDemo }, ref) {
+const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry, isDemo, onComposingChange }, ref) {
   const colors = getAccentColors();
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
@@ -55,6 +56,8 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
   const [editing, setEditing] = useState(false);
+  const composeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -181,18 +184,19 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
     { icon: "🚫", text: "Avoid shadows" },
   ];
 
-  // iOS keyboard viewport fix
+  useEffect(() => { onComposingChange?.(composing); }, [composing, onComposingChange]);
+
   useEffect(() => {
     if (!composing) return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => {
-      window.scrollTo(0, 0);
-      setTimeout(() => window.scrollTo(0, 0), 150);
-    };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    const t = setTimeout(() => composeTextareaRef.current?.focus(), 150);
+    return () => clearTimeout(t);
   }, [composing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const t = setTimeout(() => editTextareaRef.current?.focus(), 150);
+    return () => clearTimeout(t);
+  }, [editing]);
 
   const handleInputBlur = () => {
     window.scrollTo(0, 0);
@@ -233,13 +237,13 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           className="w-full bg-card rounded-2xl px-5 py-4 text-base font-semibold text-foreground placeholder:text-muted-foreground shadow-card outline-none"
         />
         <textarea
+          ref={composeTextareaRef}
           placeholder="Write your thoughts..."
           value={newBody}
           onChange={(e) => setNewBody(e.target.value)}
           onBlur={handleInputBlur}
           rows={8}
           className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
-          autoFocus
         />
 
         {/* Scan handwriting — minimal text link */}
@@ -379,12 +383,12 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
           className="w-full bg-card rounded-2xl px-5 py-4 text-base font-semibold text-foreground placeholder:text-muted-foreground shadow-card outline-none"
         />
         <textarea
+          ref={editTextareaRef}
           placeholder="Write your thoughts..."
           value={editBody}
           onChange={(e) => setEditBody(e.target.value)}
           rows={8}
           className="w-full bg-card rounded-2xl px-5 py-4 text-sm text-foreground placeholder:text-muted-foreground shadow-card outline-none resize-none leading-relaxed"
-          autoFocus
         />
       </div>
     );

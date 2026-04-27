@@ -41,7 +41,11 @@ export default function FollowListSheet({ userId, mode, onClose, onViewProfile, 
       }));
       setUsers(list);
       const states: Record<string, boolean> = {};
-      list.forEach((u) => { states[u.userId] = demoFollows.includes(u.username); });
+      if (mode === "following") {
+        list.forEach((u) => { states[u.userId] = true; });
+      } else {
+        list.forEach((u) => { states[u.userId] = demoFollows.includes(u.username); });
+      }
       setFollowStates(states);
       setLoading(false);
       return;
@@ -54,13 +58,18 @@ export default function FollowListSheet({ userId, mode, onClose, onViewProfile, 
         : await getFollowingList(userId);
       setUsers(list);
 
-      // Check if current user follows each person
       const states: Record<string, boolean> = {};
-      await Promise.all(
-        list.map(async (u) => {
-          states[u.userId] = await isFollowingDb(u.userId);
-        })
-      );
+      if (mode === "following") {
+        // Everyone in the following list is already followed by definition
+        list.forEach((u) => { states[u.userId] = true; });
+      } else {
+        // For followers, check individually whether we follow them back
+        await Promise.all(
+          list.map(async (u) => {
+            states[u.userId] = await isFollowingDb(u.userId);
+          })
+        );
+      }
       setFollowStates(states);
       setLoading(false);
     };

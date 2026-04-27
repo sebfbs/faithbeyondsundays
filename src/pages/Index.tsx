@@ -121,6 +121,7 @@ export default function Index() {
   };
 
   const [moreOpen, setMoreOpen] = useState(false);
+  const [journalComposing, setJournalComposing] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonUIData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
   const [subOverlay, setSubOverlay] = useState<"previous-sermon-detail" | "public-profile" | null>(null);
@@ -341,6 +342,7 @@ export default function Index() {
             onUpdateEntry={handleUpdateEntry}
             onDeleteEntry={handleDeleteEntry}
             isDemo={isDemo}
+            onComposingChange={setJournalComposing}
           />
         );
       default:
@@ -411,7 +413,7 @@ export default function Index() {
         </div>
       </main>
 
-      {isMobile && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
+      {isMobile && !journalComposing && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
 
       {isMobile && moreOpen && (
         <MoreSheet

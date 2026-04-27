@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X } from "lucide-react";
 import { getAccentColors } from "./themeColors";
@@ -191,11 +191,30 @@ interface HomeTabProps {
 }
 
 export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalEntry, reflectedToday, userName = "there", churchName, hasChurch = true, onNavigate, churchId, userId, isDemo, dailyContent: dailyContentProp }: HomeTabProps) {
-  const reflectionCardRef = useRef<HTMLDivElement>(null);
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
   const colors = getAccentColors();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [vvTop, setVvTop] = useState(0);
+  const [vvHeight, setVvHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
+
+  useEffect(() => {
+    if (!reflectionOpen) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => { setVvTop(vv.offsetTop); setVvHeight(vv.height); };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
+  }, [reflectionOpen]);
+
+  useEffect(() => {
+    if (!reflectionOpen) return;
+    const t = setTimeout(() => textareaRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [reflectionOpen]);
 
   // Fetch AI-generated daily content for churchless users (skip if passed as prop)
   const { data: dailyContentFetched, isLoading: isDailyContentLoading } = useQuery<DailyContent>({
@@ -300,8 +319,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
               <Skeleton className="h-4 w-2/3" />
             </div>
           ) : (
-            <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
-            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
+            <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
                   <BookText size={14} style={{ color: colors.accent }} />
@@ -314,42 +332,15 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
                 {dailyContent?.reflection_prompt || FALLBACK_REFLECTION}
               </p>
 
-              {!completed && !reflectionOpen && (
+              {!completed && (
                 <button
-                  onClick={() => { setReflectionOpen(true); setTimeout(() => { reflectionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
-                   className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
-                   style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
+                  onClick={() => setReflectionOpen(true)}
+                  className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
+                  style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
                 >
                   <BookText size={16} />
                   Reflect
                 </button>
-              )}
-
-              {!completed && reflectionOpen && (
-                <div className="mt-4 space-y-3">
-                  <div className="flex justify-end">
-                    <button onClick={() => { setReflectionOpen(false); setReflectionText(""); }} className="p-1 rounded-full tap-active transition-opacity hover:opacity-70" aria-label="Close reflection">
-                      <X size={18} className="text-muted-foreground" />
-                    </button>
-                  </div>
-                  <textarea
-                    value={reflectionText}
-                    onChange={(e) => setReflectionText(e.target.value)}
-                    placeholder="Write your thoughts and reflections here..."
-                    className="w-full h-32 text-sm text-foreground bg-transparent resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3"
-                    style={{ background: "hsl(40 25% 97%)" }}
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveReflection}
-                    disabled={!reflectionText.trim()}
-                    className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity disabled:opacity-40"
-                    style={{ background: colors.buttonBg, boxShadow: reflectionText.trim() ? colors.buttonShadow : "none" }}
-                  >
-                    <Save size={15} />
-                    Save Reflection
-                  </button>
-                </div>
               )}
 
               {completed && (
@@ -359,7 +350,6 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
                   <span className="text-xs text-muted-foreground ml-auto">View in Journal →</span>
                 </div>
               )}
-            </div>
             </div>
           )}
 
@@ -421,8 +411,8 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
       {/* Today's Reflection */}
       {sermon && (
-      <div ref={reflectionCardRef} style={{ position: 'relative', zIndex: reflectionOpen ? 10 : 'auto' as any, transform: reflectionOpen ? 'scale(1.01)' : 'scale(1)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
-      <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: reflectionOpen ? '0 8px 32px -4px hsl(38 100% 47% / 0.18), 0 2px 12px hsl(220 25% 15% / 0.08)' : undefined }}>
+      <div>
+      <div className="rounded-2xl p-5 shadow-card" style={{ background: "hsl(0 0% 100% / 0.8)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
             <BookText size={14} style={{ color: colors.accent }} />
@@ -438,42 +428,15 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
           From Sunday's sermon · {sermon.title}
         </p>
 
-        {!completed && !reflectionOpen && (
+        {!completed && (
           <button
-            onClick={() => { setReflectionOpen(true); setTimeout(() => { reflectionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }}
+            onClick={() => setReflectionOpen(true)}
             className="w-full mt-4 flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity hover:opacity-90"
             style={{ background: colors.buttonBg, boxShadow: colors.buttonShadow }}
           >
             <BookText size={16} />
             Reflect
           </button>
-        )}
-
-        {!completed && reflectionOpen && (
-          <div className="mt-4 space-y-3">
-            <div className="flex justify-end">
-              <button onClick={() => { setReflectionOpen(false); setReflectionText(""); }} className="p-1 rounded-full tap-active transition-opacity hover:opacity-70" aria-label="Close reflection">
-                <X size={18} className="text-muted-foreground" />
-              </button>
-            </div>
-            <textarea
-              value={reflectionText}
-              onChange={(e) => setReflectionText(e.target.value)}
-              placeholder="Write your thoughts and reflections here..."
-              className="w-full h-32 text-sm text-foreground bg-transparent resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3"
-              style={{ background: "hsl(40 25% 97%)" }}
-              autoFocus
-            />
-            <button
-              onClick={handleSaveReflection}
-              disabled={!reflectionText.trim()}
-              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity disabled:opacity-40"
-              style={{ background: colors.buttonBg, boxShadow: reflectionText.trim() ? colors.buttonShadow : "none" }}
-            >
-              <Save size={15} />
-              Save Reflection
-            </button>
-          </div>
         )}
 
         {completed && (
@@ -519,6 +482,64 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
 
       <div className="h-2" />
       </div>
+
+      {/* Reflection overlay — centered in the visible viewport above the keyboard */}
+      {reflectionOpen && (
+        <div
+          className="fixed inset-x-0 z-50 flex items-center justify-center px-5"
+          style={{ top: vvTop, height: vvHeight, background: "hsl(220 25% 10% / 0.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+          onClick={() => { setReflectionOpen(false); setReflectionText(""); }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl p-5 shadow-xl"
+            style={{ background: "hsl(0 0% 100%)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: colors.accentBg }}>
+                  <BookText size={14} style={{ color: colors.accent }} />
+                </div>
+                <span className="text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+                  Today's Reflection
+                </span>
+              </div>
+              <button
+                onClick={() => { setReflectionOpen(false); setReflectionText(""); }}
+                className="p-1 rounded-full tap-active transition-opacity hover:opacity-70"
+                aria-label="Close reflection"
+              >
+                <X size={18} className="text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-foreground font-medium text-base leading-relaxed mb-1">
+              {sermon ? getDailyPrompt(sermon) : (dailyContent?.reflection_prompt || FALLBACK_REFLECTION)}
+            </p>
+            {sermon && (
+              <p className="text-muted-foreground text-xs mb-4 font-medium">
+                From Sunday's sermon · {sermon.title}
+              </p>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={reflectionText}
+              onChange={(e) => setReflectionText(e.target.value)}
+              placeholder="Write your thoughts and reflections here..."
+              className="w-full h-28 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3 mb-3"
+              style={{ background: "hsl(40 25% 97%)" }}
+            />
+            <button
+              onClick={handleSaveReflection}
+              disabled={!reflectionText.trim()}
+              className="w-full flex items-center justify-center gap-2 text-primary-foreground font-semibold text-sm py-3 rounded-2xl tap-active transition-opacity disabled:opacity-40"
+              style={{ background: colors.buttonBg, boxShadow: reflectionText.trim() ? colors.buttonShadow : "none" }}
+            >
+              <Save size={15} />
+              Save Reflection
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

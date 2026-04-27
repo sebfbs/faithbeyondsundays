@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ChevronLeft, ChevronRight, Clock, Calendar } from "lucide-react";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 
@@ -12,6 +13,8 @@ export default function PreviousSermonsListScreen({
   onBack,
   onSelectSermon,
 }: PreviousSermonsListScreenProps) {
+  useEffect(() => { setTimeout(() => window.scrollTo(0, 0), 0); }, []);
+
   return (
     <div className="animate-fade-in min-h-screen" style={{ background: "hsl(var(--background))" }}>
       {/* Header */}

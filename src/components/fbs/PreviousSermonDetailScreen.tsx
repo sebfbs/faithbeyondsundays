@@ -73,6 +73,8 @@ export default function PreviousSermonDetailScreen({
   onBack,
   onOpenBible,
 }: PreviousSermonDetailScreenProps) {
+  useEffect(() => { setTimeout(() => window.scrollTo(0, 0), 0); }, []);
+
   const videoRef = useRef<SermonVideoPlayerHandle>(null);
   const {
     sermonLikeCount,
