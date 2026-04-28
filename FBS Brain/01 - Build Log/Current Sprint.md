@@ -2,6 +2,12 @@
 
 ## Status: Ready — Vercel Deployment
 
+## Completed This Sprint (2026-04-28)
+
+### Onboarding Wizard — Animated Mockup Polish — DONE
+- tour4 (Bible): scroll to Romans, tap highlights, chapter grid, verse text vv1-6
+- tour5 (Community): full animation sequence, Women's Group sheet fix, padding fix, 2.5s start delay
+
 ## Completed This Sprint (2026-04-27)
 
 ### Lovable Independence — DONE
