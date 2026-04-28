@@ -24,10 +24,16 @@ interface ProfileScreenProps {
   onUpdateUser?: (updated?: UserData) => void;
 }
 
-const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier) => {
+const formatMemberSince = (isoDate?: string): string => {
+  if (!isoDate) return "—";
+  const d = new Date(isoDate);
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
+
+const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier, memberSinceDate?: string) => {
   const hasChurch = !!user.churchCode;
   const badges: { icon: any; label: string; detail: string; color?: string; gradient?: string; animated?: boolean }[] = [
-    { icon: Medal, label: "Member Since", detail: "Jan 2025", color: "hsl(38 100% 47%)" },
+    { icon: Medal, label: "Member Since", detail: formatMemberSince(memberSinceDate), color: "hsl(38 100% 47%)" },
   ];
   if (hasChurch) {
     badges.push({ icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" });
@@ -100,12 +106,13 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     enabled: !!authUser,
   });
 
-  const badges = getProfileBadges(user, highestBadge || undefined);
+  const badges = getProfileBadges(user, highestBadge || undefined, authUser?.created_at);
 
   // Avatar upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
 
   // Instagram handle editing
   const [igInput, setIgInput] = useState(user.instagramHandle || "");
@@ -151,6 +158,15 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     setUploading(false);
   };
 
+  const handleRemoveAvatar = async () => {
+    if (!authUser || removingAvatar) return;
+    setRemovingAvatar(true);
+    await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", authUser.id);
+    setAvatarUrl(undefined);
+    onUpdateUser?.({ ...user, avatarUrl: undefined });
+    setRemovingAvatar(false);
+  };
+
   const sanitizeIgHandle = (value: string) => {
     return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
   };
@@ -163,7 +179,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         .update({ instagram_handle: clean || null })
         .eq("user_id", authUser.id);
     }
-    onUpdateUser?.();
+    onUpdateUser?.({ ...user, instagramHandle: clean || undefined });
     setIgSaved(true);
     setTimeout(() => setIgSaved(false), 2000);
   };
@@ -260,6 +276,19 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           >
             <Camera size={14} className="text-muted-foreground" />
           </button>
+          {avatarUrl && (
+            <button
+              onClick={handleRemoveAvatar}
+              disabled={removingAvatar}
+              className="absolute -bottom-1 -left-1 w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center shadow-sm border border-border/50 tap-active disabled:opacity-50"
+            >
+              {removingAvatar ? (
+                <Loader2 size={12} className="animate-spin text-destructive" />
+              ) : (
+                <Trash2 size={12} className="text-destructive" />
+              )}
+            </button>
+          )}
           <input
             ref={fileInputRef}
             type="file"
