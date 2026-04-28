@@ -15,9 +15,9 @@ interface ChurchEntry {
   state: string | null;
 }
 
-type Step = "age" | "church" | "details" | "username" | "tour1" | "tour2" | "tour4" | "tour5";
+type Step = "age" | "church" | "details" | "username" | "tour1" | "tour2a" | "tour2" | "tour4" | "tour5";
 
-const STEPS: Step[] = ["age", "church", "details", "username", "tour1", "tour2", "tour4", "tour5"];
+const STEPS: Step[] = ["age", "church", "details", "username", "tour1", "tour2a", "tour2", "tour4", "tour5"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_OPTIONS = [
   { label: "Morning", time: "8 AM" },
@@ -147,11 +147,6 @@ export default function OnboardingScreen() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Request form
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
-  const [requestForm, setRequestForm] = useState({ name: "", city: "", state: "" });
-  const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
 
   // Notification preferences for tour cards
   const { preferences, updatePreference } = useNotificationPreferences();
@@ -217,18 +212,6 @@ export default function OnboardingScreen() {
 
   const handleUsernameChange = (value: string) => {
     setUsername(value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20));
-  };
-
-  const handleRequestSubmit = () => {
-    const errs: Record<string, string> = {};
-    if (!requestForm.name.trim()) errs.name = "Church name is required";
-    if (!requestForm.city.trim()) errs.city = "City is required";
-    if (!requestForm.state.trim()) errs.state = "State is required";
-    if (Object.keys(errs).length > 0) {
-      setRequestErrors(errs);
-      return;
-    }
-    setRequestSubmitted(true);
   };
 
   const handleClaimUsername = async () => {
@@ -340,69 +323,7 @@ export default function OnboardingScreen() {
           <p className="text-sm text-muted-foreground">Search for your church to get started</p>
         </div>
 
-        {requestSubmitted ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-amber-bg flex items-center justify-center mb-5">
-              <CheckCircle size={32} className="text-amber" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">We're on it!</h2>
-            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-6">
-              We'll reach out to <span className="font-semibold text-foreground">{requestForm.name}</span> and let you know when they're ready.
-            </p>
-            <button
-              onClick={() => { setSelectedChurch(null); setStep("details"); }}
-              className="w-full max-w-[280px] flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 mb-3"
-            >
-              Continue
-              <ArrowRight size={16} />
-            </button>
-            <button
-              onClick={() => { setRequestSubmitted(false); setShowRequestForm(false); setSearchQuery(""); }}
-              className="text-sm font-medium text-muted-foreground tap-active"
-            >
-              ← Back to Search
-            </button>
-          </div>
-        ) : showRequestForm ? (
-          <div className="space-y-3 flex-1 animate-fade-in">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
-                <Church size={18} className="text-amber" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Request Your Church</h2>
-                <p className="text-xs text-muted-foreground">We'll get them set up</p>
-              </div>
-            </div>
-            {[
-              { key: "name", placeholder: "Church name" },
-              { key: "city", placeholder: "City" },
-              { key: "state", placeholder: "State" },
-            ].map(({ key, placeholder }) => (
-              <div key={key}>
-                <input
-                  type="text"
-                  value={requestForm[key as keyof typeof requestForm]}
-                  onChange={(e) => {
-                    setRequestForm((prev) => ({ ...prev, [key]: e.target.value }));
-                    if (requestErrors[key]) setRequestErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
-                  }}
-                  placeholder={placeholder}
-                  className={`w-full bg-card rounded-2xl px-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40 ${requestErrors[key] ? "ring-2 ring-destructive/50" : ""}`}
-                />
-                {requestErrors[key] && <p className="text-xs text-destructive mt-1 ml-1">{requestErrors[key]}</p>}
-              </div>
-            ))}
-            <div className="pt-4 space-y-3">
-              <button onClick={handleRequestSubmit} className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90">
-                Submit Request
-              </button>
-              <button onClick={() => setShowRequestForm(false)} className="w-full text-sm font-medium text-muted-foreground tap-active">
-                ← Back to Search
-              </button>
-            </div>
-          </div>
-        ) : (
+        {(
           <div className="space-y-4 flex-1">
             <div className="relative">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -447,21 +368,9 @@ export default function OnboardingScreen() {
                     </button>
                   ))
                 ) : (
-                  <div className="text-center py-6 space-y-4">
-                    <p className="text-sm text-muted-foreground">Don't see your church?</p>
-                    <button
-                      onClick={() => { setSelectedChurch(null); setStep("details"); }}
-                      className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
-                    >
-                      Continue without a church
-                      <ArrowRight size={16} />
-                    </button>
-                    <button
-                      onClick={() => { setShowRequestForm(true); setRequestForm((prev) => ({ ...prev, name: searchQuery })); }}
-                      className="text-sm font-medium text-muted-foreground tap-active"
-                    >
-                      Request Your Church →
-                    </button>
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground">Can't find your church?</p>
+                    <p className="text-sm text-muted-foreground mt-1">Contact <span className="font-medium text-foreground">support@faithbeyondsundays.com</span></p>
                   </div>
                 )}
               </div>
@@ -567,9 +476,6 @@ export default function OnboardingScreen() {
           <div className="bg-card/95 backdrop-blur-sm rounded-3xl animate-fade-in animate-shimmer-border shadow-xl p-6 space-y-6">
             <div className="text-center space-y-3">
               <ProgressDots current="username" />
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-300 via-yellow-400 to-sky-300 flex items-center justify-center shadow-lg">
-                <Sparkles className="h-7 w-7 text-white" />
-              </div>
               <h1 className="text-2xl font-bold text-card-foreground tracking-tight">Claim Your @</h1>
               <p className="text-sm text-muted-foreground">Every great name is still available. Pick yours.</p>
             </div>
@@ -694,10 +600,93 @@ export default function OnboardingScreen() {
         icon={<AnimatedLogo size={48} />}
         iconGradient="bg-muted/50"
         headline="Sunday Doesn't End on Sunday"
-        description="Revisit Sunday's message anytime — watch the sermon, unpack the key takeaways, and let it shape your whole week, not just your Sunday."
+        description="Sunday's message lives here all week. Revisit it. Reflect on it. Live it out."
         buttonLabel="Next"
-        onNext={() => setStep("tour2")}
+        onNext={() => setStep("tour2a")}
       />
+    );
+  }
+
+  // ─── Tour 2a: Daily Sparks intro (visual) ───
+  if (step === "tour2a") {
+    const churchName = selectedChurch?.name || "Faith Beyond Sundays";
+    const initial = churchName[0].toUpperCase();
+    return (
+      <div
+        className="app-container mx-auto flex flex-col min-h-screen px-6 !max-w-[430px]"
+        style={{ background: "hsl(var(--background))" }}
+      >
+        <div className="pt-14 pb-4">
+          <ProgressDots current="tour2a" />
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
+          <h1 className="text-2xl font-bold text-foreground mb-2 leading-tight">Daily Sparks</h1>
+          <p className="text-sm text-muted-foreground mb-8">A daily nudge from Sunday's sermon, right on your lock screen.</p>
+
+          {/* iPhone mockup */}
+          <div className="relative mx-auto mb-8" style={{ width: 210 }}>
+            {/* Volume buttons */}
+            <div className="absolute" style={{ left: -5, top: 72, width: 4, height: 22, background: "#3a3a3a", borderRadius: "2px 0 0 2px" }} />
+            <div className="absolute" style={{ left: -5, top: 102, width: 4, height: 38, background: "#3a3a3a", borderRadius: "2px 0 0 2px" }} />
+            <div className="absolute" style={{ left: -5, top: 148, width: 4, height: 38, background: "#3a3a3a", borderRadius: "2px 0 0 2px" }} />
+            {/* Power button */}
+            <div className="absolute" style={{ right: -5, top: 108, width: 4, height: 56, background: "#3a3a3a", borderRadius: "0 2px 2px 0" }} />
+
+            {/* Phone shell */}
+            <div style={{ borderRadius: 40, border: "9px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", boxShadow: "0 24px 56px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)" }}>
+              {/* Screen */}
+              <div style={{ borderRadius: 32, overflow: "hidden", background: "linear-gradient(150deg, #f97316 0%, #fbbf24 35%, #38bdf8 70%, #0ea5e9 100%)", position: "relative" }}>
+                {/* Notch */}
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <div style={{ width: 90, height: 22, background: "#1e1e1e", borderRadius: "0 0 16px 16px" }} />
+                </div>
+                {/* Lock + time */}
+                <div className="text-center pt-3 pb-4 px-4">
+                  <p className="text-white/80 text-xs mb-1">🔒</p>
+                  <p className="text-white leading-none" style={{ fontSize: 46, fontWeight: 200, letterSpacing: -1 }}>9:41</p>
+                  <p className="text-white/70 text-xs mt-1">Monday, April 28</p>
+                </div>
+                {/* Notification card */}
+                <div className="mx-3 mb-4 rounded-2xl overflow-hidden text-left" style={{ background: "rgba(220,220,220,0.82)", backdropFilter: "blur(24px)" }}>
+                  <div className="px-3 pt-2.5 pb-2">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-white font-bold" style={{ background: "hsl(var(--amber))", fontSize: 9 }}>
+                        {initial}
+                      </div>
+                      <span className="text-gray-500 font-semibold uppercase tracking-wide flex-1 truncate" style={{ fontSize: 9 }}>{churchName}</span>
+                      <span className="text-gray-400 shrink-0" style={{ fontSize: 9 }}>now</span>
+                    </div>
+                    <p className="text-gray-900 font-medium leading-snug" style={{ fontSize: 11 }}>Grace meets you in the storm, not on the other side of it.</p>
+                  </div>
+                </div>
+                {/* Bottom controls */}
+                <div className="flex justify-between px-5 pb-4">
+                  {[0, 1].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full" style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(10px)" }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pb-12 pt-4 space-y-3">
+          <button
+            onClick={() => { setSparkEnabled(true); setStep("tour2"); }}
+            className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
+          >
+            Turn on Daily Sparks
+            <ArrowRight size={16} />
+          </button>
+          <button
+            onClick={() => { setSparkEnabled(false); setStep("tour4"); }}
+            className="w-full text-sm font-medium text-muted-foreground tap-active text-center py-2"
+          >
+            Skip for now
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -713,11 +702,8 @@ export default function OnboardingScreen() {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
-          <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg mb-6 bg-gradient-to-br from-amber-400 to-sky-400">
-            <Sparkles className="h-9 w-9 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-3 leading-tight max-w-[300px]">Daily Sparks</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-[320px] mb-6">Short, powerful nudges pulled straight from this week's sermon. A spark a day keeps the message close — and you don't have to get one every day. You choose.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-1 leading-tight">When do you want them?</h1>
+          <p className="text-sm text-muted-foreground mb-6">Pick the days and time that work for you.</p>
           <div className="w-full text-left">
             <NotificationSetup
               type="daily_spark"
