@@ -701,8 +701,8 @@ export default function OnboardingScreen() {
             <div className="absolute" style={{ right: -5, top: 126, width: 4, height: 68, background: "#3a3a3a", borderRadius: "0 2px 2px 0" }} />
 
             {/* Phone shell — clipped mid-body so bottom corners never show */}
-            <div style={{ overflow: "hidden", maxHeight: 265, borderRadius: "46px 46px 0 0" }}>
-              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 560, boxShadow: "0 28px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)" }}>
+            <div style={{ overflow: "hidden", maxHeight: 265, borderRadius: "46px 46px 0 0", maskImage: "linear-gradient(to bottom, black 85%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 85%, transparent 100%)" }}>
+              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 560, boxShadow: "0 28px 64px rgba(0,0,0,0.5)" }}>
                 {/* Screen */}
                 <div style={{ borderRadius: 37, overflow: "hidden", background: skyGradient, position: "relative", height: "100%" }}>
                   {/* Notch */}
@@ -877,10 +877,10 @@ export default function OnboardingScreen() {
             <div className="absolute" style={{ left: -5, top: 172, width: 4, height: 46, background: "#3a3a3a", borderRadius: "2px 0 0 2px" }} />
             <div className="absolute" style={{ right: -5, top: 126, width: 4, height: 68, background: "#3a3a3a", borderRadius: "0 2px 2px 0" }} />
 
-            <div style={{ overflow: "hidden", maxHeight: 340, borderRadius: "46px 46px 0 0" }}>
-              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 600, boxShadow: "0 28px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)" }}>
+            <div style={{ overflow: "hidden", maxHeight: 340, borderRadius: "46px 46px 0 0", maskImage: "linear-gradient(to bottom, black 85%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 85%, transparent 100%)" }}>
+              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 600, boxShadow: "0 28px 64px rgba(0,0,0,0.5)" }}>
                 {/* Notch */}
-                <div style={{ display: "flex", justifyContent: "center", background: "hsl(var(--background))" }}>
+                <div style={{ display: "flex", justifyContent: "center", background: "hsl(var(--background))", marginBottom: -1 }}>
                   <div style={{ width: 110, height: 24, background: "#1e1e1e", borderRadius: "0 0 18px 18px" }} />
                 </div>
 
@@ -1052,8 +1052,8 @@ export default function OnboardingScreen() {
             <div className="absolute" style={{ left: -5, top: 172, width: 4, height: 46, background: "#3a3a3a", borderRadius: "2px 0 0 2px" }} />
             <div className="absolute" style={{ right: -5, top: 126, width: 4, height: 68, background: "#3a3a3a", borderRadius: "0 2px 2px 0" }} />
 
-            <div style={{ overflow: "hidden", maxHeight: 350, borderRadius: "46px 46px 0 0" }}>
-              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 600, boxShadow: "0 28px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)" }}>
+            <div style={{ overflow: "hidden", maxHeight: 350, borderRadius: "46px 46px 0 0", maskImage: "linear-gradient(to bottom, black 85%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 85%, transparent 100%)" }}>
+              <div style={{ borderRadius: 46, border: "10px solid #1e1e1e", background: "#1e1e1e", overflow: "hidden", height: 600, boxShadow: "0 28px 64px rgba(0,0,0,0.5)" }}>
                 <div style={{ display: "flex", justifyContent: "center", background: "hsl(var(--background))" }}>
                   <div style={{ width: 110, height: 24, background: "#1e1e1e", borderRadius: "0 0 18px 18px" }} />
                 </div>
