@@ -186,6 +186,9 @@ export default function Index() {
       }
     : null;
 
+  // Preview bypass — skip auth entirely for local development previews
+  if (new URLSearchParams(window.location.search).get("preview") === "onboarding") return <OnboardingScreen />;
+
   // Loading state
   if (!isDemo && authLoading) {
     return (
