@@ -291,6 +291,7 @@ export default function Index() {
           userChurchName={userData.churchName}
           userChurchId={profile?.church_id || undefined}
           isDemo={isDemo}
+          onJoined={refetchProfile}
         />
       );
     }

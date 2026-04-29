@@ -19,6 +19,7 @@ interface CommunityScreenProps {
   userChurchName: string;
   userChurchId?: string;
   isDemo?: boolean;
+  onJoined?: () => void;
 }
 
 interface GroupInfo {
@@ -37,6 +38,7 @@ export default function CommunityScreen({
   userChurchName,
   userChurchId,
   isDemo,
+  onJoined,
 }: CommunityScreenProps) {
   const [search, setSearch] = useState("");
   const colors = getAccentColors();
@@ -209,7 +211,7 @@ export default function CommunityScreen({
   };
 
   if (!userChurchCode) {
-    return <ChurchlessCommunity onBack={onBack} onViewProfile={onViewProfile} />;
+    return <ChurchlessCommunity onBack={onBack} onViewProfile={onViewProfile} onJoined={onJoined} />;
   }
 
   return (

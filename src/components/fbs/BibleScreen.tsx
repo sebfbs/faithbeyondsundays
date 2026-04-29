@@ -128,6 +128,8 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
   const handleTranslationChange = (t: BibleTranslation) => {
     setTranslation(t);
     setShowTranslationPicker(false);
+    scrollRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
     // If currently viewing text, re-fetch with new translation
     if (view === "text" && selectedBook && selectedChapter) {
       const cacheKey = `${t.id}:${selectedBook.name}:${selectedChapter}`;

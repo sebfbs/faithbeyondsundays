@@ -12,9 +12,10 @@ import { getAvatarColor } from "./avatarColors";
 interface ChurchlessCommunityProps {
   onBack: () => void;
   onViewProfile: (member: CommunityMember) => void;
+  onJoined?: () => void;
 }
 
-export default function ChurchlessCommunity({ onBack, onViewProfile }: ChurchlessCommunityProps) {
+export default function ChurchlessCommunity({ onBack, onViewProfile, onJoined }: ChurchlessCommunityProps) {
   const [userSearch, setUserSearch] = useState("");
   const [churchSearch, setChurchSearch] = useState("");
   const [joiningChurchId, setJoiningChurchId] = useState<string | null>(null);
@@ -88,8 +89,8 @@ export default function ChurchlessCommunity({ onBack, onViewProfile }: Churchles
       if (roleError && !roleError.message.includes("duplicate")) throw roleError;
 
       await refetchProfile();
+      onJoined?.();
       toast({ title: `Welcome to ${churchName}!`, description: "You're now connected to your church community." });
-      // Page will re-render with church data via profile refetch
     } catch (e: any) {
       toast({ title: "Couldn't join church", description: e.message, variant: "destructive" });
     } finally {
