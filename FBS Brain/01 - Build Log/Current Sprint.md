@@ -34,8 +34,11 @@
 
 1. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
 2. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
-3. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
-4. **QR code → church landing page flow**
+3. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
+4. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
+5. **Locked badge tooltip** — when a user taps a grayed-out locked badge, show a small pop-up explaining how to earn it (e.g. "Read 10 Bible chapters to earn this"). Turns confusion into a call to action.
+6. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
+7. **QR code → church landing page flow**
 
 ---
 
