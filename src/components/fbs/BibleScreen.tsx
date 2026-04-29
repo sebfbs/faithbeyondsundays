@@ -48,6 +48,7 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, [view, selectedBook, selectedChapter]);
 
   // Auto-navigate to a specific book/chapter/verse when deep-linking

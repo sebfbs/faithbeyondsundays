@@ -1,6 +1,6 @@
 export function getAccentColors() {
   const hour = new Date().getHours();
-  if (hour >= 17) {
+  if (hour >= 17 || hour < 5) {
     // Evening: soft sky blue / lavender
     return {
       accent: "hsl(215, 65%, 65%)",
