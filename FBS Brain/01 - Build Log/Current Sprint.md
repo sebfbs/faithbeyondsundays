@@ -1,6 +1,18 @@
 # Current Sprint
 
-## Status: Ready — Vercel Deployment
+## Status: Badge System Complete — Next: Streak Logic
+
+## Completed This Sprint (2026-04-29)
+
+### Badge System — DONE
+- Full badge system built end-to-end (DB + frontend + real-time)
+- `user_badges` and `bible_reads` tables created with RLS and triggers
+- `BadgeStackGroup` Apple Wallet fan-expand component
+- Locked badge cards: uniform gray, lock icon right-aligned, Founding Member excluded
+- `ProfileScreen` and `PublicProfileScreen` updated with new badge sections
+- `BibleScreen` logs every chapter read to `bible_reads`
+- Real-time banner + confetti fires on badge earn
+- Fixed: `reflection_badges` missing from `supabase_realtime` publication (was breaking entire channel)
 
 ## Completed This Sprint (2026-04-28)
 
@@ -20,9 +32,9 @@
 
 ## What's Next
 
-1. **Vercel deployment** — set up project on Vercel, wire production env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`)
-2. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
-3. **Churchless users decision** — cut or keep for V1 (quick call, not a build task)
+1. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
+2. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
+3. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
 4. **QR code → church landing page flow**
 
 ---
