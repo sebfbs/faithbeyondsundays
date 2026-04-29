@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Medal, Star, Users, Calendar, UserCheck, UserPlus, HeartHandshake, ShieldCheck, BookOpen, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Medal, Crown, Users, Flame, UserCheck, UserPlus, BookOpen, MoreHorizontal } from "lucide-react";
 import ReportBlockSheet from "./ReportBlockSheet";
 import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
 import { getAccentColors } from "./themeColors";
-import { getBadgeTier } from "./badgeConfig";
+import { getBadgeTier, getUserBadgeConfig, BADGE_TIERS, type UserBadgeConfig } from "./badgeConfig";
+import BadgeStackGroup, { type BadgeItem } from "./BadgeStackGroup";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import FollowListSheet from "./FollowListSheet";
 import type { FollowListUser } from "./communityData";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
@@ -66,30 +69,46 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
     }
   };
 
-  const reflectionBadge = member.reflectionMilestone ? getBadgeTier(member.reflectionMilestone) : undefined;
+  const { data: reflectionBadges = [] } = useQuery({
+    queryKey: ["public-reflection-badges", member.userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("reflection_badges" as any)
+        .select("milestone")
+        .eq("user_id", member.userId!)
+        .order("milestone", { ascending: false });
+      return ((data || []) as any[]).map((r) => getBadgeTier(r.milestone)).filter(Boolean) as ReturnType<typeof getBadgeTier>[];
+    },
+    enabled: !!member.userId && !isDemo,
+  });
 
-  const badges: { icon: any; label: string; detail: string; color?: string; gradient?: string; animated?: boolean }[] = [
-    ...(member.role === "pastor"
-      ? [{ icon: ShieldCheck, label: "Pastor", detail: member.churchName, color: "hsl(38, 100%, 47%)" }]
-      : []),
-    { icon: Calendar, label: "Member Since", detail: member.memberSince, color: "hsl(207, 65%, 55%)" },
-    ...(reflectionBadge
-      ? [{
-          icon: BookOpen,
-          label: reflectionBadge.label,
-          detail: reflectionBadge.detail,
-          color: reflectionBadge.color,
-          gradient: reflectionBadge.gradient,
-          animated: reflectionBadge.animated,
-        }]
-      : []),
-    ...(member.isGroupMember
-      ? [{ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150, 55%, 45%)" }]
-      : []),
-    ...(member.hasInvited
-      ? [{ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", gradient: "linear-gradient(135deg, hsl(175, 75%, 35%), hsl(150, 70%, 45%), hsl(130, 65%, 40%), hsl(175, 75%, 35%))", animated: true }]
-      : []),
-  ];
+  const { data: earnedUserBadges = [] } = useQuery({
+    queryKey: ["public-user-badges", member.userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_badges" as any)
+        .select("badge_type")
+        .eq("user_id", member.userId!);
+      return ((data || []) as any[]).map((r) => getUserBadgeConfig(r.badge_type)).filter(Boolean) as UserBadgeConfig[];
+    },
+    enabled: !!member.userId && !isDemo,
+  });
+
+  function publicBadgeIcon(type: string): React.ReactNode {
+    if (type === "founding_member") return <Crown size={20} color="white" />;
+    if (type === "group_member") return <Users size={20} color="white" />;
+    if (type.startsWith("streak_")) return <Flame size={20} color="white" />;
+    if (type.startsWith("scripture_")) return <BookOpen size={20} color="white" />;
+    return <Medal size={20} color="white" />;
+  }
+
+  const reflectionEarned: BadgeItem[] = reflectionBadges.map((t) => ({
+    label: t!.label, detail: t!.detail, color: t!.color, gradient: t!.gradient, animated: t!.animated,
+    icon: <Medal size={20} color="white" />,
+  }));
+  const streakEarned  = earnedUserBadges.filter((b) => b.group === "streak").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
+  const scriptEarned  = earnedUserBadges.filter((b) => b.group === "scripture").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
+  const specialEarned = earnedUserBadges.filter((b) => b.group === "special").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
 
   // Show nested public profile
   if (viewingMember) {
@@ -229,34 +248,17 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
       </div>
 
       {/* Badges */}
-      <section className="bg-card rounded-3xl p-5 shadow-card">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-          Badges
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {badges.map(({ icon: Icon, label, detail, color, gradient, animated }) => (
-            <div
-              key={label}
-              className="rounded-2xl p-3.5 bg-muted/50"
-            >
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${animated ? "animate-gradient-rotate" : ""}`}
-                style={
-                  gradient
-                    ? { background: gradient, backgroundSize: "200% 200%" }
-                    : { background: `${color}22` }
-                }
-              >
-                <Icon size={17} style={{ color: animated ? "white" : color }} />
-              </div>
-              <p className="text-xs font-bold text-foreground leading-tight">
-                {label}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{detail}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {(reflectionEarned.length > 0 || streakEarned.length > 0 || scriptEarned.length > 0 || specialEarned.length > 0) && (
+        <section className="bg-card rounded-3xl p-5 shadow-card">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-5">
+            Badges
+          </p>
+          <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Special"     earned={specialEarned}    locked={[]} isOwn={false} />
+        </section>
+      )}
 
       <ReportBlockSheet
         open={showReport}

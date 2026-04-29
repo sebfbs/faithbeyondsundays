@@ -35,8 +35,8 @@ import type { UserData } from "@/components/fbs/WelcomeScreen";
 import { Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import AchievementBanner from "@/components/fbs/AchievementBanner";
-import { getBadgeTier } from "@/components/fbs/badgeConfig";
-import type { BadgeTier } from "@/components/fbs/badgeConfig";
+import { getBadgeTier, getUserBadgeConfig } from "@/components/fbs/badgeConfig";
+import type { BadgeDisplay } from "@/components/fbs/AchievementBanner";
 
 type OverlayScreen =
   | "profile"
@@ -103,7 +103,7 @@ export default function Index() {
   }, [profile, isDemo, authUser]);
 
   // Achievement banner state
-  const [pendingBadge, setPendingBadge] = useState<BadgeTier | null>(null);
+  const [pendingBadge, setPendingBadge] = useState<BadgeDisplay | null>(null);
 
   // Realtime: listen for new badges earned by the current user
   useEffect(() => {
@@ -119,6 +119,18 @@ export default function Index() {
         const tier = getBadgeTier(payload.new.milestone);
         if (tier) {
           setPendingBadge(tier);
+          confetti({ particleCount: 160, spread: 80, origin: { x: 0.5, y: 0.1 } });
+        }
+      })
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "user_badges",
+        filter: `user_id=eq.${authUser.id}`,
+      }, (payload: any) => {
+        const config = getUserBadgeConfig(payload.new.badge_type);
+        if (config) {
+          setPendingBadge(config);
           confetti({ particleCount: 160, spread: 80, origin: { x: 0.5, y: 0.1 } });
         }
       })

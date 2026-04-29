@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Star, Users, LogOut, HeartHandshake, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Crown, Users, Flame, LogOut, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle } from "lucide-react";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -14,7 +14,8 @@ import type { CommunityMember, FollowListUser } from "./communityData";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
-import { getBadgeTier, type BadgeTier } from "./badgeConfig";
+import { getBadgeTier, getUserBadgeConfig, BADGE_TIERS, USER_BADGE_CONFIGS, type UserBadgeConfig } from "./badgeConfig";
+import BadgeStackGroup, { type BadgeItem } from "./BadgeStackGroup";
 import { useDemoMode } from "./DemoModeProvider";
 
 interface ProfileScreenProps {
@@ -24,39 +25,17 @@ interface ProfileScreenProps {
   onUpdateUser?: (updated?: UserData) => void;
 }
 
-const formatMemberSince = (isoDate?: string): string => {
-  if (!isoDate) return "—";
-  const d = new Date(isoDate);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-};
+function badgeIcon(type: string): React.ReactNode {
+  if (type === "founding_member") return <Crown size={20} color="white" />;
+  if (type === "group_member") return <Users size={20} color="white" />;
+  if (type.startsWith("streak_")) return <Flame size={20} color="white" />;
+  if (type.startsWith("scripture_")) return <BookOpen size={20} color="white" />;
+  return <Medal size={20} color="white" />;
+}
 
-const getProfileBadges = (user: UserData, reflectionBadge?: BadgeTier, memberSinceDate?: string) => {
-  const hasChurch = !!user.churchCode;
-  const badges: { icon: any; label: string; detail: string; color?: string; gradient?: string; animated?: boolean }[] = [
-    { icon: Medal, label: "Member Since", detail: formatMemberSince(memberSinceDate), color: "hsl(38 100% 47%)" },
-  ];
-  if (hasChurch) {
-    badges.push({ icon: Star, label: "Founding Member", detail: "Early Supporter", color: "hsl(207 65% 55%)" });
-    if (reflectionBadge) {
-      badges.push({
-        icon: BookOpen,
-        label: reflectionBadge.label,
-        detail: reflectionBadge.detail,
-        color: reflectionBadge.color,
-        gradient: reflectionBadge.gradient,
-        animated: reflectionBadge.animated,
-      });
-    }
-    badges.push({ icon: Users, label: "Group Member", detail: "Community", color: "hsl(150 55% 45%)" });
-  }
-  if (hasInvited()) {
-    badges.push({ icon: HeartHandshake, label: "Community Builder", detail: "Invited a friend", gradient: "linear-gradient(135deg, hsl(175, 75%, 35%), hsl(150, 70%, 45%), hsl(130, 65%, 40%), hsl(175, 75%, 35%))", animated: true });
-  }
-  if (user.role === "pastor") {
-    badges.unshift({ icon: ShieldCheck, label: "Pastor", detail: user.churchName, color: "hsl(38 100% 47%)" });
-  }
-  return badges;
-};
+function userBadgeToItem(cfg: UserBadgeConfig): BadgeItem {
+  return { label: cfg.label, detail: cfg.detail, color: cfg.color, gradient: cfg.gradient, animated: cfg.animated, icon: badgeIcon(cfg.type) };
+}
 
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
@@ -90,23 +69,51 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     load();
   }, [authUser, isDemo]);
 
-  // Fetch highest reflection badge
-  const { data: highestBadge } = useQuery({
-    queryKey: ["reflection-badge", authUser?.id],
+  // Fetch all earned reflection badges (highest first)
+  const { data: reflectionBadges = [] } = useQuery({
+    queryKey: ["all-reflection-badges", authUser?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("reflection_badges" as any)
         .select("milestone")
         .eq("user_id", authUser!.id)
-        .order("milestone", { ascending: false })
-        .limit(1);
-      if (error || !data || data.length === 0) return null;
-      return getBadgeTier((data[0] as any).milestone);
+        .order("milestone", { ascending: false });
+      return ((data || []) as any[]).map((r) => getBadgeTier(r.milestone)).filter(Boolean) as ReturnType<typeof getBadgeTier>[];
     },
-    enabled: !!authUser,
+    enabled: !!authUser && !isDemo,
   });
 
-  const badges = getProfileBadges(user, highestBadge || undefined, authUser?.created_at);
+  // Fetch all earned user badges (group member, streak, scripture, founding member)
+  const { data: earnedUserBadges = [] } = useQuery({
+    queryKey: ["user-badges", authUser?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_badges" as any)
+        .select("badge_type")
+        .eq("user_id", authUser!.id);
+      return ((data || []) as any[]).map((r) => getUserBadgeConfig(r.badge_type)).filter(Boolean) as UserBadgeConfig[];
+    },
+    enabled: !!authUser && !isDemo,
+  });
+
+  const earnedTypes = new Set(earnedUserBadges.map((b) => b.type));
+
+  // Build earned/locked lists per group
+  const reflectionEarned: BadgeItem[] = reflectionBadges.map((t) => ({
+    label: t!.label, detail: t!.detail, color: t!.color, gradient: t!.gradient, animated: t!.animated,
+    icon: <Medal size={20} color="white" />,
+  }));
+  const reflectionLocked: BadgeItem[] = BADGE_TIERS
+    .filter((t) => !reflectionBadges.find((e) => e?.milestone === t.milestone))
+    .slice(0, 1)
+    .map((t) => ({ label: t.label, detail: t.detail, color: t.color, gradient: t.gradient, icon: <Medal size={20} color="white" /> }));
+
+  const streakEarned  = earnedUserBadges.filter((b) => b.group === "streak").map(userBadgeToItem);
+  const streakLocked  = USER_BADGE_CONFIGS.filter((b) => b.group === "streak"  && !earnedTypes.has(b.type)).slice(0, 1).map(userBadgeToItem);
+  const scriptEarned  = earnedUserBadges.filter((b) => b.group === "scripture").map(userBadgeToItem);
+  const scriptLocked  = USER_BADGE_CONFIGS.filter((b) => b.group === "scripture" && !earnedTypes.has(b.type)).slice(0, 1).map(userBadgeToItem);
+  const specialEarned = earnedUserBadges.filter((b) => b.group === "special").map(userBadgeToItem);
+  const specialLocked = USER_BADGE_CONFIGS.filter((b) => b.group === "special" && !earnedTypes.has(b.type) && b.type !== "founding_member").slice(0, 1).map(userBadgeToItem);
 
   // Avatar upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -343,33 +350,13 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
 
       {/* Badges */}
       <section className="bg-card rounded-3xl p-5 shadow-card">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-5">
           Badges
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          {badges.map(({ icon: Icon, label, detail, color, gradient, animated }) => (
-            <div
-              key={label}
-              className="rounded-2xl p-3.5"
-              style={{ background: "hsl(40 25% 97%)" }}
-            >
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${animated ? "animate-gradient-rotate" : ""}`}
-                style={
-                  gradient
-                    ? { background: gradient, backgroundSize: "200% 200%" }
-                    : { background: `${color}22` }
-                }
-              >
-                <Icon size={17} style={{ color: animated ? "white" : color }} />
-              </div>
-              <p className="text-xs font-bold text-foreground leading-tight">
-                {label}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{detail}</p>
-            </div>
-          ))}
-        </div>
+        <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={reflectionLocked} isOwn={true} />
+        <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={streakLocked}     isOwn={true} />
+        <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={scriptLocked}     isOwn={true} />
+        <BadgeStackGroup label="Special"     earned={specialEarned}    locked={specialLocked}    isOwn={true} />
       </section>
 
       {/* Social & Contact */}

@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { X, Medal } from "lucide-react";
-import type { BadgeTier } from "./badgeConfig";
+
+export interface BadgeDisplay {
+  label: string;
+  detail: string;
+  color?: string;
+  gradient?: string;
+}
 
 interface AchievementBannerProps {
-  badge: BadgeTier;
+  badge: BadgeDisplay;
   onDismiss: () => void;
 }
 

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { ArrowLeft, BookOpen, ChevronRight, Loader2, RefreshCw, ChevronDown, Check, Search, X } from "lucide-react";
 import { BIBLE_BOOKS, BIBLE_TRANSLATIONS, type BibleBook, type BibleTranslation } from "./bibleData";
 import { getAccentColors } from "./themeColors";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
 
 interface BibleScreenProps {
   onBack: () => void;
@@ -21,6 +23,7 @@ type View = "books" | "chapters" | "text";
 
 export default function BibleScreen({ onBack, initialBook, initialChapter, initialVerse }: BibleScreenProps) {
   const colors = getAccentColors();
+  const { user: authUser } = useAuth();
   const [view, setView] = useState<View>("books");
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
@@ -65,10 +68,18 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
     setView("text");
   }, [initialBook, initialChapter]);
 
+  const logChapterRead = (book: BibleBook, chapter: number) => {
+    if (!authUser) return;
+    supabase.from("bible_reads" as any)
+      .insert({ user_id: authUser.id, book: book.name, chapter })
+      .then(({ error }) => { if (error && error.code !== "23505") console.error("bible_reads insert:", error); });
+  };
+
   const fetchChapter = async (book: BibleBook, chapter: number) => {
     const cacheKey = `${translation.id}:${book.name}:${chapter}`;
     if (cache.current[cacheKey]) {
       setVerses(cache.current[cacheKey]);
+      logChapterRead(book, chapter);
       return;
     }
     setLoading(true);
@@ -83,6 +94,7 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
       const v: Verse[] = data.verses || [];
       cache.current[cacheKey] = v;
       setVerses(v);
+      logChapterRead(book, chapter);
     } catch {
       setError("Couldn't load this chapter. Check your connection and try again.");
     } finally {
