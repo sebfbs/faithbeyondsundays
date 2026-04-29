@@ -33,6 +33,10 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { DEMO_SERMON, DEMO_PREVIOUS_SERMONS, DEMO_JOURNAL_ENTRIES } from "@/components/fbs/demoData";
 import type { UserData } from "@/components/fbs/WelcomeScreen";
 import { Loader2 } from "lucide-react";
+import confetti from "canvas-confetti";
+import AchievementBanner from "@/components/fbs/AchievementBanner";
+import { getBadgeTier } from "@/components/fbs/badgeConfig";
+import type { BadgeTier } from "@/components/fbs/badgeConfig";
 
 type OverlayScreen =
   | "profile"
@@ -97,6 +101,36 @@ export default function Index() {
       .insert({ church_id: profile.church_id, user_id: authUser!.id, event_type: "app_open" })
       .then(() => {});
   }, [profile, isDemo, authUser]);
+
+  // Achievement banner state
+  const [pendingBadge, setPendingBadge] = useState<BadgeTier | null>(null);
+
+  // Realtime: listen for new badges earned by the current user
+  useEffect(() => {
+    if (!authUser || isDemo) return;
+    const channel = supabase
+      .channel(`badges-${authUser.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "reflection_badges",
+        filter: `user_id=eq.${authUser.id}`,
+      }, (payload: any) => {
+        const tier = getBadgeTier(payload.new.milestone);
+        if (tier) {
+          setPendingBadge(tier);
+          confetti({ particleCount: 160, spread: 80, origin: { x: 0.5, y: 0.1 } });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [authUser?.id, isDemo]);
+
+  const handleJoined = useCallback(async () => {
+    await refetchProfile();
+    confetti({ particleCount: 160, spread: 80, origin: { x: 0.5, y: 0.1 } });
+  }, [refetchProfile]);
+
 
   // Derive active screen from URL path
   const pathScreen = location.pathname.replace(/^\//, "") || "home";
@@ -291,7 +325,7 @@ export default function Index() {
           userChurchName={userData.churchName}
           userChurchId={profile?.church_id || undefined}
           isDemo={isDemo}
-          onJoined={refetchProfile}
+          onJoined={handleJoined}
         />
       );
     }
@@ -377,6 +411,7 @@ export default function Index() {
 
   return (
     <div className={`app-container relative mx-auto ${!isMobile ? "tablet-layout" : ""}`} style={{ background: "hsl(var(--background))" }}>
+      {pendingBadge && <AchievementBanner badge={pendingBadge} onDismiss={() => setPendingBadge(null)} />}
       {sparkMessage && <DailySparkOverlay sparkMessage={sparkMessage} />}
       {!isMobile && (
         <TabletSidebar
