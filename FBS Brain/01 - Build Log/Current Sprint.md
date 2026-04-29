@@ -30,6 +30,11 @@
 - Auth email hook wired in Supabase Auth → Hooks → Send Email
 - App builds clean, zero errors
 
+### GTM Strategy — DONE (Session 2, 2026-04-29)
+- Created `FBS Brain/03 - GTM Strategy/` with two documents
+- Distribution Strategy: 3-phase GTM plan (founding churches → pastor flywheel → owned distribution)
+- Referral Program Research: $100/mo recurring commission structure, framing, competitive gap analysis, pastor guilt-free payout design
+
 ## What's Next
 
 1. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
