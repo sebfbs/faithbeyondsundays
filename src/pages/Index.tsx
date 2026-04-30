@@ -10,6 +10,7 @@ import BibleScreen from "@/components/fbs/BibleScreen";
 import ProfileScreen from "@/components/fbs/ProfileScreen";
 import MoreSheet from "@/components/fbs/MoreSheet";
 import PreviousSermonsListScreen from "@/components/fbs/PreviousSermonsListScreen";
+import GroupsListScreen from "@/components/fbs/GroupsListScreen";
 import PreviousSermonDetailScreen from "@/components/fbs/PreviousSermonDetailScreen";
 import CommunityScreen from "@/components/fbs/CommunityScreen";
 import PrayerScreen from "@/components/fbs/PrayerScreen";
@@ -43,6 +44,7 @@ type OverlayScreen =
   | "previous-sermons-list"
   | "previous-sermon-detail"
   | "community"
+  | "community-groups"
   | "public-profile"
   | "bible"
   | "prayer"
@@ -147,7 +149,7 @@ export default function Index() {
   // Derive active screen from URL path
   const pathScreen = location.pathname.replace(/^\//, "") || "home";
   const tabScreens = ["home", "sermon", "journal"];
-  const overlayScreens = ["community", "bible", "prayer", "profile", "previous-sermons"];
+  const overlayScreens = ["community", "community-groups", "bible", "prayer", "profile", "previous-sermons"];
 
   const activeTab: TabId = tabScreens.includes(pathScreen) ? (pathScreen as TabId) :
     overlayScreens.includes(pathScreen) ? "more" : "home";
@@ -333,11 +335,57 @@ export default function Index() {
         <CommunityScreen
           onBack={() => navTo("/home")}
           onViewProfile={(member) => { setSelectedMember(member); setSubOverlay("public-profile"); window.history.pushState({ subOverlay: "public-profile" }, ""); }}
+          onGroups={() => navTo("/community-groups")}
           userChurchCode={userData.churchCode}
           userChurchName={userData.churchName}
           userChurchId={profile?.church_id || undefined}
           isDemo={isDemo}
           onJoined={handleJoined}
+        />
+      );
+    }
+    if (overlay === "community-groups") {
+      return (
+        <GroupsListScreen
+          onBack={() => navTo("/community")}
+          userChurchCode={userData.churchCode}
+          userChurchId={profile?.church_id || undefined}
+          isDemo={isDemo}
+          onViewProfile={async (userId) => {
+            const { data: p } = await supabase
+              .from("profiles_safe")
+              .select("user_id, username, first_name, last_name, avatar_url, bio, instagram_handle, church_id, challenges_completed, created_at")
+              .eq("user_id", userId)
+              .single();
+            if (!p) return;
+            let churchName = "";
+            let churchCode = "";
+            if (p.church_id) {
+              const { data: church } = await supabase
+                .from("churches")
+                .select("name, code")
+                .eq("id", p.church_id)
+                .single();
+              churchName = church?.name || "";
+              churchCode = church?.code || "";
+            }
+            const member = {
+              userId: p.user_id,
+              username: p.username || "",
+              firstName: p.first_name || "",
+              lastName: p.last_name || "",
+              churchName,
+              churchCode,
+              avatarUrl: p.avatar_url || undefined,
+              memberSince: new Date(p.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+              challengesCompleted: p.challenges_completed || 0,
+              isGroupMember: false,
+              instagramHandle: p.instagram_handle || undefined,
+            };
+            setSelectedMember(member);
+            setSubOverlay("public-profile");
+            window.history.pushState({ subOverlay: "public-profile" }, "");
+          }}
         />
       );
     }
@@ -454,7 +502,7 @@ export default function Index() {
         key={`${activeTab}-${overlay}-${subOverlay}`}
         ref={mainRef}
         onScroll={(e) => setScrollY((e.target as HTMLElement).scrollTop)}
-        className={`relative z-10 scrollable-content ${isMobile ? "pb-[84px]" : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
+        className={`relative z-10 scrollable-content ${isMobile ? (overlay === "community-groups" ? "pb-0" : "pb-[84px]") : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
           background: (overlay === null && activeTab === "home") ? getSkyGradient() : "hsl(var(--background))",
@@ -466,7 +514,7 @@ export default function Index() {
         </div>
       </main>
 
-      {isMobile && !journalComposing && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
+      {isMobile && !journalComposing && overlay !== "community-groups" && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
 
       {isMobile && moreOpen && (
         <MoreSheet

@@ -1,8 +1,6 @@
 # Known Issues
 
 ## High Priority
-- Vercel deployment not configured yet
-- Production env vars not set up on Vercel
 - `APNS_BUNDLE_ID` not yet set in Supabase Edge Function secrets — iOS push notifications will error until this is configured (deferred, not needed for V1 launch)
 
 ## Low Priority

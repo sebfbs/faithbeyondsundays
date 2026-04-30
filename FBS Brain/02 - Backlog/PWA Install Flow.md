@@ -8,6 +8,38 @@
 
 Church members scan a QR code → land on a branded landing page → tap "Download App" → get routed to a device/version-specific install wizard that walks them through adding the PWA to their home screen.
 
+**The same landing page serves two entry points:**
+```
+QR code scan   ──┐
+                 ├──▶  gracecommunitychurch.faithbeyondsundays.com
+Website button ──┘
+```
+
+Churches can also link to their install page from their own website, newsletter, Instagram bio, or anywhere else. One URL, works everywhere. The landing page handles the rest.
+
+---
+
+## Church Website Button
+
+**How it works:** Each church gets their unique install URL from their admin dashboard. They paste it into a button on their website. That's it.
+
+**What FBS provides from the admin dashboard:**
+1. **Their install link** — copyable one-click, e.g. `gracecommunitychurch.faithbeyondsundays.com`
+2. **An embeddable button snippet** — pre-written HTML they paste directly into their site, already styled and linked:
+
+```html
+<a href="https://gracecommunitychurch.faithbeyondsundays.com"
+   style="display:inline-block;background:#1a3a6b;color:white;
+          padding:14px 28px;border-radius:8px;font-family:sans-serif;
+          font-size:16px;font-weight:600;text-decoration:none;">
+  Get the Grace Community App
+</a>
+```
+
+Churches don't need a developer. They copy, paste, done.
+
+**V2 add-on (not now):** Let churches download a pre-made "Get the App" badge graphic from their admin dashboard — an App Store-style image with their church logo and name that links to their install URL. They drop it into their website as an image. Higher polish, same destination.
+
 ---
 
 ## Project Structure

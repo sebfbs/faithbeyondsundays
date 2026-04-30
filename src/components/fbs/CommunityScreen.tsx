@@ -1,20 +1,20 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Search, Church, Users, Share2, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Users, Share2, Loader2, MessageCircle, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { DEMO_MEMBERS, getFollows, markInviteSent, type CommunityMember } from "./communityData";
+import { DEMO_MEMBERS, markInviteSent, type CommunityMember } from "./communityData";
 import { DEMO_GROUPS } from "./demoData";
 import { getAccentColors } from "./themeColors";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import ChurchlessCommunity from "./ChurchlessCommunity";
-import GroupDetailSheet from "./GroupDetailSheet";
 import { getAvatarColor } from "./avatarColors";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 interface CommunityScreenProps {
   onBack: () => void;
   onViewProfile: (member: CommunityMember) => void;
+  onGroups: () => void;
   userChurchCode: string;
   userChurchName: string;
   userChurchId?: string;
@@ -34,23 +34,16 @@ interface GroupInfo {
 export default function CommunityScreen({
   onBack,
   onViewProfile,
+  onGroups,
   userChurchCode,
   userChurchName,
   userChurchId,
   isDemo,
   onJoined,
 }: CommunityScreenProps) {
-  const [search, setSearch] = useState("");
   const colors = getAccentColors();
-  const follows = getFollows();
   const { user: authUser } = useAuth();
   const { blockedIds } = useBlockedUsers();
-  const [selectedGroup, setSelectedGroup] = useState<GroupInfo | null>(null);
-  const [demoMemberships, setDemoMemberships] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    DEMO_GROUPS.forEach((g) => { init[g.id] = g.isMember; });
-    return init;
-  });
 
   // Fetch community groups
   const { data: groups = [] } = useQuery({
@@ -174,26 +167,10 @@ export default function CommunityScreen({
       });
   }, [allMembers, userChurchCode, isDemo, blockedIds]);
 
-  const searchResults = useMemo(() => {
-    if (!search.trim()) return null;
-    const q = search.toLowerCase();
-    const source = isDemo ? DEMO_MEMBERS : allMembers;
-    return source.filter(
-      (m) =>
-        (!m.userId || !blockedIds.includes(m.userId)) &&
-        (m.username.includes(q) ||
-        m.firstName.toLowerCase().includes(q) ||
-        m.lastName.toLowerCase().includes(q))
-    );
-  }, [search, isDemo, allMembers, blockedIds]);
-
-  const displayList = searchResults ?? churchMembers;
-  const isSearching = searchResults !== null;
-
   const handleInvite = async () => {
     const shareData = {
-      title: "Join Faith Beyond Sundays",
-      text: "Join me on Faith Beyond Sundays! Download the app and start growing in your faith.",
+      title: `Join ${userChurchName}`,
+      text: `Join me on the ${userChurchName} app! Download it and stay connected with our church family.`,
       url: "https://faithbeyondsundays.app",
     };
     try {
@@ -230,114 +207,29 @@ export default function CommunityScreen({
         <h1 className="text-xl font-bold text-foreground">Community</h1>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or @username"
-          className="w-full bg-card rounded-2xl pl-11 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
-        />
-      </div>
-
-      {/* Invite a Friend */}
-      {!isSearching && (
-        <button
-          onClick={handleInvite}
-          className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow"
+      {/* Groups entry point */}
+      <button
+        onClick={onGroups}
+        className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow text-left"
+      >
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: colors.accentBg }}
         >
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: "hsl(170 55% 45% / 0.12)" }}
-          >
-            <Share2 size={19} style={{ color: "hsl(170, 55%, 45%)" }} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-foreground">Invite a friend</p>
-            <p className="text-xs text-muted-foreground">Invite a friend & earn a badge</p>
-          </div>
-        </button>
-      )}
-
-      {/* Your church label */}
-      {!isSearching && (
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-          Your Church
-        </p>
-      )}
-
-      {/* Church header */}
-      {!isSearching && (
-        <div className="bg-card rounded-3xl p-5 shadow-card">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: colors.accentBg }}
-            >
-              <Church size={22} style={{ color: colors.accent }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{userChurchName}</p>
-              <p className="text-xs text-muted-foreground">
-                {churchMembers.length >= 15
-                  ? `${churchMembers.length} member${churchMembers.length !== 1 ? "s" : ""}`
-                  : "Your church family"}
-              </p>
-            </div>
-          </div>
+          <MessageCircle size={19} style={{ color: colors.accent }} />
         </div>
-      )}
-
-      {/* Groups section */}
-      {!isSearching && (isDemo ? DEMO_GROUPS : groups).length > 0 && (
-        <>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Groups
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Groups</p>
+          <p className="text-xs text-muted-foreground">
+            {(isDemo ? DEMO_GROUPS : groups).length} group{(isDemo ? DEMO_GROUPS : groups).length !== 1 ? "s" : ""} · Browse &amp; join
           </p>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
-            {(isDemo ? DEMO_GROUPS.map(g => ({ ...g, isMember: demoMemberships[g.id] ?? g.isMember })) : groups).map((g) => (
-              <button
-                key={g.id}
-                onClick={() => setSelectedGroup(g)}
-                className="min-w-[160px] max-w-[200px] bg-card rounded-2xl p-4 shadow-card tap-active hover:shadow-card-hover transition-shadow text-left shrink-0 relative"
-              >
-                {g.hasUnread && (
-                  <div
-                    className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full"
-                    style={{ background: colors.accent }}
-                  />
-                )}
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-2.5"
-                  style={{ background: colors.accentBg }}
-                >
-                  <MessageCircle size={18} style={{ color: colors.accent }} />
-                </div>
-                <p className="text-sm font-semibold text-foreground truncate">{g.name}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {g.memberCount} member{g.memberCount !== 1 ? "s" : ""}
-                </p>
-                {g.isMember && (
-                  <div
-                    className="mt-2 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                    style={{ background: colors.accentBg, color: colors.accent }}
-                  >
-                    Joined
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+        </div>
+        <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+      </button>
 
       {/* Section label */}
       <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-        {isSearching
-          ? `${displayList.length} result${displayList.length !== 1 ? "s" : ""}`
-          : "Church Members"}
+        Church Members
       </p>
 
       {/* Loading state */}
@@ -350,12 +242,12 @@ export default function CommunityScreen({
       {/* Member list */}
       {(!isLoading || isDemo) && (
         <div className="space-y-2">
-          {displayList.length === 0 && (
+          {churchMembers.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
-              {isSearching ? "No members found" : "No other members yet — invite someone!"}
+              No other members yet — invite someone!
             </p>
           )}
-          {displayList.map((member) => (
+          {churchMembers.map((member) => (
             <button
               key={member.username}
               onClick={() => onViewProfile(member)}
@@ -390,42 +282,32 @@ export default function CommunityScreen({
                       Pastor
                     </span>
                   )}
-                  {isSearching && isDemo && (
-                    <span className="ml-1.5 text-muted-foreground/70">· {member.churchName}</span>
-                  )}
                 </p>
               </div>
-              {follows.includes(member.username) && (
-                <div
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0"
-                  style={{ background: colors.accentBg, color: colors.accent }}
-                >
-                  Following
-                </div>
-              )}
             </button>
           ))}
         </div>
       )}
 
-      {/* Group detail sheet */}
-      {selectedGroup && (
-        <GroupDetailSheet
-          open={!!selectedGroup}
-          onClose={() => setSelectedGroup(null)}
-          group={selectedGroup}
-          isMember={selectedGroup.isMember}
-          memberCount={selectedGroup.memberCount}
-          isDemo={isDemo}
-          churchId={userChurchId}
-          onMembershipChange={(isMember) => {
-            if (isDemo) {
-              setDemoMemberships((prev) => ({ ...prev, [selectedGroup.id]: isMember }));
-            }
-            setSelectedGroup((prev) => prev ? { ...prev, isMember } : null);
-          }}
-        />
+      {/* Invite a Friend */}
+      {(!isLoading || isDemo) && (
+        <button
+          onClick={handleInvite}
+          className="w-full flex items-center gap-3.5 p-4 rounded-2xl bg-card shadow-card tap-active hover:shadow-card-hover transition-shadow"
+        >
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "hsl(170 55% 45% / 0.12)" }}
+          >
+            <Share2 size={19} style={{ color: "hsl(170, 55%, 45%)" }} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-foreground">Don't see your friend?</p>
+            <p className="text-xs text-muted-foreground">Invite them to join {userChurchName}</p>
+          </div>
+        </button>
       )}
+
     </div>
   );
 }

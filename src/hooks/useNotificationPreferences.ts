@@ -5,7 +5,6 @@ import { useAuth } from "@/components/fbs/AuthProvider";
 export type NotificationType =
   | "new_sermon"
   | "daily_spark"
-  | "new_follower"
   | "prayer_for_you"
   | "sermon_processing_complete";
 
@@ -22,7 +21,6 @@ const DEFAULT_TIME = "Morning (8 AM)";
 const ALL_TYPES: NotificationType[] = [
   "new_sermon",
   "daily_spark",
-  "new_follower",
   "prayer_for_you",
   "sermon_processing_complete",
 ];

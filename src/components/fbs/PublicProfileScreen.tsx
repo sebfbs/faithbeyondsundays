@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Medal, Crown, Users, Flame, UserCheck, UserPlus, BookOpen, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Medal, Crown, Users, Flame, BookOpen, MoreHorizontal } from "lucide-react";
 import ReportBlockSheet from "./ReportBlockSheet";
-import { type CommunityMember, isFollowing, toggleFollow, isFollowingDb, followUserDb, unfollowUserDb, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
+import { type CommunityMember } from "./communityData";
 import { getAccentColors } from "./themeColors";
 import { getBadgeTier, getUserBadgeConfig, BADGE_TIERS, type UserBadgeConfig } from "./badgeConfig";
 import BadgeStackGroup, { type BadgeItem } from "./BadgeStackGroup";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import FollowListSheet from "./FollowListSheet";
-import type { FollowListUser } from "./communityData";
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 import { getAvatarColor } from "./avatarColors";
@@ -21,53 +19,8 @@ interface PublicProfileScreenProps {
 }
 
 export default function PublicProfileScreen({ member, onBack, isDemo, churchId }: PublicProfileScreenProps) {
-  const [following, setFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
-  const [viewingMember, setViewingMember] = useState<CommunityMember | null>(null);
   const [showReport, setShowReport] = useState(false);
   const colors = getAccentColors();
-
-  useEffect(() => {
-    if (isDemo) {
-      setFollowing(isFollowing(member.username));
-      // Demo counts must match FollowListSheet demo slices
-      setFollowerCount(Math.min(DEMO_MEMBERS.length, 5));
-      setFollowingCount(Math.min(DEMO_MEMBERS.length, 3));
-      return;
-    }
-    if (!member.userId) return;
-    const load = async () => {
-      const [isF, fc, fgc] = await Promise.all([
-        isFollowingDb(member.userId!),
-        getFollowerCount(member.userId!),
-        getFollowingCount(member.userId!),
-      ]);
-      setFollowing(isF);
-      setFollowerCount(fc);
-      setFollowingCount(fgc);
-    };
-    load();
-  }, [member.userId, member.username, isDemo]);
-
-  const handleToggleFollow = async () => {
-    if (isDemo) {
-      toggleFollow(member.username);
-      setFollowing((prev) => !prev);
-      setFollowerCount((prev) => following ? prev - 1 : prev + 1);
-      return;
-    }
-    if (!member.userId) return;
-    const wasFollowing = following;
-    setFollowing(!wasFollowing);
-    setFollowerCount((prev) => wasFollowing ? prev - 1 : prev + 1);
-    if (wasFollowing) {
-      await unfollowUserDb(member.userId);
-    } else {
-      await followUserDb(member.userId);
-    }
-  };
 
   const { data: reflectionBadges = [] } = useQuery({
     queryKey: ["public-reflection-badges", member.userId],
@@ -109,46 +62,6 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
   const streakEarned  = earnedUserBadges.filter((b) => b.group === "streak").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
   const scriptEarned  = earnedUserBadges.filter((b) => b.group === "scripture").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
   const specialEarned = earnedUserBadges.filter((b) => b.group === "special").map((b): BadgeItem => ({ label: b.label, detail: b.detail, color: b.color, gradient: b.gradient, animated: b.animated, icon: publicBadgeIcon(b.type) }));
-
-  // Show nested public profile
-  if (viewingMember) {
-    return (
-      <PublicProfileScreen
-        member={viewingMember}
-        onBack={() => setViewingMember(null)}
-        isDemo={isDemo}
-      />
-    );
-  }
-
-  // Show follow list overlay
-  if (followListMode) {
-    const handleViewProfile = (u: FollowListUser) => {
-      const asMember: CommunityMember = {
-        username: u.username,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        avatarUrl: u.avatarUrl,
-        userId: u.userId,
-        churchName: "",
-        churchCode: "",
-        memberSince: "",
-        challengesCompleted: 0,
-        isGroupMember: false,
-      };
-      setFollowListMode(null);
-      setViewingMember(asMember);
-    };
-    return (
-      <FollowListSheet
-        userId={member.userId || member.username}
-        mode={followListMode}
-        onClose={() => setFollowListMode(null)}
-        onViewProfile={handleViewProfile}
-        isDemo={isDemo}
-      />
-    );
-  }
 
   return (
     <div
@@ -194,19 +107,6 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
           <p className="text-sm text-muted-foreground mt-0.5">{member.churchName}</p>
         )}
 
-        {/* Follower / Following counts */}
-        <div className="flex items-center gap-4 mt-2">
-          <button onClick={() => setFollowListMode("followers")} className="text-center tap-active">
-            <span className="text-sm font-bold text-foreground">{followerCount}</span>
-            <span className="text-xs text-muted-foreground ml-1">Followers</span>
-          </button>
-          <div className="w-px h-4 bg-border" />
-          <button onClick={() => setFollowListMode("following")} className="text-center tap-active">
-            <span className="text-sm font-bold text-foreground">{followingCount}</span>
-            <span className="text-xs text-muted-foreground ml-1">Following</span>
-          </button>
-        </div>
-
         <div className="flex items-center flex-wrap gap-2 mt-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
             <span className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center relative">
@@ -232,19 +132,6 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
 
         </div>
 
-        {/* Follow button */}
-        <button
-          onClick={handleToggleFollow}
-          className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-2xl font-semibold text-sm tap-active transition-colors"
-          style={
-            following
-              ? { background: colors.accentBg, color: colors.accent }
-              : { background: colors.accent, color: colors.accentFg }
-          }
-        >
-          {following ? <UserCheck size={16} /> : <UserPlus size={16} />}
-          {following ? "Following" : "Follow"}
-        </button>
       </div>
 
       {/* Badges */}

@@ -7,10 +7,8 @@ import {
   NotificationTimeModal,
 } from "./NotificationModals";
 import type { UserData } from "./WelcomeScreen";
-import { hasInvited, getFollowerCount, getFollowingCount, DEMO_MEMBERS } from "./communityData";
-import FollowListSheet from "./FollowListSheet";
+import type { CommunityMember } from "./communityData";
 import PublicProfileScreen from "./PublicProfileScreen";
-import type { CommunityMember, FollowListUser } from "./communityData";
 import { useNotificationPreferences, type NotificationType } from "@/hooks/useNotificationPreferences";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
@@ -44,30 +42,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
-  const [followListMode, setFollowListMode] = useState<"followers" | "following" | null>(null);
   const [viewingMember, setViewingMember] = useState<CommunityMember | null>(null);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-
-  // Fetch follower/following counts
-  useEffect(() => {
-    if (isDemo) {
-      // Must match FollowListSheet demo slices
-      setFollowerCount(Math.min(DEMO_MEMBERS.length, 5));
-      setFollowingCount(Math.min(DEMO_MEMBERS.length, 3));
-      return;
-    }
-    if (!authUser) return;
-    const load = async () => {
-      const [fc, fgc] = await Promise.all([
-        getFollowerCount(authUser.id),
-        getFollowingCount(authUser.id),
-      ]);
-      setFollowerCount(fc);
-      setFollowingCount(fgc);
-    };
-    load();
-  }, [authUser, isDemo]);
 
   // Fetch all earned reflection badges (highest first)
   const { data: reflectionBadges = [] } = useQuery({
@@ -216,36 +191,6 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
     );
   }
 
-  // Show follow list overlay
-  if (followListMode) {
-    const handleViewProfile = (u: FollowListUser) => {
-      const asMember: CommunityMember = {
-        username: u.username,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        avatarUrl: u.avatarUrl,
-        userId: u.userId,
-        instagramHandle: u.instagramHandle,
-        churchName: "",
-        churchCode: "",
-        memberSince: "",
-        challengesCompleted: 0,
-        isGroupMember: false,
-      };
-      setFollowListMode(null);
-      setViewingMember(asMember);
-    };
-    return (
-      <FollowListSheet
-        userId={authUser?.id || "demo"}
-        mode={followListMode}
-        onClose={() => setFollowListMode(null)}
-        onViewProfile={handleViewProfile}
-        isDemo={isDemo}
-      />
-    );
-  }
-
   return (
     <div className="px-5 pb-6 space-y-5 animate-fade-in" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
       {/* Header */}
@@ -321,19 +266,6 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
             <span className="text-xs font-medium text-muted-foreground">@{user.instagramHandle}</span>
           </button>
         )}
-
-        {/* Follower / Following counts */}
-        <div className="flex items-center gap-4 mt-2">
-          <button onClick={() => setFollowListMode("followers")} className="text-center tap-active">
-            <span className="text-sm font-bold text-foreground">{followerCount}</span>
-            <span className="text-xs text-muted-foreground ml-1">Followers</span>
-          </button>
-          <div className="w-px h-4 bg-border" />
-          <button onClick={() => setFollowListMode("following")} className="text-center tap-active">
-            <span className="text-sm font-bold text-foreground">{followingCount}</span>
-            <span className="text-xs text-muted-foreground ml-1">Following</span>
-          </button>
-        </div>
 
         {user.churchName ? (
           <p className="text-xs text-muted-foreground mt-0.5">{user.churchName}</p>
@@ -451,15 +383,6 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
               onTimePress={() => setTimeModal("daily_spark")}
             />
           )}
-
-          {/* New Follower — always on, shown as info */}
-          <div className="flex items-center justify-between py-3.5 border-b border-border">
-            <div>
-              <span className="text-sm font-medium text-foreground">New Follower</span>
-              <p className="text-xs text-muted-foreground mt-0.5">Always on</p>
-            </div>
-            <Bell size={16} className="text-amber" />
-          </div>
 
           {/* Someone Prayed for You — always on */}
           <div className="flex items-center justify-between py-3.5">
