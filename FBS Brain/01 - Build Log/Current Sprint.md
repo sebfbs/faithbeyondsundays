@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Follow System Removed, Group Chat Overhauled — Next: OnboardingScreen Cleanup + Streak Logic
+## Status: Onboarding Overhauled — Next: Drop follows table, Username uniqueness, Streak Logic
 
 ## Completed This Sprint (2026-04-30)
 
@@ -57,19 +57,20 @@
 
 ## What's Next
 
-1. **OnboardingScreen follow cleanup** — remove 3 cosmetic follow references still in the file (line 1045 copy, lines 1140–1144 mockup)
-2. **Drop follows table** — run `drop table if exists follows cascade;` in Supabase SQL Editor
-3. **Username uniqueness** — change DB constraint from `username` to `(church_id, username)`
-4. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
-5. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
-6. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
-7. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
-8. **Locked badge tooltip** — when a user taps a grayed-out locked badge, show a small pop-up explaining how to earn it (e.g. "Read 10 Bible chapters to earn this"). Turns confusion into a call to action.
-9. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
-10. **QR code → church landing page flow**
-11. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
-12. **Primary accent color refresh** *(see full spec below)*
-13. **Pastor announcements feed — home screen** *(see full spec below)*
+1. ~~**Onboarding overhaul**~~ ✅ DONE (2026-04-30) — 5 clean benefit-first slides replace all animated iPhone mockups. tour2a (Daily Sparks notification) kept and white-labeled: fallback → "Your Church", logo_url support added. 375 lines of old mockup code deleted. Follow references from old tour5 removed as a side effect.
+2. **Remove church search step from onboarding** — the "Find Your Church" step (church search) should be removed entirely. Members always arrive via a QR code or invite link with the church already embedded in the URL — they should never need to search for it. Church context comes from the URL, not user selection. This is a meaningful flow change; tackle after the tour slide overhaul.
+3. **Drop follows table** — run `drop table if exists follows cascade;` in Supabase SQL Editor
+4. **Username uniqueness** — change DB constraint from `username` to `(church_id, username)`
+5. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
+6. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
+7. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
+8. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
+9. **Locked badge tooltip** — when a user taps a grayed-out locked badge, show a small pop-up explaining how to earn it (e.g. "Read 10 Bible chapters to earn this"). Turns confusion into a call to action.
+10. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
+11. **QR code → church landing page flow**
+12. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
+13. **Primary accent color refresh** *(see full spec below)*
+14. **Pastor announcements feed — home screen** *(see full spec below)*
 
 ---
 
