@@ -524,7 +524,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
               onChange={(e) => setReflectionText(e.target.value)}
               placeholder="Write your thoughts and reflections here..."
               className="w-full h-28 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-2xl p-3 mb-3"
-              style={{ background: "hsl(40 25% 97%)" }}
+              style={{ background: "hsl(var(--muted))" }}
             />
             <button
               onClick={handleSaveReflection}
