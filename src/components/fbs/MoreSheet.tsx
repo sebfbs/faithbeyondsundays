@@ -1,5 +1,5 @@
 import { Users, Heart, User, BookOpen, HandCoins, Lock, ChevronRight } from "lucide-react";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface MoreSheetProps {
@@ -13,7 +13,7 @@ interface MoreSheetProps {
 }
 
 export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl }: MoreSheetProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
 
   const allOptions = [
     { icon: Users, label: "Community", key: "community", featureKey: "community" as keyof FeatureFlags | null },

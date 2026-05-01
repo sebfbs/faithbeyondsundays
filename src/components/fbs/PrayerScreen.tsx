@@ -3,7 +3,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
@@ -38,7 +38,7 @@ interface PrayerScreenProps {
 }
 
 export default function PrayerScreen({ onBack, isDemo }: PrayerScreenProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [text, setText] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const { user: authUser } = useAuth();

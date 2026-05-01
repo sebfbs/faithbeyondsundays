@@ -1,5 +1,5 @@
 import { Home, BookOpen, BookMarked, MoreHorizontal } from "lucide-react";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 
 export type TabId = "home" | "sermon" | "journal" | "more";
 
@@ -17,7 +17,7 @@ const tabs = [
 ];
 
 export default function BottomNav({ activeTab, onTabChange, moreOpen }: BottomNavProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   return (
     <nav
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card/95 backdrop-blur-md z-[56]"

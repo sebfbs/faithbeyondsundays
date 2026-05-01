@@ -4,7 +4,7 @@ import { X, Users, MessageCircle, LogIn, LogOut, Loader2 } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import GroupChat from "./GroupChat";
 import { getAvatarColor } from "./avatarColors";
 import { DEMO_GROUP_MEMBERS } from "./demoData";
@@ -36,7 +36,7 @@ export default function GroupDetailSheet({
 }: GroupDetailSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [tab, setTab] = useState<"members" | "chat">("chat");
   const [demoMember, setDemoMember] = useState(initialIsMember);
 

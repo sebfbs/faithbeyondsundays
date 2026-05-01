@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { ArrowLeft, Search, Church, Users, Loader2, MapPin, UserPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
@@ -19,7 +19,7 @@ export default function ChurchlessCommunity({ onBack, onViewProfile, onJoined }:
   const [userSearch, setUserSearch] = useState("");
   const [churchSearch, setChurchSearch] = useState("");
   const [joiningChurchId, setJoiningChurchId] = useState<string | null>(null);
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const { user: authUser } = useAuth();
   const { refetch: refetchProfile } = useProfile();
 

@@ -3,7 +3,7 @@ import { ArrowLeft, Users, Share2, Loader2, MessageCircle, ChevronRight } from "
 import { useQuery } from "@tanstack/react-query";
 import { DEMO_MEMBERS, markInviteSent, type CommunityMember } from "./communityData";
 import { DEMO_GROUPS } from "./demoData";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
@@ -41,7 +41,7 @@ export default function CommunityScreen({
   isDemo,
   onJoined,
 }: CommunityScreenProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const { user: authUser } = useAuth();
   const { blockedIds } = useBlockedUsers();
 

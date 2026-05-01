@@ -4,7 +4,7 @@ import { Users, Award, UserPlus, BookText, Heart, LucideIcon } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_COMMUNITY_PULSE } from "./demoData";
 import { getBadgeTier } from "./badgeConfig";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { formatDistanceToNow } from "date-fns";
 import { getAvatarColor } from "./avatarColors";
 
@@ -95,7 +95,7 @@ function buildStories(pulse: PulseDataV2): Story[] {
 }
 
 export default function CommunityPulse({ churchId, userId, isDemo, locked, onNavigate }: CommunityPulseProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 

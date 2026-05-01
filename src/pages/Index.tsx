@@ -170,6 +170,7 @@ export default function Index() {
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [journalComposing, setJournalComposing] = useState(false);
+  const [bibleView, setBibleView] = useState<"books" | "chapters" | "text">("books");
   const [selectedSermon, setSelectedSermon] = useState<SermonUIData | null>(null);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
   const [subOverlay, setSubOverlay] = useState<"previous-sermon-detail" | "public-profile" | null>(null);
@@ -325,7 +326,7 @@ export default function Index() {
     if (subOverlay === "previous-sermon-detail" && selectedSermon) {
       return <PreviousSermonDetailScreen sermon={selectedSermon} onBack={() => window.history.back()} onOpenBible={handleOpenBible} />;
     }
-    if (overlay === "bible") return <BibleScreen onBack={() => { setBibleDeepLink(null); navTo("/home"); }} initialBook={bibleDeepLink?.book} initialChapter={bibleDeepLink?.chapter} initialVerse={bibleDeepLink?.verse} />;
+    if (overlay === "bible") return <BibleScreen onBack={() => { setBibleDeepLink(null); setBibleView("books"); navTo("/home"); }} initialBook={bibleDeepLink?.book} initialChapter={bibleDeepLink?.chapter} initialVerse={bibleDeepLink?.verse} onViewChange={setBibleView} />;
     if (overlay === "prayer") return <PrayerScreen onBack={() => navTo("/home")} isDemo={isDemo} />;
     if (overlay === "profile") {
       return <ProfileScreen onBack={() => navTo("/home")} user={userData} onSignOut={handleSignOut} onUpdateUser={() => refetchProfile()} />;
@@ -502,7 +503,7 @@ export default function Index() {
         key={`${activeTab}-${overlay}-${subOverlay}`}
         ref={mainRef}
         onScroll={(e) => setScrollY((e.target as HTMLElement).scrollTop)}
-        className={`relative z-10 scrollable-content ${isMobile ? (overlay === "community-groups" ? "pb-0" : "pb-[84px]") : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
+        className={`relative z-10 scrollable-content ${isMobile ? ((overlay === "community-groups" || (overlay === "bible" && bibleView === "text")) ? "pb-0" : "pb-[84px]") : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
           background: (overlay === null && activeTab === "home") ? getSkyGradient() : "hsl(var(--background))",
@@ -514,7 +515,7 @@ export default function Index() {
         </div>
       </main>
 
-      {isMobile && !journalComposing && overlay !== "community-groups" && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
+      {isMobile && !journalComposing && overlay !== "community-groups" && !(overlay === "bible" && bibleView === "text") && <BottomNav activeTab={activeTab} onTabChange={handleTabChange} moreOpen={moreOpen} />}
 
       {isMobile && moreOpen && (
         <MoreSheet

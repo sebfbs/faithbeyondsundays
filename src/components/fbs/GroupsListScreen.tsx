@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { DEMO_GROUPS } from "./demoData";
 import GroupPage from "./GroupPage";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 
 interface GroupInfo {
   id: string;
@@ -26,7 +26,7 @@ interface GroupsListScreenProps {
 
 export default function GroupsListScreen({ onBack, userChurchCode, userChurchId, isDemo, onViewProfile }: GroupsListScreenProps) {
   const { user: authUser } = useAuth();
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [selectedGroup, setSelectedGroup] = useState<GroupInfo | null>(null);
   const [demoMemberships, setDemoMemberships] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};

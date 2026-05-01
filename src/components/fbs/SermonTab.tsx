@@ -274,8 +274,7 @@ export default function SermonTab({ sermon, isLoading, previousSermonsCount, onP
               return (
                 <div
                   key={i}
-                  className="rounded-2xl p-4"
-                  style={{ background: "hsl(210 50% 95%)" }}
+                  className="rounded-2xl p-4 bg-muted/60"
                 >
                   <p className="text-sm text-foreground leading-relaxed">{t}</p>
                   <div className="flex items-center justify-end gap-1 mt-2">

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Crown, Users, Flame, LogOut, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Crown, Users, Flame, LogOut, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import {
   NotificationDaysModal,
   NotificationTimeModal,
@@ -38,6 +39,7 @@ function userBadgeToItem(cfg: UserBadgeConfig): BadgeItem {
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { isDemo } = useDemoMode();
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
@@ -97,7 +99,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const [removingAvatar, setRemovingAvatar] = useState(false);
 
   // Instagram handle editing
-  const [igInput, setIgInput] = useState(user.instagramHandle || "");
+  const [igInput, setIgInput] = useState((user.instagramHandle || "").toLowerCase());
   const [igSaved, setIgSaved] = useState(false);
 
   // Phone number editing
@@ -150,7 +152,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   };
 
   const sanitizeIgHandle = (value: string) => {
-    return value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
+    return value.replace(/^@/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
   };
 
   const handleSaveIg = async () => {
@@ -322,7 +324,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
             <Check size={16} className={igSaved ? "text-white" : "text-foreground"} />
           </button>
         </div>
-        {igInput && !/^[a-zA-Z0-9._]{1,30}$/.test(igInput) && (
+        {igInput && !/^[a-z0-9._]{1,30}$/.test(igInput) && (
           <p className="text-xs text-destructive mt-2 ml-1">Only letters, numbers, periods, and underscores</p>
         )}
         <p className="text-xs text-muted-foreground mt-1.5 ml-1">Shown on your profile when saved</p>
@@ -393,6 +395,25 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
             <Bell size={16} className="text-amber" />
           </div>
         </div>
+      </section>
+
+      {/* Appearance */}
+      <section className="bg-card rounded-3xl p-5 shadow-card">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+          Appearance
+        </p>
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-full flex items-center justify-between py-1 tap-active"
+        >
+          <div className="flex items-center gap-3">
+            <Moon size={16} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Dark Mode</span>
+          </div>
+          <div className={`w-11 h-6 rounded-full transition-colors relative ${theme === "dark" ? "bg-primary" : "bg-border"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${theme === "dark" ? "translate-x-5" : "translate-x-0.5"}`} />
+          </div>
+        </button>
       </section>
 
       {/* Sign Out */}

@@ -1,6 +1,34 @@
 # Current Sprint
 
-## Status: Badge polish done — Next: Bible next/prev chapter, IG lowercase, White-label copy audit
+## Status: Bible UX + dark mode done — Next: White-label copy audit, QR flow, Pastor announcements
+
+## Completed This Sprint (2026-05-01, Session 4)
+
+### Bible Reading UX Overhaul — DONE
+- Fixed bottom reading toolbar: prev chapter ← | Aa | → next chapter
+- Nav bar hidden when reading (text view) — reappears on chapter grid / book list
+- `Aa` button opens reading settings sheet above toolbar: Background (White/Sepia/Dark), Size (A−/A/A+), Font (Sans/Serif)
+- Preferences persisted in localStorage
+- `onViewChange` prop wired from BibleScreen → Index.tsx to control nav visibility
+
+### App-Wide Dark Mode — DONE
+- `ThemeProvider` from `next-themes` wired in `App.tsx` (was installed but never activated)
+- Dark mode toggle added to ProfileScreen → Appearance section (Moon icon + amber toggle)
+- `useAccentColors()` hook added to `themeColors.ts` — reads `resolvedTheme`, returns dark-appropriate tints for `accentBg`, `pillBgSoft`, `statusBg`, etc.
+- All 15 components using `getAccentColors()` migrated to `useAccentColors()`
+- `ScripturePills.tsx` — hardcoded cream `hsl(48 80% 94%)` replaced with `bg-muted text-foreground`
+- `SermonTab.tsx` + `PreviousSermonDetailScreen.tsx` — hardcoded light blue takeaway cards replaced with `bg-muted/60`
+
+### Bible: Next/Previous Chapter — DONE
+- `getNavTargets()` computes prev/next across book boundaries
+- Handles edge cases: Genesis 1 (no prev), Revelation 22 (no next), single-chapter books, YLT NT-only translation
+
+### Instagram Handle: Enforce Lowercase — DONE
+- `sanitizeIgHandle` now `.toLowerCase()` before character filter
+- Initial state lowercased for existing handles
+- Validation regex tightened to `[a-z0-9._]`
+
+---
 
 ## Completed This Sprint (2026-05-01, Session 3)
 
@@ -91,13 +119,14 @@
 6. ~~**Founding Member backfill**~~ ✅ DONE (2026-05-01) — renamed to "Day One", scoped per-church (first 20), trigger updated, backfill run
 7. ~~**Badge section reorder**~~ ✅ DONE (2026-05-01) — Special → Streaks → Reflections → Scripture
 8. ~~**Locked badge tooltip**~~ ✅ DONE (2026-05-01) — tap gray badge → overlay with how-to-earn + colored icon
-9. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
-10. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
-11. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
-11. **QR code → church landing page flow**
-12. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
-13. **Primary accent color refresh** *(see full spec below)*
-14. **Pastor announcements feed — home screen** *(see full spec below)*
+9. ~~**Bible: Next/Prev Chapter + Reading Toolbar**~~ ✅ DONE (2026-05-01) — fixed bottom toolbar with prev|Aa|next, nav bar hidden while reading, Aa opens settings sheet
+10. ~~**Instagram handle: enforce lowercase**~~ ✅ DONE (2026-05-01)
+11. ~~**App-wide dark mode**~~ ✅ DONE (2026-05-01) — ThemeProvider wired, ProfileScreen toggle, useAccentColors hook, all hardcoded colors fixed
+12. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
+13. **QR code → church landing page flow**
+14. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
+15. **Primary accent color refresh** *(see full spec below)*
+16. **Pastor announcements feed — home screen** *(see full spec below)*
 
 ---
 

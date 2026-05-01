@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, forwardRef } from "react";
 import { Bookmark, ChevronRight, SlidersHorizontal, Check, Plus, X, Pencil, Trash2, Camera, Loader2 } from "lucide-react";
 import type { JournalEntry } from "@/hooks/useJournalEntries";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -45,7 +45,7 @@ function checkImageQuality(imageData: ImageData): string | null {
 }
 
 const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalTab({ entries, onAddEntry, onUpdateEntry, onDeleteEntry, isDemo, onComposingChange }, ref) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [bookmarks, setBookmarks] = useState<Record<string, boolean>>(
     Object.fromEntries(entries.map((e) => [e.id, e.bookmarked]))
   );

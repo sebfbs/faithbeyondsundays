@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Medal, Crown, Users, Flame, BookOpen, MoreHorizontal } from "lucide-react";
 import ReportBlockSheet from "./ReportBlockSheet";
 import { type CommunityMember } from "./communityData";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { getBadgeTier, getUserBadgeConfig, BADGE_TIERS, type UserBadgeConfig } from "./badgeConfig";
 import BadgeStackGroup, { type BadgeItem } from "./BadgeStackGroup";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,7 @@ interface PublicProfileScreenProps {
 
 export default function PublicProfileScreen({ member, onBack, isDemo, churchId }: PublicProfileScreenProps) {
   const [showReport, setShowReport] = useState(false);
-  const colors = getAccentColors();
+  const colors = useAccentColors();
 
   const { data: reflectionBadges = [] } = useQuery({
     queryKey: ["public-reflection-badges", member.userId],

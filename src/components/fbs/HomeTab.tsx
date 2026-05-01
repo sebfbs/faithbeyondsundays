@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X } from "lucide-react";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunityPulse from "./CommunityPulse";
@@ -195,7 +195,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
   const [reflectionOpen, setReflectionOpen] = useState(false);
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [vvTop, setVvTop] = useState(0);
   const [vvHeight, setVvHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));

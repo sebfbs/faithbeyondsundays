@@ -21,8 +21,7 @@ export default function ScripturePills({ scriptures, onOpenBible }: ScripturePil
         <button
           key={i}
           onClick={() => onOpenBible?.(s.reference)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tap-active transition-colors"
-          style={{ background: "hsl(48 80% 94%)", color: "hsl(30 60% 35%)" }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tap-active transition-colors bg-muted text-foreground"
         >
           <BookOpen size={12} />
           {s.reference}

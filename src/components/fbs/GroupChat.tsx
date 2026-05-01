@@ -7,7 +7,7 @@ import CommunityGuidelinesDialog from "./CommunityGuidelinesDialog";
 import ReportBlockSheet from "./ReportBlockSheet";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { useCommunityGuidelines } from "@/hooks/useCommunityGuidelines";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { getAvatarColor } from "./avatarColors";
 import { DEMO_GROUP_MESSAGES } from "./demoData";
 
@@ -30,7 +30,7 @@ interface Message {
 export default function GroupChat({ groupId, isMember, isDemo, churchId, onViewProfile }: GroupChatProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [text, setText] = useState("");
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [pendingMessage, setPendingMessage] = useState("");

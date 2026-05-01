@@ -3,7 +3,7 @@ import { ChevronLeft, Users, MessageCircle, LogIn, LogOut, Loader2 } from "lucid
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { getAvatarColor } from "./avatarColors";
 import { DEMO_GROUP_MEMBERS } from "./demoData";
 import GroupChat from "./GroupChat";
@@ -26,7 +26,7 @@ interface GroupPageProps {
 export default function GroupPage({ group, onBack, isDemo, churchId, onMembershipChange, onViewProfile }: GroupPageProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const colors = getAccentColors();
+  const colors = useAccentColors();
   const [view, setView] = useState<"landing" | "chat">("landing");
   const [demoMember, setDemoMember] = useState(group.isMember);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);

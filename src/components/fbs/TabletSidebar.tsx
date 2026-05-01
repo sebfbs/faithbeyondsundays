@@ -1,5 +1,5 @@
 import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, PanelLeft, PanelLeftClose, Lock } from "lucide-react";
-import { getAccentColors } from "./themeColors";
+import { useAccentColors } from "./themeColors";
 import { GIVING_URL } from "./data";
 import FBSLogo from "@/assets/FBS_Logo_white.png";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
@@ -36,7 +36,7 @@ const moreItemsDef = [
 ];
 
 export default function TabletSidebar({ featureFlags, activeItem, onNavigate, collapsed, onToggle }: TabletSidebarProps) {
-  const colors = getAccentColors();
+  const colors = useAccentColors();
 
   const filteredMoreItems = moreItemsDef;
 
