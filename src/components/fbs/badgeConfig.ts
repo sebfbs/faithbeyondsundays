@@ -67,7 +67,7 @@ export interface UserBadgeConfig {
 
 export const USER_BADGE_CONFIGS: UserBadgeConfig[] = [
   // Special
-  { type: "founding_member", label: "Founding Member", detail: "One of the first 250", howToEarn: "This badge was awarded to the first 250 members.",           gradient: "linear-gradient(135deg, hsl(208,80%,78%), hsl(248,72%,76%), hsl(288,70%,76%), hsl(328,72%,76%), hsl(18,78%,76%), hsl(208,80%,78%))", animated: true, group: "special" },
+  { type: "founding_member", label: "Day One", detail: "One of the first 20", howToEarn: "Awarded to the first 20 members to join your church's app.",  gradient: "linear-gradient(135deg, hsl(208,80%,78%), hsl(248,72%,76%), hsl(288,70%,76%), hsl(328,72%,76%), hsl(18,78%,76%), hsl(208,80%,78%))", animated: true, group: "special" },
   { type: "group_member",    label: "Group Member",    detail: "Community Connected",  howToEarn: "Join a group in the Community tab.",                          gradient: "linear-gradient(135deg, hsl(174,58%,48%), hsl(192,55%,53%), hsl(174,58%,48%))", group: "special" },
   // Streaks
   { type: "streak_3",   label: "3-Day Streak",   detail: "On Fire",        howToEarn: "Journal 3 days in a row.",                color: "hsl(26, 88%, 57%)", group: "streak" },
