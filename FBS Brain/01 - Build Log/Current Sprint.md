@@ -1,6 +1,17 @@
 # Current Sprint
 
-## Status: DB Cleanup Done — Next: Streak Logic, Bible next chapter, Polish items
+## Status: Badge polish done — Next: Bible next/prev chapter, IG lowercase, White-label copy audit
+
+## Completed This Sprint (2026-05-01, Session 3)
+
+### Badge Polish — DONE
+- Founding Member backfill SQL run — 1 user awarded ✅
+- Badge section reorder: Special → Streaks → Reflections → Scripture (both ProfileScreen + PublicProfileScreen)
+- Locked badge tooltip: tap gray badge → overlay with "How to earn" description + colored icon
+- "Day One" rename: founding_member badge renamed from "Founding Member / first 250" → "Day One / first 20 per church"
+- DB trigger updated: `award_founding_member_badge()` now checks per-church count ≤ 20 (was global ≤ 250)
+
+---
 
 ## Completed This Sprint (2026-05-01)
 
@@ -77,11 +88,12 @@
 3. ~~**Drop follows table**~~ ✅ DONE (2026-05-01)
 4. ~~**Username uniqueness**~~ ✅ DONE (2026-05-01) — constraint now `(church_id, username)`
 5. ~~**Streak logic**~~ ✅ DONE (2026-05-01) — triggers live on `journal_entries` and `profiles`; verified end to end
-6. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
-7. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
-8. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
-9. **Locked badge tooltip** — when a user taps a grayed-out locked badge, show a small pop-up explaining how to earn it (e.g. "Read 10 Bible chapters to earn this"). Turns confusion into a call to action.
-10. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
+6. ~~**Founding Member backfill**~~ ✅ DONE (2026-05-01) — renamed to "Day One", scoped per-church (first 20), trigger updated, backfill run
+7. ~~**Badge section reorder**~~ ✅ DONE (2026-05-01) — Special → Streaks → Reflections → Scripture
+8. ~~**Locked badge tooltip**~~ ✅ DONE (2026-05-01) — tap gray badge → overlay with how-to-earn + colored icon
+9. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
+10. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
+11. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
 11. **QR code → church landing page flow**
 12. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
 13. **Primary accent color refresh** *(see full spec below)*
