@@ -1,23 +1,14 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Church, AtSign, Check, X, Search, MapPin, CheckCircle, Loader2, Phone, User, Sparkles, BookOpen, PenLine, Users, Bell, Clock, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, X, Loader2, Phone, User, Sparkles, BookOpen, PenLine, Users, Bell, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { useNotificationPreferences, NotificationType } from "@/hooks/useNotificationPreferences";
 import { Switch } from "@/components/ui/switch";
 import confetti from "canvas-confetti";
 
-interface ChurchEntry {
-  id: string;
-  code: string;
-  name: string;
-  city: string | null;
-  state: string | null;
-  logo_url: string | null;
-}
+type Step = "details" | "username" | "tour1" | "tour2a" | "tour2" | "tour3" | "tour4" | "tour5";
 
-type Step = "age" | "church" | "details" | "username" | "tour1" | "tour2a" | "tour2" | "tour3" | "tour4" | "tour5";
-
-const STEPS: Step[] = ["age", "church", "details", "username", "tour1", "tour2a", "tour2", "tour3", "tour4", "tour5"];
+const STEPS: Step[] = ["details", "username", "tour1", "tour2a", "tour2", "tour3", "tour4", "tour5"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIME_OPTIONS = [
   { label: "Morning", time: "8 AM" },
@@ -131,13 +122,10 @@ export default function OnboardingScreen() {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>(() => {
     const param = new URLSearchParams(window.location.search).get("step");
-    return (STEPS.includes(param as Step) ? param : "age") as Step;
+    return (STEPS.includes(param as Step) ? param : "details") as Step;
   });
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [churches, setChurches] = useState<ChurchEntry[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedChurch, setSelectedChurch] = useState<ChurchEntry | null>(null);
+
+  const [churchIdFromUrl] = useState(() => new URLSearchParams(window.location.search).get("church_id"));
 
   // Details step
   const [firstName, setFirstName] = useState("");
@@ -168,26 +156,6 @@ export default function OnboardingScreen() {
       setSparkTime(spark.preferred_time || "Morning (8 AM)");
     }
   }, [preferences]);
-
-  // Search churches from database
-  useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setChurches([]);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      setSearchLoading(true);
-      const { data } = await supabase
-        .from("churches")
-        .select("id, code, name, city, state, logo_url")
-        .or(`name.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%`)
-        .eq("is_active", true)
-        .limit(10);
-      setChurches(data || []);
-      setSearchLoading(false);
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [searchQuery]);
 
   // Validate username
   useEffect(() => {
@@ -223,7 +191,7 @@ export default function OnboardingScreen() {
 
     const { error } = await supabase.from("profiles").insert({
       user_id: user.id,
-      church_id: selectedChurch?.id || null,
+      church_id: churchIdFromUrl || null,
       username,
       first_name: firstName.trim() || null,
       last_name: lastName.trim() || null,
@@ -258,144 +226,6 @@ export default function OnboardingScreen() {
 
   const displayUsername = username || "yourname";
 
-  // ─── Age verification step ───
-  if (step === "age") {
-    return (
-      <div
-        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
-        style={{ background: "hsl(var(--background))" }}
-      >
-        <div className="pt-14 pb-6">
-          <ProgressDots current="age" />
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
-              <ShieldCheck size={18} className="text-amber" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Age Verification</h1>
-              <p className="text-xs text-muted-foreground">We need to confirm your age</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-          <div className="w-20 h-20 rounded-3xl bg-amber-bg flex items-center justify-center mb-6">
-            <ShieldCheck size={36} className="text-amber" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-3">Are you 13 or older?</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-[300px] mb-8">
-            Faith Beyond Sundays is designed for users ages 13 and up. By continuing, you confirm that you meet this age requirement.
-          </p>
-
-          <div className="w-full space-y-3 max-w-[320px]">
-            <button
-              onClick={() => setStep("church")}
-              className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
-            >
-              <Check size={18} />
-              Yes, I'm 13 or older
-            </button>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.reload();
-              }}
-              className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active transition-opacity hover:opacity-90"
-            >
-              No, I'm under 13
-            </button>
-            <p className="text-[10px] text-muted-foreground leading-relaxed pt-1">
-              In compliance with COPPA and App Store guidelines, users under 13 cannot create an account.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Church selection step ───
-  if (step === "church") {
-    return (
-      <div
-        className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
-        style={{ background: "hsl(var(--background))" }}
-      >
-        <div className="pt-14 pb-6">
-          <ProgressDots current="church" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Find Your Church</h1>
-          <p className="text-sm text-muted-foreground">Search for your church to get started</p>
-        </div>
-
-        {(
-          <div className="space-y-4 flex-1">
-            <div className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSelectedChurch(null); }}
-                placeholder="Search churches..."
-                className="w-full bg-card rounded-2xl pl-11 pr-4 py-4 text-base text-foreground placeholder:text-muted-foreground shadow-card focus:outline-none focus:ring-2 focus:ring-amber/40"
-              />
-            </div>
-
-            {searchQuery.trim().length >= 2 && (
-              <div className="space-y-2 animate-fade-in">
-                {searchLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 size={24} className="animate-spin text-muted-foreground" />
-                  </div>
-                ) : churches.length > 0 ? (
-                  churches.map((church) => (
-                    <button
-                      key={church.id}
-                      onClick={() => setSelectedChurch(church)}
-                      className={`w-full text-left bg-card rounded-2xl p-4 shadow-card tap-active transition-all flex items-center ${
-                        selectedChurch?.id === church.id ? "ring-2 ring-amber" : ""
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-foreground">{church.name}</p>
-                        {(church.city || church.state) && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <MapPin size={12} className="text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">
-                              {[church.city, church.state].filter(Boolean).join(", ")}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {selectedChurch?.id === church.id && (
-                        <CheckCircle size={20} className="text-amber ml-2 flex-shrink-0" />
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-muted-foreground">Can't find your church?</p>
-                    <p className="text-sm text-muted-foreground mt-1">Contact <span className="font-medium text-foreground">support@faithbeyondsundays.com</span></p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {selectedChurch && (
-              <div className="animate-fade-in">
-                <button
-                  onClick={() => setStep("details")}
-                  className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-sm py-3.5 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90"
-                >
-                  Continue
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   // ─── Details step ───
   if (step === "details") {
     return (
@@ -404,9 +234,6 @@ export default function OnboardingScreen() {
         style={{ background: "hsl(var(--background))" }}
       >
         <div className="pt-14 pb-6">
-          <button onClick={() => setStep("church")} className="mb-4 tap-active">
-            <ArrowLeft size={24} className="text-foreground" />
-          </button>
           <ProgressDots current="details" />
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
@@ -612,9 +439,9 @@ export default function OnboardingScreen() {
 
   // ─── Tour 2a: Daily Sparks intro (visual) ───
   if (step === "tour2a") {
-    const churchName = selectedChurch?.name || "Your Church";
+    const churchName = "Your Church";
     const initial = churchName[0].toUpperCase();
-    const logoUrl = selectedChurch?.logo_url;
+    const logoUrl = null;
 
     const tour2aStyles = `
       @keyframes notifPop {

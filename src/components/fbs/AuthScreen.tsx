@@ -389,6 +389,7 @@ export default function AuthScreen() {
                 <button onClick={() => navigate("/terms")} className="underline">Terms of Service</button>{" "}
                 and{" "}
                 <button onClick={() => navigate("/privacy")} className="underline">Privacy Policy</button>
+                {". "}By signing up, you confirm you are 13 or older.
               </p>
             )}
           </>

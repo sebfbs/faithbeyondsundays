@@ -1,6 +1,21 @@
 # Current Sprint
 
-## Status: Onboarding Overhauled — Next: Drop follows table, Username uniqueness, Streak Logic
+## Status: DB Cleanup Done — Next: Streak Logic, Bible next chapter, Polish items
+
+## Completed This Sprint (2026-05-01)
+
+### Onboarding + Auth cleanup — DONE
+- Removed age verification step from onboarding entirely (was active confirmation screen)
+- Removed church search step from onboarding entirely (members arrive via QR/invite URL)
+- New flow: details → username → tour1 → tour2a → tour2 → tour3 → tour4 → tour5
+- `church_id` now read from URL param (`?church_id=xxx`) for profile creation — ready for QR flow
+- Age confirmation moved to passive fine print on AuthScreen sign-up form: "By signing up, you confirm you are 13 or older."
+- Cleaned up dead imports, ChurchEntry interface, church search state + useEffect
+
+### DB Cleanup — DONE
+- Dropped `follows` table (was referenced in OnboardingScreen, all frontend already cleaned last session)
+- Fixed profiles RLS policy that referenced `follows` — removed the follower visibility clause
+- Changed username uniqueness constraint from global → church-scoped `(church_id, username)`
 
 ## Completed This Sprint (2026-04-30)
 
@@ -57,10 +72,10 @@
 
 ## What's Next
 
-1. ~~**Onboarding overhaul**~~ ✅ DONE (2026-04-30) — 5 clean benefit-first slides replace all animated iPhone mockups. tour2a (Daily Sparks notification) kept and white-labeled: fallback → "Your Church", logo_url support added. 375 lines of old mockup code deleted. Follow references from old tour5 removed as a side effect.
-2. **Remove church search step from onboarding** — the "Find Your Church" step (church search) should be removed entirely. Members always arrive via a QR code or invite link with the church already embedded in the URL — they should never need to search for it. Church context comes from the URL, not user selection. This is a meaningful flow change; tackle after the tour slide overhaul.
-3. **Drop follows table** — run `drop table if exists follows cascade;` in Supabase SQL Editor
-4. **Username uniqueness** — change DB constraint from `username` to `(church_id, username)`
+1. ~~**Onboarding overhaul**~~ ✅ DONE (2026-04-30)
+2. ~~**Remove church search + age steps from onboarding**~~ ✅ DONE (2026-05-01) — new flow: details → username → tours. Age confirmation moved to AuthScreen fine print.
+3. ~~**Drop follows table**~~ ✅ DONE (2026-05-01)
+4. ~~**Username uniqueness**~~ ✅ DONE (2026-05-01) — constraint now `(church_id, username)`
 5. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
 6. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
 7. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
