@@ -179,7 +179,7 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
               <div
                 key={i}
                 className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center"
-                style={{ background: a.avatar_url ? "hsl(var(--muted))" : getAvatarColor(a.first_name || "?") }}
+                style={{ background: a.avatar_url ? "hsl(var(--muted))" : getAvatarColor(a.first_name || "?"), boxShadow: "0 0 0 2px hsl(var(--card))" }}
               >
                 {a.avatar_url ? (
                   <img src={a.avatar_url} alt="" className="w-full h-full object-cover" />
