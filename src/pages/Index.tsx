@@ -26,6 +26,7 @@ import type { CommunityMember } from "@/components/fbs/communityData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDemoMode } from "@/components/fbs/DemoModeProvider";
 import { useAuth } from "@/components/fbs/AuthProvider";
+import { useTheme } from "next-themes";
 import { useProfile } from "@/hooks/useProfile";
 import { useCurrentSermon } from "@/hooks/useCurrentSermon";
 import { usePreviousSermons } from "@/hooks/usePreviousSermons";
@@ -56,6 +57,7 @@ export default function Index() {
   const { isDemo } = useDemoMode();
   const { user: authUser, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
+  const { resolvedTheme } = useTheme();
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -491,7 +493,7 @@ export default function Index() {
             height: "env(safe-area-inset-top, 0px)",
             backdropFilter: `blur(${(overlay === null && activeTab === "home") ? 12 * topBarRatio : 12}px)`,
             WebkitBackdropFilter: `blur(${(overlay === null && activeTab === "home") ? 12 * topBarRatio : 12}px)`,
-            background: (overlay === null && activeTab === "home")
+            background: (overlay === null && activeTab === "home" && resolvedTheme !== "dark")
               ? getSkyGradientTopColor().replace(')', ` / ${0.95 * topBarRatio})`)
               : `hsl(var(--background) / 0.95)`,
             transition: "background 0.1s, backdrop-filter 0.1s, -webkit-backdrop-filter 0.1s",
@@ -506,7 +508,7 @@ export default function Index() {
         className={`relative z-10 scrollable-content ${isMobile ? ((overlay === "community-groups" || (overlay === "bible" && bibleView === "text")) ? "pb-0" : "pb-[84px]") : "pb-8"} pt-[0px] ${!isMobile ? "tablet-content" : ""}`}
         style={{
           minHeight: "100dvh",
-          background: (overlay === null && activeTab === "home") ? getSkyGradient() : "hsl(var(--background))",
+          background: (overlay === null && activeTab === "home" && resolvedTheme !== "dark") ? getSkyGradient() : "hsl(var(--background))",
           ...((!isMobile) ? { marginLeft: sidebarCollapsed ? 64 : 180 } : {}),
         }}
       >

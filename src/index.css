@@ -252,6 +252,11 @@
     text-transform: uppercase;
   }
 
+  .dark .blue-pill {
+    background: hsl(215 40% 22%);
+    color: hsl(210 65% 70%);
+  }
+
   @keyframes twinkle {
     0%, 100% { opacity: var(--tw-opacity, 0.7); }
     50% { opacity: 0.15; }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Sparkles } from "lucide-react";
 import { getSkyGradient } from "./HomeTab";
+import { useTheme } from "next-themes";
 
 const STORAGE_KEY = "fbs_spark_seen_date";
 const CHAR_DELAY = 35;
@@ -66,6 +67,7 @@ interface DailySparkOverlayProps {
 }
 
 export default function DailySparkOverlay({ sparkMessage }: DailySparkOverlayProps) {
+  const { resolvedTheme } = useTheme();
   const [visible, setVisible] = useState(() => !hasSeenToday());
   const [fadingOut, setFadingOut] = useState(false);
   const [displayedChars, setDisplayedChars] = useState(0);
@@ -97,7 +99,9 @@ export default function DailySparkOverlay({ sparkMessage }: DailySparkOverlayPro
       onClick={dismiss}
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center cursor-pointer select-none"
       style={{
-        background: `linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.22) 100%), ${getSkyGradient()}`,
+        background: resolvedTheme === "dark"
+          ? `linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.4) 100%), linear-gradient(180deg, hsl(225, 45%, 8%) 0%, hsl(220, 40%, 14%) 60%, hsl(215, 35%, 20%) 100%)`
+          : `linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.22) 100%), ${getSkyGradient()}`,
         opacity: fadingOut ? 0 : 1,
         transition: "opacity 300ms ease",
       }}

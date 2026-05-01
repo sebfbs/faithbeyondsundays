@@ -473,23 +473,23 @@ const JournalTab = forwardRef<HTMLDivElement, JournalTabProps>(function JournalT
         {selectedEntry.suggestedScripture && (
           <div
             className="rounded-2xl p-5"
-            style={{ background: "hsl(210 55% 94%)" }}
+            style={{ background: colors.accentBg }}
           >
             <p
               className="text-xs font-bold uppercase tracking-widest mb-2"
-              style={{ color: "hsl(207 65% 40%)" }}
+              style={{ color: colors.pillTextSoft }}
             >
               Suggested Scripture
             </p>
             <p
               className="text-xs font-bold mb-1.5"
-              style={{ color: "hsl(207 65% 40%)" }}
+              style={{ color: colors.pillTextSoft }}
             >
               {selectedEntry.suggestedScripture.reference}
             </p>
             <p
               className="text-sm leading-relaxed italic"
-              style={{ color: "hsl(207 50% 30%)" }}
+              style={{ color: colors.pillTextSoft }}
             >
               {selectedEntry.suggestedScripture.text}
             </p>
