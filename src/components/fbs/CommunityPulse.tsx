@@ -148,12 +148,7 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
   return (
     <button
       onClick={() => !locked && onNavigate?.("community")}
-      className={`w-full rounded-3xl p-5 shadow-card text-left transition-opacity ${locked ? "opacity-50 grayscale pointer-events-none" : "tap-active hover:opacity-90"}`}
-      style={{
-        background: "hsl(0 0% 100% / 0.8)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-      }}
+      className={`bg-card w-full rounded-3xl p-5 shadow-card text-left transition-opacity ${locked ? "opacity-50 grayscale pointer-events-none" : "tap-active hover:opacity-90"}`}
     >
       <div className="flex items-center gap-2 mb-3">
         <div
