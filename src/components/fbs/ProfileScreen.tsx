@@ -32,7 +32,7 @@ function badgeIcon(type: string): React.ReactNode {
 }
 
 function userBadgeToItem(cfg: UserBadgeConfig): BadgeItem {
-  return { label: cfg.label, detail: cfg.detail, color: cfg.color, gradient: cfg.gradient, animated: cfg.animated, icon: badgeIcon(cfg.type) };
+  return { label: cfg.label, detail: cfg.detail, howToEarn: cfg.howToEarn, color: cfg.color, gradient: cfg.gradient, animated: cfg.animated, icon: badgeIcon(cfg.type) };
 }
 
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
@@ -81,7 +81,7 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
   const reflectionLocked: BadgeItem[] = BADGE_TIERS
     .filter((t) => !reflectionBadges.find((e) => e?.milestone === t.milestone))
     .slice(0, 1)
-    .map((t) => ({ label: t.label, detail: t.detail, color: t.color, gradient: t.gradient, icon: <Medal size={20} color="white" /> }));
+    .map((t) => ({ label: t.label, detail: t.detail, howToEarn: t.howToEarn, color: t.color, gradient: t.gradient, icon: <Medal size={20} color="white" /> }));
 
   const streakEarned  = earnedUserBadges.filter((b) => b.group === "streak").map(userBadgeToItem);
   const streakLocked  = USER_BADGE_CONFIGS.filter((b) => b.group === "streak"  && !earnedTypes.has(b.type)).slice(0, 1).map(userBadgeToItem);

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ChevronDown, Lock } from "lucide-react";
+import { ChevronDown, Lock, X } from "lucide-react";
 
 export interface BadgeItem {
   label: string;
   detail: string;
+  howToEarn?: string;
   color?: string;
   gradient?: string;
   animated?: boolean;
@@ -22,40 +23,133 @@ const PEEK = 10;
 const EXPANDED_STEP = 56;
 
 function LockedBadgeCard({ badge }: { badge: BadgeItem }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <div
-      style={{
-        borderRadius: 20,
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        background: "hsl(var(--muted))",
-      }}
-    >
+    <>
       <div
+        onClick={() => badge.howToEarn && setShowTooltip(true)}
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
-          background: "rgba(0,0,0,0.08)",
+          borderRadius: 20,
+          padding: "14px 16px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          opacity: 0.4,
+          gap: 14,
+          background: "hsl(var(--muted))",
+          cursor: badge.howToEarn ? "pointer" : undefined,
         }}
       >
-        {badge.icon}
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "rgba(0,0,0,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            opacity: 0.4,
+          }}
+        >
+          {badge.icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "hsl(var(--muted-foreground))", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+            {badge.label}
+          </p>
+          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, opacity: 0.7 }}>{badge.detail}</p>
+        </div>
+        <Lock size={17} color="hsl(var(--muted-foreground))" style={{ flexShrink: 0, opacity: 0.5 }} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: "hsl(var(--muted-foreground))", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
-          {badge.label}
-        </p>
-        <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, opacity: 0.7 }}>{badge.detail}</p>
-      </div>
-      <Lock size={17} color="hsl(var(--muted-foreground))" style={{ flexShrink: 0, opacity: 0.5 }} />
-    </div>
+
+      {showTooltip && badge.howToEarn && (
+        <div
+          onClick={() => setShowTooltip(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9000,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 32px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "hsl(var(--card))",
+              borderRadius: 24,
+              padding: "24px 20px",
+              width: "100%",
+              maxWidth: 320,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              boxShadow: "0 16px 48px rgba(0,0,0,0.3)",
+            }}
+          >
+            <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowTooltip(false)}
+                style={{
+                  background: "hsl(var(--muted))",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={14} color="hsl(var(--muted-foreground))" />
+              </button>
+            </div>
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "hsl(var(--muted))",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: 0.5,
+              }}
+            >
+              {badge.icon}
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "hsl(var(--foreground))", fontWeight: 700, fontSize: 17, marginBottom: 4 }}>
+                {badge.label}
+              </p>
+              <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, marginBottom: 16 }}>
+                {badge.detail}
+              </p>
+              <div
+                style={{
+                  background: "hsl(var(--muted))",
+                  borderRadius: 12,
+                  padding: "10px 14px",
+                }}
+              >
+                <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                  How to earn
+                </p>
+                <p style={{ color: "hsl(var(--foreground))", fontSize: 14 }}>
+                  {badge.howToEarn}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
