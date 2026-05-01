@@ -140,10 +140,10 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-5">
             Badges
           </p>
-          <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={[]} isOwn={false} />
-          <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={[]} isOwn={false} />
-          <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={[]} isOwn={false} />
           <BadgeStackGroup label="Special"     earned={specialEarned}    locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={[]} isOwn={false} />
+          <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={[]} isOwn={false} />
         </section>
       )}
 

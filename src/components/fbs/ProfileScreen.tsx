@@ -285,10 +285,10 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-5">
           Badges
         </p>
-        <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={reflectionLocked} isOwn={true} />
-        <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={streakLocked}     isOwn={true} />
-        <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={scriptLocked}     isOwn={true} />
         <BadgeStackGroup label="Special"     earned={specialEarned}    locked={specialLocked}    isOwn={true} />
+        <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={streakLocked}     isOwn={true} />
+        <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={reflectionLocked} isOwn={true} />
+        <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={scriptLocked}     isOwn={true} />
       </section>
 
       {/* Social & Contact */}
