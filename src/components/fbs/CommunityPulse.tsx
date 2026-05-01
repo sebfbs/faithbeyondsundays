@@ -178,7 +178,7 @@ export default function CommunityPulse({ churchId, userId, isDemo, locked, onNav
             {active_avatars.slice(0, 5).map((a, i) => (
               <div
                 key={i}
-                className="w-7 h-7 rounded-full border-2 border-white overflow-hidden flex items-center justify-center"
+                className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center"
                 style={{ background: a.avatar_url ? "hsl(var(--muted))" : getAvatarColor(a.first_name || "?") }}
               >
                 {a.avatar_url ? (
