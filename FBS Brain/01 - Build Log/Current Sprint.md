@@ -1,6 +1,18 @@
 # Current Sprint
 
-## Status: Bible UX + dark mode done — Next: White-label copy audit, QR flow, Pastor announcements
+## Status: Dark mode fully polished — Next: White-label copy audit, QR flow, Pastor announcements
+
+## Completed This Sprint (2026-05-01, Session 5)
+
+### Dark Mode Polish — DONE
+- Homepage: `getSkyGradient()` now skipped when `resolvedTheme === "dark"` — flat dark background shown instead
+- DailySparkOverlay: deep navy gradient in dark mode instead of sky gradient
+- HomeTab + CommunityPulse: all frosted glass cards (`hsl(0 0% 100% / 0.8)` + backdrop blur) replaced with `bg-card`
+- JournalTab Suggested Scripture block: hardcoded `hsl(210...)` replaced with `useAccentColors()` values
+- `index.css`: `.dark .blue-pill` override added — deep blue bg + light blue text
+- Avatar overlap separator: was hardcoded `border-white`, now `boxShadow: "0 0 0 2px hsl(var(--card))"` — matches card in all modes
+
+---
 
 ## Completed This Sprint (2026-05-01, Session 4)
 
@@ -121,7 +133,7 @@
 8. ~~**Locked badge tooltip**~~ ✅ DONE (2026-05-01) — tap gray badge → overlay with how-to-earn + colored icon
 9. ~~**Bible: Next/Prev Chapter + Reading Toolbar**~~ ✅ DONE (2026-05-01) — fixed bottom toolbar with prev|Aa|next, nav bar hidden while reading, Aa opens settings sheet
 10. ~~**Instagram handle: enforce lowercase**~~ ✅ DONE (2026-05-01)
-11. ~~**App-wide dark mode**~~ ✅ DONE (2026-05-01) — ThemeProvider wired, ProfileScreen toggle, useAccentColors hook, all hardcoded colors fixed
+11. ~~**App-wide dark mode**~~ ✅ DONE (2026-05-01, sessions 4+5) — ThemeProvider wired, ProfileScreen toggle, useAccentColors hook, all hardcoded colors fixed, frosted glass cards replaced, homepage gradient dark-aware
 12. **End-to-end app walkthrough** — walk through the deployed app and document what works vs what's broken
 13. **QR code → church landing page flow**
 14. **Empty state: show church name instead of "Faith Beyond Sundays"** *(see full spec below)*
