@@ -115,11 +115,12 @@ function LockedBadgeCard({ badge }: { badge: BadgeItem }) {
                 width: 56,
                 height: 56,
                 borderRadius: "50%",
-                background: "hsl(var(--muted))",
+                background: badge.gradient ?? badge.color ?? "hsl(var(--muted))",
+                backgroundSize: badge.animated ? "350% 350%" : undefined,
+                animation: badge.animated ? "aurora-shift 6s ease-in-out infinite" : undefined,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: 0.5,
               }}
             >
               {badge.icon}
