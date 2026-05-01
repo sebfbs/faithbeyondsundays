@@ -5,7 +5,7 @@
 
 ## Low Priority
 - `README.md` still contains Lovable links — should be replaced with real FBS readme
-- **Streak badges won't fire** — `streak_current` on `profiles` is never incremented yet. Triggers are ready; needs streak logic wired up first.
+- ~~**Streak badges won't fire**~~ — resolved 2026-05-01. Streak increment trigger live on `journal_entries`; badge award trigger live on `profiles`.
 - **Founding Member backfill** — users who signed up before the trigger was added won't have the badge. Needs a one-time SQL backfill.
 
 ---

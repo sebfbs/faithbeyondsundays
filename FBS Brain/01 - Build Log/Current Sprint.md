@@ -76,7 +76,7 @@
 2. ~~**Remove church search + age steps from onboarding**~~ ✅ DONE (2026-05-01) — new flow: details → username → tours. Age confirmation moved to AuthScreen fine print.
 3. ~~**Drop follows table**~~ ✅ DONE (2026-05-01)
 4. ~~**Username uniqueness**~~ ✅ DONE (2026-05-01) — constraint now `(church_id, username)`
-5. **Streak logic** — wire up daily reflection streak increment on `profiles.streak_current`; streak badge triggers are already in place and will fire automatically once streaks update
+5. ~~**Streak logic**~~ ✅ DONE (2026-05-01) — triggers live on `journal_entries` and `profiles`; verified end to end
 6. **Founding Member backfill** — one-time SQL to award the badge to existing users who signed up before the trigger was added
 7. **Bible: Next Chapter button** — add a Next / Previous button at the bottom of the chapter text view so users don't have to swipe back and tap the next chapter number. Standard pattern in all Bible apps.
 8. **Instagram handle: enforce lowercase** — when user types their IG handle (profile settings), auto-lowercase it on input so it's never stored or displayed with uppercase letters. Affects the IG pill on the profile page.
