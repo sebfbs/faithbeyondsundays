@@ -24,23 +24,23 @@ export function getAccentColors(isDark = false) {
     };
   }
   return {
-    accent: "hsl(38, 100%, 47%)",
-    accentBg: isDark ? "hsl(38, 65%, 16%)" : "hsl(38, 80%, 96%)",
+    accent: "hsl(43, 78%, 61%)",
+    accentBg: isDark ? "hsl(43, 55%, 16%)" : "hsl(43, 60%, 96%)",
     accentFg: "hsl(0, 0%, 100%)",
-    pillBg: "hsl(38, 100%, 47%)",
+    pillBg: "hsl(43, 78%, 61%)",
     pillText: "hsl(0, 0%, 100%)",
-    pillBgSoft: isDark ? "hsl(38, 55%, 20%)" : "hsl(38, 80%, 90%)",
-    pillTextSoft: isDark ? "hsl(38, 100%, 65%)" : "hsl(38, 80%, 35%)",
-    buttonBg: "hsl(38, 100%, 47%)",
-    buttonShadow: "0 4px 16px -2px hsl(38 100% 47% / 0.35)",
-    statusBg: isDark ? "hsl(38, 65%, 16%)" : "hsl(38, 80%, 96%)",
-    statusText: isDark ? "hsl(38, 100%, 60%)" : "hsl(38, 100%, 47%)",
+    pillBgSoft: isDark ? "hsl(43, 45%, 20%)" : "hsl(43, 70%, 90%)",
+    pillTextSoft: isDark ? "hsl(43, 78%, 70%)" : "hsl(43, 70%, 30%)",
+    buttonBg: "hsl(43, 78%, 61%)",
+    buttonShadow: "0 4px 16px -2px hsl(43 78% 61% / 0.35)",
+    statusBg: isDark ? "hsl(43, 55%, 16%)" : "hsl(43, 60%, 96%)",
+    statusText: isDark ? "hsl(43, 78%, 70%)" : "hsl(43, 78%, 45%)",
     streakGradient: isDark
-      ? "linear-gradient(135deg, hsl(38 65% 16%) 0%, hsl(38 55% 20%) 100%)"
-      : "linear-gradient(135deg, hsl(38 100% 95%) 0%, hsl(38 80% 90%) 100%)",
-    streakBorder: isDark ? "1.5px solid hsl(38 65% 26%)" : "1.5px solid hsl(38 100% 85%)",
-    streakIconBg: "hsl(38, 100%, 47%)",
-    fillClass: "fill-[hsl(38,100%,47%)]",
+      ? "linear-gradient(135deg, hsl(43 55% 16%) 0%, hsl(43 45% 20%) 100%)"
+      : "linear-gradient(135deg, hsl(43 60% 95%) 0%, hsl(43 60% 90%) 100%)",
+    streakBorder: isDark ? "1.5px solid hsl(43 55% 26%)" : "1.5px solid hsl(43 78% 82%)",
+    streakIconBg: "hsl(43, 78%, 61%)",
+    fillClass: "fill-[hsl(43,78%,61%)]",
   };
 }
 

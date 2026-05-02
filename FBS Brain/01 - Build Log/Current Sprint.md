@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Dark mode fully polished — Next: White-label copy audit, QR flow, Pastor announcements
+## Status: Accent color refreshed to Avatar Gold — Next: Takeaway audit, Bible defaults + tooltip, App walkthrough
 
 ## Completed This Sprint (2026-05-01, Session 5)
 
@@ -123,7 +123,11 @@
 
 ## What's Next
 
-1. ~~**Onboarding overhaul**~~ ✅ DONE (2026-04-30)
+1. **Audit AI-generated key takeaways on sermon page** — Check what the `generate-daily-content` edge function is actually outputting for takeaways. If they're redundant with Daily Sparks, cap at 3–4 and tighten the prompt so they serve a distinct purpose (sermon notes, not re-skinned sparks). Decision: keep the feature, fix the content quality.
+
+2. **Bible reader: default settings + first-open tooltip** — Change defaults to: White background, A+ size, Serif font. Add a one-time tooltip on first chapter open that points down at the Aa button so users know reading settings exist. Tooltip fires once per user (localStorage flag), disappears on any tap.
+
+3. ~~**Onboarding overhaul**~~ ✅ DONE (2026-04-30)
 2. ~~**Remove church search + age steps from onboarding**~~ ✅ DONE (2026-05-01) — new flow: details → username → tours. Age confirmation moved to AuthScreen fine print.
 3. ~~**Drop follows table**~~ ✅ DONE (2026-05-01)
 4. ~~**Username uniqueness**~~ ✅ DONE (2026-05-01) — constraint now `(church_id, username)`

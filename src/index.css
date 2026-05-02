@@ -10,10 +10,10 @@
     --sky-blue: 207 65% 76%;
     --sky-blue-light: 207 60% 88%;
     --peach: 22 60% 88%;
-    --amber: 38 100% 47%;
-    --amber-light: 38 100% 60%;
-    --amber-lighter: 38 100% 92%;
-    --amber-bg: 38 80% 96%;
+    --amber: 43 78% 61%;
+    --amber-light: 43 78% 72%;
+    --amber-lighter: 43 60% 92%;
+    --amber-bg: 43 60% 96%;
     --blue-soft: 210 60% 94%;
     --blue-card: 210 50% 92%;
 
@@ -27,7 +27,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 15%;
 
-    --primary: 38 100% 47%;
+    --primary: 43 78% 61%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 40 30% 95%;
@@ -36,15 +36,15 @@
     --muted: 40 20% 93%;
     --muted-foreground: 220 15% 55%;
 
-    --accent: 38 100% 92%;
-    --accent-foreground: 38 100% 35%;
+    --accent: 43 60% 92%;
+    --accent-foreground: 43 70% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 38 100% 47%;
+    --ring: 43 78% 61%;
 
     --radius: 1rem;
 
@@ -65,13 +65,13 @@
       hsl(35, 90%, 72%) 65%,
       hsl(38, 100%, 55%) 100%
     );
-    --gradient-amber: linear-gradient(135deg, hsl(38, 100%, 47%), hsl(35, 100%, 55%));
+    --gradient-amber: linear-gradient(135deg, hsl(43, 78%, 61%), hsl(40, 78%, 68%));
     --gradient-card-top: linear-gradient(180deg, hsl(207, 65%, 76%) 0%, hsl(207, 50%, 88%) 100%);
 
     /* Shadows */
     --shadow-card: 0 1px 3px hsl(220 25% 15% / 0.04);
     --shadow-card-hover: 0 2px 8px hsl(220 25% 15% / 0.06);
-    --shadow-amber: 0 4px 16px -2px hsl(38 100% 47% / 0.35);
+    --shadow-amber: 0 4px 16px -2px hsl(43 78% 61% / 0.35);
     --shadow-nav: 0 -2px 20px hsl(220 25% 15% / 0.08);
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji;
   }
@@ -83,19 +83,19 @@
     --card-foreground: 40 30% 95%;
     --popover: 220 20% 14%;
     --popover-foreground: 40 30% 95%;
-    --primary: 38 100% 50%;
+    --primary: 43 78% 61%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 20% 18%;
     --secondary-foreground: 40 30% 85%;
     --muted: 220 20% 18%;
     --muted-foreground: 220 15% 55%;
-    --accent: 38 80% 20%;
-    --accent-foreground: 38 100% 60%;
+    --accent: 43 60% 20%;
+    --accent-foreground: 43 78% 70%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 40 30% 95%;
     --border: 220 20% 22%;
     --input: 220 20% 22%;
-    --ring: 38 100% 50%;
+    --ring: 43 78% 61%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -310,10 +310,10 @@
   .animate-aurora-bg {
     background: linear-gradient(
       135deg,
-      hsl(38, 100%, 47%) 0%,
+      hsl(43, 78%, 61%) 0%,
       hsl(22, 55%, 75%) 25%,
       hsl(207, 65%, 76%) 50%,
-      hsl(38, 100%, 60%) 75%,
+      hsl(43, 78%, 70%) 75%,
       hsl(207, 50%, 82%) 100%
     );
     background-size: 300% 300%;
@@ -322,13 +322,13 @@
 
   /* Shimmer border for username card */
   @keyframes shimmer-border {
-    0% { border-color: hsl(38, 100%, 47% / 0.4); box-shadow: 0 0 20px hsl(38, 100%, 47% / 0.1); }
+    0% { border-color: hsl(43, 78%, 61% / 0.4); box-shadow: 0 0 20px hsl(43, 78%, 61% / 0.1); }
     50% { border-color: hsl(207, 65%, 76% / 0.6); box-shadow: 0 0 30px hsl(207, 65%, 76% / 0.15); }
-    100% { border-color: hsl(38, 100%, 47% / 0.4); box-shadow: 0 0 20px hsl(38, 100%, 47% / 0.1); }
+    100% { border-color: hsl(43, 78%, 61% / 0.4); box-shadow: 0 0 20px hsl(43, 78%, 61% / 0.1); }
   }
 
   .animate-shimmer-border {
-    border: 2px solid hsl(38, 100%, 47% / 0.4);
+    border: 2px solid hsl(43, 78%, 61% / 0.4);
     animation: shimmer-border 3s ease-in-out infinite;
   }
 

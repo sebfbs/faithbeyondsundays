@@ -63,7 +63,7 @@ function SunRays() {
           width: '50%',
           height: '60%',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, hsl(42 90% 70% / 0.35) 0%, hsl(38 100% 60% / 0.1) 50%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(43 78% 70% / 0.35) 0%, hsl(43 78% 72% / 0.1) 50%, transparent 70%)',
         }}
       />
       <div
