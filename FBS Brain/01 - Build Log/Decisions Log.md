@@ -4,6 +4,19 @@ _Decisions already made — don't relitigate these._
 
 ---
 
+## 2026-05-04 — Admin Login + Announcements
+
+**Decision:** Admin login is email/password only — no Google OAuth.
+**Why:** Google OAuth on the admin dashboard requires Supabase redirect URL whitelisting, and the Google account UUID wouldn't match the admin role entry unless explicitly linked. For a small known group (pastors/staff), email/password is simpler and more reliable. Admins are invited via email so they always have a password from day one.
+
+**Decision:** Announcements auto-expire — pastors don't manually delete them.
+**Why:** Pastors won't manage announcement cleanup. Auto-expiry is essential UX. Default is 1 week. Options: 1 day / 3 days / 1 week / 2 weeks / No expiry. Expired announcements are filtered server-side in the member query.
+
+**Decision:** Announcements have a required title + optional body.
+**Why:** Bold title makes announcements scannable. Members see the headline first and decide if they want to read more. Same pattern as every notification system that works. Body is optional detail.
+
+---
+
 ## 2026-04-30 — Product Vision + White-Label Architecture
 
 **Decision:** FBS is a white-label church tool — not a social network.

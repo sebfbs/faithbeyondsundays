@@ -5,25 +5,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/fbs/AuthProvider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Megaphone, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Megaphone, Trash2, ExternalLink, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+const EXPIRY_OPTIONS = [
+  { label: "1 day", days: 1 },
+  { label: "3 days", days: 3 },
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+  { label: "No expiry", days: null },
+];
 
 interface Announcement {
   id: string;
   church_id: string;
   created_by: string | null;
-  body: string;
+  title: string | null;
+  body: string | null;
   link_url: string | null;
   created_at: string;
+  expires_at: string | null;
 }
 
 export default function AdminAnnouncements() {
   const { churchId } = useOutletContext<{ churchId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [expiryDays, setExpiryDays] = useState<number | null>(7);
   const [posting, setPosting] = useState(false);
 
   const { data: announcements, isLoading } = useQuery({
@@ -42,18 +54,25 @@ export default function AdminAnnouncements() {
   });
 
   const post = async () => {
-    if (!body.trim() || !churchId || !user) return;
+    if (!title.trim() || !churchId || !user) return;
     setPosting(true);
+    const expires_at = expiryDays
+      ? new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
     try {
       const { error } = await (supabase as any).from("announcements").insert({
         church_id: churchId,
         created_by: user.id,
-        body: body.trim(),
+        title: title.trim(),
+        body: body.trim() || null,
         link_url: linkUrl.trim() || null,
+        expires_at,
       });
       if (error) throw error;
+      setTitle("");
       setBody("");
       setLinkUrl("");
+      setExpiryDays(7);
       queryClient.invalidateQueries({ queryKey: ["admin", "announcements", churchId] });
       toast.success("Announcement posted");
     } catch (err) {
@@ -91,11 +110,19 @@ export default function AdminAnnouncements() {
       {/* Post form */}
       <Card>
         <CardContent className="p-5 space-y-3">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Announcement title (required)"
+            className="w-full text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal rounded-xl p-3 border border-border focus:ring-2 focus:ring-primary/30 transition-all"
+            style={{ background: "hsl(var(--muted))" }}
+          />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Write an announcement for your congregation..."
-            className="w-full h-28 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-xl p-3 border border-border focus:ring-2 focus:ring-primary/30 transition-all"
+            placeholder="Add more detail (optional)..."
+            className="w-full h-24 text-sm text-foreground resize-none outline-none placeholder:text-muted-foreground leading-relaxed rounded-xl p-3 border border-border focus:ring-2 focus:ring-primary/30 transition-all"
             style={{ background: "hsl(var(--muted))" }}
           />
           <input
@@ -106,9 +133,24 @@ export default function AdminAnnouncements() {
             className="w-full text-sm text-foreground outline-none placeholder:text-muted-foreground rounded-xl p-3 border border-border focus:ring-2 focus:ring-primary/30 transition-all"
             style={{ background: "hsl(var(--muted))" }}
           />
+          <div className="relative">
+            <select
+              value={expiryDays ?? "null"}
+              onChange={(e) => setExpiryDays(e.target.value === "null" ? null : Number(e.target.value))}
+              className="w-full appearance-none text-sm text-foreground rounded-xl px-3 py-3 pr-10 border border-border focus:ring-2 focus:ring-primary/30 transition-all outline-none"
+              style={{ background: "hsl(var(--muted))" }}
+            >
+              {EXPIRY_OPTIONS.map((opt) => (
+                <option key={String(opt.days)} value={String(opt.days)}>
+                  Expires after: {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
           <Button
             onClick={post}
-            disabled={!body.trim() || posting}
+            disabled={!title.trim() || posting}
             className="w-full"
           >
             {posting ? (
@@ -136,7 +178,8 @@ export default function AdminAnnouncements() {
             <Card key={a.id}>
               <CardContent className="p-4 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground leading-relaxed">{a.body}</p>
+                  {a.title && <p className="text-sm font-semibold text-foreground leading-snug">{a.title}</p>}
+                  {a.body && <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">{a.body}</p>}
                   {a.link_url && (
                     <a
                       href={a.link_url}
@@ -150,6 +193,11 @@ export default function AdminAnnouncements() {
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
+                    {a.expires_at && (
+                      <span className="ml-2">
+                        · expires {formatDistanceToNow(new Date(a.expires_at), { addSuffix: true })}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <Button

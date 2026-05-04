@@ -11,9 +11,11 @@ import { formatDistanceToNow } from "date-fns";
 
 interface Announcement {
   id: string;
-  body: string;
+  title: string | null;
+  body: string | null;
   link_url: string | null;
   created_at: string;
+  expires_at: string | null;
 }
 
 const STARS = [
@@ -211,8 +213,9 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("announcements")
-        .select("id, body, link_url, created_at")
+        .select("id, title, body, link_url, created_at, expires_at")
         .eq("church_id", churchId)
+        .or("expires_at.is.null,expires_at.gt." + new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;
@@ -442,7 +445,8 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
                     <Megaphone size={13} style={{ color: colors.accent }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground leading-relaxed">{a.body}</p>
+                    {a.title && <p className="text-sm font-semibold text-foreground leading-snug">{a.title}</p>}
+                    {a.body && <p className={`text-sm text-foreground leading-relaxed ${a.title ? "mt-0.5 text-muted-foreground" : ""}`}>{a.body}</p>}
                     {a.link_url && (
                       <a
                         href={a.link_url}
