@@ -1,12 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X } from "lucide-react";
+import { Sparkles, BookText, CheckCircle2, Save, BookOpen, Heart, Users, X, Megaphone, ExternalLink } from "lucide-react";
 import { useAccentColors } from "./themeColors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import CommunityPulse from "./CommunityPulse";
 import type { SermonUIData } from "@/hooks/useCurrentSermon";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
+import { formatDistanceToNow } from "date-fns";
+
+interface Announcement {
+  id: string;
+  body: string;
+  link_url: string | null;
+  created_at: string;
+}
 
 const STARS = [
   { top: '8%', left: '8%', size: 2, opacity: 0.7, twinkle: true },
@@ -196,6 +204,42 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
   const [reflectionText, setReflectionText] = useState("");
   const [justSaved, setJustSaved] = useState(false);
   const colors = useAccentColors();
+
+  const { data: announcements } = useQuery({
+    queryKey: ["announcements", churchId],
+    enabled: !!churchId && !isDemo,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("announcements")
+        .select("id, body, link_url, created_at")
+        .eq("church_id", churchId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data as Announcement[];
+    },
+  });
+
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("dismissed_announcements");
+      return new Set(stored ? JSON.parse(stored) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const dismissAnnouncement = (id: string) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem("dismissed_announcements", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const visibleAnnouncements = (announcements ?? []).filter((a) => !dismissedIds.has(a.id));
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [vvTop, setVvTop] = useState(0);
   const [vvHeight, setVvHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
@@ -384,6 +428,48 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
           <p className="text-sm text-muted-foreground leading-relaxed">
             Your pastor hasn't uploaded a sermon yet. Once they do, you'll see daily sparks, reflections, and scripture right here.
           </p>
+        </div>
+      )}
+
+      {/* Announcements — dismissible banners */}
+      {visibleAnnouncements.length > 0 && (
+        <div style={{ filter: reflectionOpen ? 'blur(6px)' : 'none', opacity: reflectionOpen ? 0.3 : 1, transition: 'filter 0.4s ease, opacity 0.4s ease', pointerEvents: reflectionOpen ? 'none' as const : 'auto' as const }}>
+          <div className="space-y-2">
+            {visibleAnnouncements.map((a) => (
+              <div key={a.id} className="bg-card rounded-2xl px-4 py-3.5 shadow-card">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: colors.accentBg }}>
+                    <Megaphone size={13} style={{ color: colors.accent }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-relaxed">{a.body}</p>
+                    {a.link_url && (
+                      <a
+                        href={a.link_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium mt-1.5"
+                        style={{ color: colors.accent }}
+                      >
+                        <ExternalLink size={11} />
+                        Learn more
+                      </a>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => dismissAnnouncement(a.id)}
+                    className="shrink-0 p-1 -mr-1 tap-active rounded-full hover:opacity-60 transition-opacity"
+                    aria-label="Dismiss"
+                  >
+                    <X size={15} className="text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

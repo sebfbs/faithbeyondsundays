@@ -18,6 +18,7 @@ import {
   Bell,
   UserCog,
   Flag,
+  Megaphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ const navItems = [
   { title: "Groups & Flags", url: "/admin/groups", icon: Users2 },
   { title: "Prayer", url: "/admin/prayer", icon: Heart },
   { title: "Moderation", url: "/admin/moderation", icon: Flag },
+  { title: "Announcements", url: "/admin/announcements", icon: Megaphone },
   { title: "Notifications", url: "/admin/notifications", icon: Bell },
   { title: "Team", url: "/admin/team", icon: UserCog },
   { title: "Settings", url: "/admin/settings", icon: Settings },

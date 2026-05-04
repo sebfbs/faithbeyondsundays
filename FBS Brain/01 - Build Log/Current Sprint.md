@@ -1,6 +1,65 @@
 # Current Sprint
 
-## Status: Accent color refreshed to Avatar Gold — Next: Takeaway audit, Bible defaults + tooltip, App walkthrough
+## Status: Announcements built — BLOCKED on Supabase URL mismatch (frontend connecting to wrong project). Resolve in next session before testing anything end-to-end.
+
+## Completed This Sprint (2026-05-04, Session 6)
+
+### Bible Reader Defaults + First-Open Tooltip — DONE
+- Default reading preferences changed: Serif font, A+ size (20px), White background
+- Defaults only apply to first-time users (localStorage values override for returning users)
+- First-open tooltip added: "Tap Aa to customize your reading" bubble appears above the Aa button on first chapter open
+- Text behind tooltip blurs (`filter: blur(3px)`) until dismissed — focus drawn to Aa button
+- Tooltip dismisses on any tap (400ms delay before listener fires, prevents immediate dismissal from chapter-select tap)
+- localStorage flag: `bible-tooltip-shown` — fires once per device, never again
+
+### Admin Login Sky Gradient — DONE
+- `AdminLogin.tsx` now uses `getSkyGradient()` imported from `HomeTab.tsx`
+- Matches the member app's dynamic time-of-day sky gradient exactly
+- Replaces the old static `gradient-horizon` class
+
+### Announcements Feature — BUILT (not yet tested end-to-end — blocked by Supabase URL issue)
+**DB:** `announcements` table created with RLS. SQL was run in Supabase. Schema:
+```
+id, church_id, created_by, body, link_url, created_at
+```
+RLS: church members can read, admins can insert/delete (scoped by `user_roles`).
+
+**Admin dashboard:** New `AdminAnnouncements.tsx` page at `/admin/announcements`.
+- Textarea + optional link URL + Post button
+- List of posted announcements with delete
+- Added to sidebar nav (Megaphone icon, between Groups & Flags and Notifications)
+- Route added to `App.tsx`
+
+**Member home screen (`HomeTab.tsx`):**
+- Dismissible banner cards at the very top of the feed, above the Daily Spark
+- Each card has an X button — tap to dismiss, never shows again (localStorage: `dismissed_announcements` = array of dismissed IDs)
+- Section hidden entirely when no unread announcements
+- Optional link renders as "Learn more" tap target
+
+**Push notifications:** Deferred. Current `send-push` edge function uses native APNS/FCM (wrong for a PWA). Web Push (VAPID) is the correct path — planned as a dedicated sprint. Will wire announcements into push at that time.
+
+### Overflow Church + Admin Account Setup — DONE
+- Created Overflow Church in Supabase (`id: 5e7a9458-24e3-4ed9-b798-db629a2120a1`, code: `overflow`)
+- `@seb` profile (Sebastian Perez, `sebmattiasperez@gmail.com`) linked to Overflow Church
+- Admin role assigned to that account
+- Cleaned up stale `member` role pointing to orphaned church from a failed SQL attempt
+
+---
+
+## 🚨 ACTIVE BLOCKER — Must Resolve First Next Session
+
+### Supabase URL Mismatch
+**Symptom:** Admin Members page shows 9 fake test accounts (flagmail, blackmail, mikeike, lucky, glorious, etc.) despite the database being clean — only `@seb` exists in Overflow Church.
+
+**Root cause (strong hypothesis):** The `.env` file contains Lovable's OLD Supabase project URL and anon key. The frontend is connecting to the original Lovable Supabase project (which still has all the fake test data from Lovable development). Sebastian has been running SQL in a DIFFERENT (new) Supabase project. Two different databases.
+
+**How to confirm:** Compare `VITE_SUPABASE_URL` in the `.env` file with the URL shown in the Supabase dashboard Sebastian has been using (visible in the browser address bar, format: `https://app.supabase.com/project/[ref]/...`). If the project ref doesn't match, that confirms the mismatch.
+
+**How to fix:** Sebastian needs to update `.env` with the correct `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from the correct Supabase project. Claude never touches `.env`. Once updated, ALL the Overflow Church setup SQL needs to be re-run in the correct project (it was run in the wrong one).
+
+**Impact:** Until this is fixed, nothing can be tested end-to-end. The frontend and the database we've been building in are not talking to each other.
+
+---
 
 ## Completed This Sprint (2026-05-01, Session 5)
 

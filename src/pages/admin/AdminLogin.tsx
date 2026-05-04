@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Church, AlertCircle, Loader2 } from "lucide-react";
+import { getSkyGradient } from "@/components/fbs/HomeTab";
 
 export default function AdminLogin() {
   const { user, loading: authLoading } = useAuth();
@@ -143,7 +144,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="admin-root min-h-screen flex items-center justify-center gradient-horizon p-4">
+    <div className="admin-root min-h-screen flex items-center justify-center p-4" style={{ background: getSkyGradient() }}>
       <Card className="w-full max-w-sm shadow-card border-border bg-card">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">

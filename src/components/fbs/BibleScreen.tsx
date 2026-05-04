@@ -50,10 +50,13 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
     (localStorage.getItem("bible-bg") as "white" | "sepia") || "white"
   );
   const [readingSize, setReadingSize] = useState<15 | 17 | 20>(() =>
-    (Number(localStorage.getItem("bible-size")) as 15 | 17 | 20) || 17
+    (Number(localStorage.getItem("bible-size")) as 15 | 17 | 20) || 20
   );
   const [readingFont, setReadingFont] = useState<"sans" | "serif">(() =>
-    (localStorage.getItem("bible-font") as "sans" | "serif") || "sans"
+    (localStorage.getItem("bible-font") as "sans" | "serif") || "serif"
+  );
+  const [showAaTooltip, setShowAaTooltip] = useState(
+    () => !localStorage.getItem("bible-tooltip-shown")
   );
 
   const isNtOnly = translation.id === "ylt";
@@ -71,6 +74,24 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
     scrollRef.current?.scrollTo(0, 0);
     window.scrollTo(0, 0);
   }, [view, selectedBook, selectedChapter]);
+
+  useEffect(() => {
+    if (!showAaTooltip || view !== "text") return;
+    const dismiss = () => {
+      localStorage.setItem("bible-tooltip-shown", "1");
+      setShowAaTooltip(false);
+    };
+    // Delay so the click/touch that navigated into text view doesn't immediately dismiss
+    const timer = setTimeout(() => {
+      document.addEventListener("touchstart", dismiss, { once: true, passive: true });
+      document.addEventListener("click", dismiss, { once: true });
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("touchstart", dismiss);
+      document.removeEventListener("click", dismiss);
+    };
+  }, [showAaTooltip, view]);
 
   // Auto-navigate to a specific book/chapter/verse when deep-linking
   useEffect(() => {
@@ -498,6 +519,9 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
         style={{
           ...(view === "text" && theme !== "dark" && readingBg === "sepia" ? { backgroundColor: "#FFF8DC" } : {}),
           ...(view === "text" ? { paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)" } : {}),
+          filter: showAaTooltip && view === "text" ? "blur(3px)" : "none",
+          transition: "filter 0.3s ease",
+          pointerEvents: showAaTooltip && view === "text" ? "none" : undefined,
         }}
       >
         {view === "books" && renderBookList()}
@@ -568,6 +592,26 @@ export default function BibleScreen({ onBack, initialBook, initialChapter, initi
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Aa tooltip — first open only */}
+            {showAaTooltip && (
+              <div
+                className="fixed left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)", zIndex: 60 }}
+              >
+                <div className="bg-foreground text-background text-xs font-semibold px-3 py-2 rounded-xl shadow-lg whitespace-nowrap">
+                  Tap Aa to customize your reading
+                </div>
+                <div
+                  className="w-0 h-0"
+                  style={{
+                    borderLeft: "6px solid transparent",
+                    borderRight: "6px solid transparent",
+                    borderTop: "6px solid hsl(var(--foreground))",
+                  }}
+                />
+              </div>
             )}
 
             {/* Toolbar */}

@@ -1,7 +1,10 @@
 # Known Issues
 
 ## High Priority
-- `APNS_BUNDLE_ID` not yet set in Supabase Edge Function secrets — iOS push notifications will error until this is configured (deferred, not needed for V1 launch)
+
+- **Supabase URL mismatch** — Frontend `.env` likely points to the old Lovable Supabase project. Database changes (Overflow Church, announcements table, @seb profile) were made in a different project than what the frontend connects to. Fix: compare `VITE_SUPABASE_URL` in `.env` with the Supabase dashboard URL. Sebastian updates `.env` with correct credentials, then re-run all setup SQL in that project.
+
+- `APNS_BUNDLE_ID` not yet set in Supabase Edge Function secrets — iOS push notifications will error until this is configured (deferred, not needed for V1 launch). Note: APNS/FCM is wrong for a PWA anyway — Web Push (VAPID) is the correct path and is planned as a dedicated sprint.
 
 ## Low Priority
 - `README.md` still contains Lovable links — should be replaced with real FBS readme
