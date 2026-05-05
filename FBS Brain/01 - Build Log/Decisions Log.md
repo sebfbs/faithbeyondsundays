@@ -4,6 +4,33 @@ _Decisions already made — don't relitigate these._
 
 ---
 
+## 2026-05-05 — Logo Upload, Dynamic Manifest, and QR Code Are One Flow
+
+**Decision:** Church logo upload, the dynamic PWA manifest, and the QR code → install flow are not three separate features. They are one interconnected system. Build them as a unit.
+
+**How it works end to end:**
+1. Platform admin (Sebastian) creates a church account and uploads their logo in `/platform/churches`
+2. Logo is stored in Supabase Storage. The `churches` table gets a `logo_url` column pointing to it
+3. When a member scans the church's QR code, the URL contains the church identifier: `app.faithbeyondsundays.com/?church=overflow`
+4. The app reads `?church=overflow` from the URL and stores it in localStorage
+5. A Vercel serverless function at `/api/manifest` reads the church identifier, fetches that church's logo URL from Supabase, and returns a dynamically generated `manifest.json` with that church's logo as the app icon
+6. `index.html` points `<link rel="manifest">` to `/api/manifest` (not the static `manifest.json`)
+7. When the member taps "Add to Home Screen," their phone uses that manifest — so the home screen icon IS the church's logo, not an FBS logo
+
+**Why this matters:**
+This is what makes FBS truly white-label. Every church's members get an app icon that looks like their church built it. FBS is invisible.
+
+**Logo sizes generated on upload:**
+Two versions are resized client-side (HTML Canvas) at upload time and stored separately:
+- `logo_192.png` — for the PWA manifest icon (192×192)
+- `logo_512.png` — for the PWA manifest icon (512×512)
+- Original is also kept for in-app display (sign-up screen, profile pill, sidebar)
+
+**The church identifier in the URL is the lynchpin:**
+Everything downstream — the manifest, the white-label sign-up screen, the member being auto-linked to the right church — all depends on `?church=overflow` (or equivalent) being present in the URL when the member first arrives. The QR code bakes this in. Don't design any of these features without preserving the church param through every redirect.
+
+---
+
 ## 2026-05-04 — Admin Login + Announcements
 
 **Decision:** Admin login is email/password only — no Google OAuth.

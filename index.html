@@ -12,7 +12,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Faith Beyond Sundays" />
     <meta name="theme-color" content="#6AADD4" />
-    <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function () {
+        var code = new URLSearchParams(location.search).get('church');
+        if (!code) { try { code = localStorage.getItem('fbs_church_code'); } catch (e) {} }
+        if (code) { try { localStorage.setItem('fbs_church_code', code); } catch (e) {} }
+        var manifestHref = code ? '/api/manifest?church=' + encodeURIComponent(code) : '/manifest.json';
+        document.write('<link rel="manifest" href="' + manifestHref + '">');
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <link rel="canonical" href="https://faithbeyondsundays.app" />
 

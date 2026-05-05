@@ -70,14 +70,14 @@ export default function PlatformDashboard() {
   }
 
   const stats = [
-    { label: "Active Churches", value: activeChurches, icon: Church, color: "text-blue-400" },
-    { label: "Total Members", value: totalMembers, icon: Users, color: "text-emerald-400" },
-    { label: "Sermons", value: totalSermons, icon: BookOpen, color: "text-violet-400" },
-    { label: "Give Taps", value: giveTaps, icon: Hand, color: "text-amber-400" },
-    { label: "App Opens", value: appOpens, icon: Smartphone, color: "text-cyan-400" },
-    { label: "Active 7d", value: analytics.activeUsers7d, icon: UserCheck, color: "text-green-400" },
-    { label: "Active 30d", value: analytics.activeUsers30d, icon: UserCheck2, color: "text-teal-400" },
-    { label: "Avg/Church", value: avgMembersPerChurch, icon: BarChart3, color: "text-pink-400" },
+    { label: "Active Churches", value: activeChurches, icon: Church, color: "text-blue-400", note: undefined },
+    { label: "Total Members", value: totalMembers, icon: Users, color: "text-emerald-400", note: undefined },
+    { label: "Sermons", value: totalSermons, icon: BookOpen, color: "text-violet-400", note: undefined },
+    { label: "Give Taps", value: giveTaps, icon: Hand, color: "text-amber-400", note: undefined },
+    { label: "App Opens", value: appOpens, icon: Smartphone, color: "text-cyan-400", note: "counts sessions, not raw opens" },
+    { label: "Active 7d", value: analytics.activeUsers7d, icon: UserCheck, color: "text-green-400", note: undefined },
+    { label: "Active 30d", value: analytics.activeUsers30d, icon: UserCheck2, color: "text-teal-400", note: undefined },
+    { label: "Avg/Church", value: avgMembersPerChurch, icon: BarChart3, color: "text-pink-400", note: undefined },
   ];
 
   const metricOptions: { key: "signups" | "app_open" | "give_tap"; label: string }[] = [
@@ -100,6 +100,7 @@ export default function PlatformDashboard() {
                 <span className="text-[10px] text-slate-400 truncate">{s.label}</span>
               </div>
               <p className="text-xl font-bold text-slate-100">{typeof s.value === "number" ? s.value.toLocaleString() : s.value}</p>
+              {s.note && <p className="text-[9px] text-slate-500 mt-0.5 leading-tight">"{s.note}"</p>}
             </CardContent>
           </Card>
         ))}
@@ -121,9 +122,11 @@ export default function PlatformDashboard() {
         <PlatformHealthCard
           jobsByStatus={analytics.jobsByStatus}
           recentFailures={analytics.recentFailures}
+          allFailures={analytics.allFailures}
           successRate={analytics.successRate}
           totalJobs={analytics.totalJobs}
-          totalSermons={totalSermons}
+          storageBytes={analytics.storageBytes}
+          churches={analytics.churches}
         />
       </div>
 

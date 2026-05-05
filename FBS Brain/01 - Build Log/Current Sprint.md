@@ -1,6 +1,39 @@
 # Current Sprint
 
-## Status: White-label audit COMPLETE ✅. Next: platform dashboard walkthrough + church logo upload.
+## Status: Platform dashboard audited + fixed. Logo upload BUILT, not yet tested. Next: test logo upload, then email hook.
+
+---
+
+## Completed This Sprint (2026-05-05, Session 9)
+
+### Platform Dashboard — Full Audit + Fixes ✅
+- Confirmed all 7 tables have correct RLS — platform admin sees data across ALL churches
+- **Give Taps fixed** — `give_tap` event now fires in `TabletSidebar.tsx` + `MoreSheet.tsx` via `handleGiveTap` in `Index.tsx`; was always 0 before, will now track correctly
+- **Financial Overview fixed** — cost config key mismatch resolved; was reading `lovable_plan_monthly` (not in DB, hardcoded $100 fallback); now reads `base_hosting_monthly` from DB ($25). Labels renamed: "Lovable Plan" → "Vercel + Supabase", "Lovable AI" → "Claude AI"
+- **Real storage** — `get_storage_usage_bytes()` SQL function queries actual Supabase Storage; Platform Health card now shows real MB (was estimated guess × sermon count)
+- **App Opens note** — small label added: "counts sessions, not raw opens"
+- **Sermon pipeline auto-refresh** — `sermon_jobs` query polls every 30 seconds automatically
+- **Failures dialog** — "View all N" button on Platform Health opens a dialog showing every failed sermon job with church name, error message, and timestamp. Data refreshes every 30s.
+
+### Church Logo Upload — BUILT, NOT YET TESTED ⚠️
+- `logo_url`, `logo_192_url`, `logo_512_url` columns added to `churches` table
+- `church-logos` Supabase Storage bucket created (public read, platform-admin write)
+- New Church form now has logo upload field with preview thumbnail
+- Existing churches: hover over the logo thumbnail in the table → upload icon appears → click to replace logo
+- Client-side resize: original PNG + 192×192 + 512×512 generated in browser (HTML Canvas), all 3 uploaded to Supabase Storage
+- **NEEDS TESTING:** Create a new church with a logo. Also test updating logo on Overflow Church row.
+- **NOTE:** Logo edit for existing churches IS built (hover the thumbnail in the Churches table). No new form needed — uploading a new logo updates all 3 URLs and the manifest auto-serves the new icon.
+
+### Dynamic PWA Manifest — BUILT, NOT YET TESTED ⚠️
+- `api/manifest.ts` — Vercel serverless function at `/api/manifest?church=overflow`; reads church name + logo from Supabase, returns per-church `manifest.json` with correct icons
+- `index.html` — manifest link is now dynamic; reads `?church=` from URL (or `fbs_church_code` from localStorage), points to `/api/manifest?church=X` when church is known; falls back to static `/manifest.json`
+- Also stores church code in localStorage so future visits (e.g. from home screen icon) still get the right manifest
+- **NEEDS TESTING:** Visit `[vercel-url]/?church=overflow` → DevTools → Application → Manifest → should show Overflow Church name + logo
+
+### Architecture Documented in Brain ✅
+- `Decisions Log.md` — new entry (2026-05-05) explaining how logo upload + dynamic manifest + QR code are one interconnected flow
+- `PWA Install Flow.md` — white labeling section updated (was hardcoded config file, now Supabase); manifest section updated to show dynamic approach
+- Platform admin login: created `sebastian@faithbeyondsundays.com` account, added to `platform_admins` table
 
 ---
 
@@ -65,12 +98,19 @@
 
 ## What's Next
 
-1. **Platform dashboard walkthrough** — Log into `/platform` with Sebastian, walk every screen, then add church logo upload to the New Church form (file input + Supabase Storage + `logo_url` column on `churches` table)
-2. **White-label sign-up screen** — *(blocked until QR code + logo upload are built)* Auth screen reads `church_id` from URL, fetches and shows that church's logo + name. Spec in backlog below.
-2. **Platform owner dashboard walkthrough** — Log into `/platform`, walk every screen with Sebastian, then add church logo upload to the "New Church" form. Logo upload needs: file input in `PlatformChurches.tsx` create dialog + Supabase Storage bucket for church logos + `logo_url` column on `churches` table.
-3. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
+1. **Test logo upload + dynamic manifest** *(Session 10 — do this first)*
+   - Create a new church in `/platform/churches` with a logo → verify thumbnail shows in table
+   - Hover the Overflow Church thumbnail → upload a logo → verify it updates
+   - Visit `[vercel-url]/?church=overflow` → DevTools → Application → Manifest → verify church name + logo appear
+   - Check that `api/manifest` is working on Vercel (auto-deployed with this push)
+
+2. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
+
+3. **White-label sign-up screen** — *(unblocked now that logo upload is built)* Auth screen reads `?church=` from URL, fetches and shows that church's logo + name. Member auto-linked to that church on sign-up.
+
 4. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
-5. **QR code → church landing page flow** — PWA install wizard per device type.
+
+5. **QR code → church landing page flow** — PWA install wizard per device type. Full spec in `02 - Backlog/PWA Install Flow.md`.
 
 ---
 

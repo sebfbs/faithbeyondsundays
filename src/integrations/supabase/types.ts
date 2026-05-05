@@ -113,6 +113,8 @@ export type Database = {
           instagram_handle: string | null
           is_active: boolean
           logo_url: string | null
+          logo_192_url: string | null
+          logo_512_url: string | null
           name: string
           state: string | null
           timezone: string | null
@@ -129,6 +131,8 @@ export type Database = {
           instagram_handle?: string | null
           is_active?: boolean
           logo_url?: string | null
+          logo_192_url?: string | null
+          logo_512_url?: string | null
           name: string
           state?: string | null
           timezone?: string | null
@@ -145,6 +149,8 @@ export type Database = {
           instagram_handle?: string | null
           is_active?: boolean
           logo_url?: string | null
+          logo_192_url?: string | null
+          logo_512_url?: string | null
           name?: string
           state?: string | null
           timezone?: string | null

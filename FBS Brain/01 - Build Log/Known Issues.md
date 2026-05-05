@@ -18,6 +18,13 @@
 
 ---
 
+## Unverified (Built, Not Tested)
+
+- **Logo upload** — New Church form + existing church hover-to-upload both built (Session 9). Resize + Supabase Storage + DB update all wired. Not tested on real browser yet.
+- **Dynamic PWA manifest** (`/api/manifest`) — Vercel function built + `index.html` updated. Deploys on next push. Not tested live yet.
+
+---
+
 ## Resolved
 
 - ~~**Supabase URL mismatch**~~ — resolved 2026-05-04 (Session 7). `.env` now points to correct project.

@@ -1,6 +1,5 @@
 import { Home, BookOpen, BookMarked, Users, Heart, HandCoins, User, PanelLeft, PanelLeftClose, Lock } from "lucide-react";
 import { useAccentColors } from "./themeColors";
-import { GIVING_URL } from "./data";
 import FBSLogo from "@/assets/FBS_Logo_white.png";
 import type { FeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -20,6 +19,7 @@ interface TabletSidebarProps {
   onNavigate: (target: SidebarNavTarget) => void;
   collapsed: boolean;
   onToggle: () => void;
+  onGive?: () => void;
 }
 
 const mainItems = [
@@ -35,14 +35,14 @@ const moreItemsDef = [
   { id: "give" as const, label: "Give", Icon: HandCoins, featureKey: "giving" as keyof FeatureFlags | null },
 ];
 
-export default function TabletSidebar({ featureFlags, activeItem, onNavigate, collapsed, onToggle }: TabletSidebarProps) {
+export default function TabletSidebar({ featureFlags, activeItem, onNavigate, collapsed, onToggle, onGive }: TabletSidebarProps) {
   const colors = useAccentColors();
 
   const filteredMoreItems = moreItemsDef;
 
   const handleClick = (id: SidebarNavTarget) => {
     if (id === "give") {
-      window.open(GIVING_URL, "_blank");
+      onGive?.();
       return;
     }
     onNavigate(id);

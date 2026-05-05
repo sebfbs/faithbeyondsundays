@@ -341,32 +341,33 @@ Graceful fallback for desktop browsers, undetected devices, etc.
 
 ## White Labeling System
 
-Every page pulls church config from a `?church=` URL param:
+**⚠️ Do NOT use a hardcoded config file.** Church config lives in Supabase — `churches` table.
+
+Every page pulls church config by reading `?church=overflow` from the URL param, then fetching that church's record from Supabase:
 
 ```javascript
-// church-config.js
-const configs = {
-  'fbc-dallas': {
-    name: 'First Baptist Dallas',
-    logo: '/logos/fbc-dallas.png',
-    primaryColor: '#1a3a6b',
-    accentColor: '#c8a951'
-  },
-  'grace-church': {
-    name: 'Grace Church',
-    logo: '/logos/grace-church.png',
-    primaryColor: '#2d6a4f',
-    accentColor: '#ffffff'
-  }
-  // add churches here
-};
-
 const params = new URLSearchParams(window.location.search);
-const churchId = params.get('church');
-const config = configs[churchId] || configs['default'];
+const churchCode = params.get('church');
+
+// Fetch from Supabase (public read — no auth needed for name/logo)
+const { data } = await supabase
+  .from('churches')
+  .select('name, logo_url, primary_color')
+  .eq('code', churchCode)
+  .single();
+
+// data.name, data.logo_url, data.primary_color
 ```
 
-All pages apply `config.primaryColor` and `config.name` dynamically. QR codes just encode the full URL with the church param baked in.
+The `churches` table has:
+- `code` — the URL slug (e.g. `overflow`) — used as the `?church=` param
+- `name` — display name (e.g. "Overflow Church")
+- `logo_url` — full public URL to their logo in Supabase Storage
+- `logo_192_url` / `logo_512_url` — resized versions for PWA manifest icons
+
+**Always pass `?church=` through every redirect in the install flow.** If the param gets dropped, white labeling breaks and the member may not be linked to the right church on sign-up.
+
+QR codes encode the full URL with the church param baked in: `app.faithbeyondsundays.com/?church=overflow`
 
 ---
 
@@ -422,32 +423,38 @@ All pages apply `config.primaryColor` and `config.name` dynamically. QR codes ju
 
 ---
 
-## PWA Manifest (Required)
+## PWA Manifest (Dynamic — Not Static)
 
+**The manifest is NOT a static file.** It is served by a Vercel serverless function at `/api/manifest`.
+
+`index.html` points to it dynamically:
+```html
+<!-- index.html — set by inline script before page renders -->
+<script>
+  const code = new URLSearchParams(location.search).get('church')
+    || localStorage.getItem('fbs_church_code');
+  const href = code ? `/api/manifest?church=${code}` : '/manifest.json';
+  document.write('<link rel="manifest" href="' + href + '">');
+</script>
+```
+
+The Vercel function (`/api/manifest.ts`) reads `?church=overflow`, fetches that church's record from Supabase, and returns:
 ```json
 {
-  "name": "Faith On Sundays",
-  "short_name": "FBS",
-  "start_url": "/",
+  "name": "Overflow Church",
+  "short_name": "Overflow",
+  "start_url": "/?church=overflow",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a3a6b",
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "https://[supabase]/logos/overflow/logo_192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://[supabase]/logos/overflow/logo_512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
 ```
 
-Note: Each church will need their own manifest with their icon. Handle this dynamically via a `/manifest.json?church=fbc-dallas` endpoint.
+The static `/manifest.json` in `public/` is a fallback only — used when no church param is present (e.g. direct traffic with no QR code).
 
 ---
 

@@ -60,6 +60,7 @@ export function usePlatformAnalytics() {
       if (error) throw error;
       return data;
     },
+    refetchInterval: 30_000,
   });
 
   const expensesQuery = useQuery({
@@ -82,6 +83,15 @@ export function usePlatformAnalytics() {
         .select("*");
       if (error) throw error;
       return data as any[];
+    },
+  });
+
+  const storageQuery = useQuery({
+    queryKey: ["platform", "storage"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_storage_usage_bytes");
+      if (error) throw error;
+      return (data as number) ?? 0;
     },
   });
 
@@ -146,7 +156,8 @@ export function usePlatformAnalytics() {
     failed: sermonJobs.filter(j => j.status === "failed").length,
     retrying: sermonJobs.filter(j => j.status === "retrying").length,
   };
-  const recentFailures = sermonJobs.filter(j => j.status === "failed").slice(0, 5);
+  const allFailures = sermonJobs.filter(j => j.status === "failed");
+  const recentFailures = allFailures.slice(0, 5);
   const totalJobs = sermonJobs.length;
   const successRate = totalJobs > 0 ? (jobsByStatus.completed / totalJobs) * 100 : 100;
 
@@ -182,13 +193,15 @@ export function usePlatformAnalytics() {
       eventsQuery.isLoading ||
       sermonJobsQuery.isLoading ||
       expensesQuery.isLoading ||
-      costConfigQuery.isLoading,
+      costConfigQuery.isLoading ||
+      storageQuery.isLoading,
     // New data
     activeUsers7d,
     activeUsers30d,
     inactiveChurches,
     jobsByStatus,
     recentFailures,
+    allFailures,
     successRate,
     totalJobs,
     totalSermonMinutes,
@@ -196,6 +209,7 @@ export function usePlatformAnalytics() {
     expenses: (expensesQuery.data ?? []) as any[],
     costConfig: costConfigMap,
     costConfigItems: (costConfigQuery.data ?? []) as any[],
+    storageBytes: storageQuery.data ?? 0,
     // Mutations
     addExpense,
     updateExpense,

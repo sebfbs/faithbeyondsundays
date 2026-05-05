@@ -10,9 +10,10 @@ interface MoreSheetProps {
   onPrayer: () => void;
   onClose: () => void;
   givingUrl?: string;
+  onGive?: () => void;
 }
 
-export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl }: MoreSheetProps) {
+export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBible, onPrayer, onClose, givingUrl, onGive }: MoreSheetProps) {
   const colors = useAccentColors();
 
   const allOptions = [
@@ -30,7 +31,7 @@ export default function MoreSheet({ featureFlags, onProfile, onCommunity, onBibl
     else if (key === "community") onCommunity();
     else if (key === "bible") onBible();
     else if (key === "prayer") onPrayer();
-    else if (key === "give" && givingUrl) window.open(givingUrl, "_blank");
+    else if (key === "give") { if (onGive) onGive(); else if (givingUrl) window.open(givingUrl, "_blank"); }
     onClose();
   };
 

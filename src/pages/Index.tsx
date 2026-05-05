@@ -106,6 +106,17 @@ export default function Index() {
       .then(() => {});
   }, [profile, isDemo, authUser]);
 
+  const handleGiveTap = useCallback(() => {
+    if (profile?.church_id && authUser && !isDemo) {
+      supabase.from("analytics_events").insert({
+        church_id: profile.church_id,
+        user_id: authUser.id,
+        event_type: "give_tap",
+      }).then(() => {});
+    }
+    window.open(GIVING_URL, "_blank");
+  }, [profile, authUser, isDemo]);
+
   // Achievement banner state
   const [pendingBadge, setPendingBadge] = useState<BadgeDisplay | null>(null);
 
@@ -483,6 +494,7 @@ export default function Index() {
           onNavigate={handleSidebarNavigate}
           collapsed={sidebarCollapsed}
           onToggle={handleSidebarToggle}
+          onGive={handleGiveTap}
         />
       )}
 
@@ -524,6 +536,7 @@ export default function Index() {
           featureFlags={featureFlags}
           onClose={() => setMoreOpen(false)}
           givingUrl={GIVING_URL}
+          onGive={handleGiveTap}
           onProfile={() => { navTo("/profile"); setMoreOpen(false); }}
           onCommunity={() => { navTo("/community"); setMoreOpen(false); }}
           onBible={() => { navTo("/bible"); setMoreOpen(false); }}

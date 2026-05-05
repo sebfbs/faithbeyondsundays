@@ -36,7 +36,7 @@ export default function FinancialOverview({
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [costConfigOpen, setCostConfigOpen] = useState(false);
 
-  const lovablePlan = costConfig["lovable_plan_monthly"] ?? 10000;
+  const lovablePlan = costConfig["base_hosting_monthly"] ?? 2500;
   const elevenLabsCost = totalSermonMinutes * ELEVENLABS_CENTS_PER_MINUTE;
   const costPerAiCall = costConfig["cost_per_ai_call"] ?? 2;
   const aiCost = completedJobCount * AI_CALLS_PER_SERMON * costPerAiCall;
@@ -64,7 +64,7 @@ export default function FinancialOverview({
             <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Estimated Costs (auto)</p>
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">Lovable Plan</p>
+                <p className="text-xs text-slate-400">Vercel + Supabase</p>
                 <p className="text-sm font-semibold text-slate-200">{fmt(lovablePlan)}/mo</p>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3">
@@ -73,7 +73,7 @@ export default function FinancialOverview({
                 <p className="text-[10px] text-slate-500">{Math.round(totalSermonMinutes)} min transcribed</p>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">Lovable AI</p>
+                <p className="text-xs text-slate-400">Claude AI</p>
                 <p className="text-sm font-semibold text-slate-200">{fmt(aiCost)}</p>
                 <p className="text-[10px] text-slate-500">{completedJobCount * AI_CALLS_PER_SERMON} calls</p>
               </div>
