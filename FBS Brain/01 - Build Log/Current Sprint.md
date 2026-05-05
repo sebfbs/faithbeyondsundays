@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: White-label audit in progress (Session 8).
+## Status: White-label audit COMPLETE ✅. Next: platform dashboard walkthrough + church logo upload.
 
 ---
 
@@ -51,9 +51,22 @@
 
 ---
 
+## Completed This Sprint (2026-05-05, Session 8)
+
+### White-Label Copy Audit — DONE ✅
+- All hardcoded "Faith Beyond Sundays" strings removed from member-facing app and admin headlines
+- `HomeTab` empty state now shows `{churchName}` dynamically (from `useProfile()` → `churches` join)
+- `AuthScreen` welcome screen: FBS logo + title removed, "Try the Demo" link removed
+- `AdminLogin` subtitle cleaned up: "Sign in to manage your church"
+- Alt text cleaned on `TabletSidebar` and `PublicProfileScreen`
+- White-label sign-up screen spec (with church logo + QR code) saved to backlog below
+
+---
+
 ## What's Next
 
-1. **White-label copy audit** — *(in progress, Session 8)* Replace all hardcoded "Faith Beyond Sundays" strings with `{churchName}` pulled dynamically from the `churches` table. Zero FBS brand visible to members anywhere.
+1. **Platform dashboard walkthrough** — Log into `/platform` with Sebastian, walk every screen, then add church logo upload to the New Church form (file input + Supabase Storage + `logo_url` column on `churches` table)
+2. **White-label sign-up screen** — *(blocked until QR code + logo upload are built)* Auth screen reads `church_id` from URL, fetches and shows that church's logo + name. Spec in backlog below.
 2. **Platform owner dashboard walkthrough** — Log into `/platform`, walk every screen with Sebastian, then add church logo upload to the "New Church" form. Logo upload needs: file input in `PlatformChurches.tsx` create dialog + Supabase Storage bucket for church logos + `logo_url` column on `churches` table.
 3. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
 4. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
