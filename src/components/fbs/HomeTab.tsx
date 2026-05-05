@@ -427,7 +427,7 @@ export default function HomeTab({ sermon, isLoading, featureFlags, onAddJournalE
           <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: colors.accentBg }}>
             <Sparkles size={24} style={{ color: colors.accent }} />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-2">Welcome to Faith Beyond Sundays</h2>
+          <h2 className="text-lg font-bold text-foreground mb-2">Welcome to {churchName || "your church"}</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Your pastor hasn't uploaded a sermon yet. Once they do, you'll see daily sparks, reflections, and scripture right here.
           </p>

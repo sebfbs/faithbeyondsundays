@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Announcements fully tested and shipped. Ready for white-label copy audit.
+## Status: White-label audit in progress (Session 8).
 
 ---
 
@@ -53,10 +53,11 @@
 
 ## What's Next
 
-1. **White-label copy audit** — Replace all hardcoded "Faith Beyond Sundays" strings with `{churchName}` pulled dynamically from the `churches` table. Zero FBS brand visible to members anywhere. (Full spec in archived sprint below)
-2. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
-3. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
-4. **QR code → church landing page flow** — PWA install wizard per device type.
+1. **White-label copy audit** — *(in progress, Session 8)* Replace all hardcoded "Faith Beyond Sundays" strings with `{churchName}` pulled dynamically from the `churches` table. Zero FBS brand visible to members anywhere.
+2. **Platform owner dashboard walkthrough** — Log into `/platform`, walk every screen with Sebastian, then add church logo upload to the "New Church" form. Logo upload needs: file input in `PlatformChurches.tsx` create dialog + Supabase Storage bucket for church logos + `logo_url` column on `churches` table.
+3. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
+4. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
+5. **QR code → church landing page flow** — PWA install wizard per device type.
 
 ---
 
@@ -110,6 +111,19 @@ grep -r '"FBS"' src/
 - Zero instances of "FBS" in member-facing UI copy
 - All empty states use `{churchName}` or church-voiced generic language
 - App builds clean with zero TypeScript errors
+
+---
+
+## Backlog — Church Identity Flow (Build After QR + Logo Upload)
+
+### White-Label Sign-Up Screen
+When a member scans a church's QR code, the sign-up screen should show that church's logo and name — not a generic screen. Full spec:
+- QR code encodes `?church_id=xxx` in the URL
+- Auth screen reads `church_id` from URL on load
+- Fetches church name + logo from `churches` table
+- Displays church logo + "Welcome to {churchName}" above the sign-in buttons
+- Member who signs up is automatically linked to that church via `church_id`
+- Requires: church logo upload (platform dashboard) + QR code flow to be built first
 
 ---
 

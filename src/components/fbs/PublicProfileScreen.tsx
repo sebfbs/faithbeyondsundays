@@ -111,7 +111,7 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
             <span className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center relative">
               <img src={fbsBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <img src={fbsLogoWhite} alt="FBS" className="relative w-3 h-3" />
+              <img src={fbsLogoWhite} alt="" className="relative w-3 h-3" />
             </span>
             <span className="text-xs font-medium text-muted-foreground">@{member.username}</span>
           </div>

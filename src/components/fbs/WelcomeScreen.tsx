@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Church, UserPlus, AtSign, Check, X, Search, MapPin, CheckCircle } from "lucide-react";
-import fbsLogo from "@/assets/FBS_Logo_white.png";
 import { validateUsername } from "./communityData";
 
 export interface UserData {
@@ -124,11 +123,7 @@ export default function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         }}
       >
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <img src={fbsLogo} alt="Faith Beyond Sundays" className="w-24 h-24 object-contain mb-6" />
-          <h1 className="text-3xl font-bold leading-tight mb-3" style={{ color: "hsl(0 0% 100%)" }}>
-            Faith Beyond<br />Sundays
-          </h1>
-          <p className="text-sm font-medium max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
+          <p className="text-lg font-semibold max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
             Stay connected to Sunday's message all week long
           </p>
         </div>

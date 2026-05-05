@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import fbsLogo from "@/assets/FBS_Logo_white.png";
 
 type Mode = "welcome" | "signin" | "signup";
 
@@ -113,11 +112,7 @@ export default function AuthScreen() {
         }}
       >
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <img src={fbsLogo} alt="Faith Beyond Sundays" className="w-24 h-24 object-contain mb-6" />
-          <h1 className="text-3xl font-bold leading-tight mb-3" style={{ color: "hsl(0 0% 100%)" }}>
-            Faith Beyond<br />Sundays
-          </h1>
-          <p className="text-sm font-medium max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
+          <p className="text-lg font-semibold max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
             Stay connected to Sunday's message all week long
           </p>
         </div>
@@ -178,13 +173,6 @@ export default function AuthScreen() {
             className="w-full text-center text-sm font-medium text-gray-600 tap-active py-2"
           >
             Already have an account? <span className="underline">Sign In</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/home?demo=true")}
-            className="w-full text-center text-xs text-gray-500 tap-active py-2"
-          >
-            Just exploring? <span className="underline">Try the Demo</span>
           </button>
 
           {/* Terms & Privacy */}

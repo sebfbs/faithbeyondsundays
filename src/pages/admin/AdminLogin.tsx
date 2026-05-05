@@ -124,7 +124,7 @@ export default function AdminLogin() {
           </div>
           <CardTitle className="text-xl text-card-foreground">Church Admin</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Manage your church on Faith Beyond Sundays
+            Sign in to manage your church
           </CardDescription>
         </CardHeader>
         <CardContent>

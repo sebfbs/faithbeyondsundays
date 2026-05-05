@@ -101,7 +101,7 @@ export default function TabletSidebar({ featureFlags, activeItem, onNavigate, co
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ background: colors.accent }}
         >
-          <img src={FBSLogo} alt="FBS" className="w-6 h-6 object-contain" />
+          <img src={FBSLogo} alt="Church logo" className="w-6 h-6 object-contain" />
         </div>
         <button
           onClick={onToggle}
