@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Session 10 complete. Logo upload ✅, PWA manifest ✅, PWA icon shows church logo ✅, auto-update pipeline fixed ✅. Next: app_short_name field for long church names, then email hook.
+## Status: Session 11 complete. App short name field ✅, 3-step home screen name-check flow ✅, church onboarding SOP ✅. Next: email hook setup (Resend + Supabase auth hook on new project).
 
 ---
 
@@ -93,6 +93,17 @@
 - `AdminLogin` subtitle cleaned up: "Sign in to manage your church"
 - Alt text cleaned on `TabletSidebar` and `PublicProfileScreen`
 - White-label sign-up screen spec (with church logo + QR code) saved to backlog below
+
+---
+
+## Completed This Sprint (2026-05-07, Session 11)
+
+### App Short Name + Church Onboarding SOP ✅
+- `app_short_name VARCHAR(15)` column added to `churches` table
+- **3-step name-check flow** on church detail page: Step 1 = copy name + test on real phone via Safari PWA; Step 2 = confirm fit or flag as too long; Step 3 = set short name with char counter + auto-save (green ✓ on save)
+- `api/manifest.ts` now uses `app_short_name` if set, falls back to full name
+- Long-name warning (>15 chars) in New Church form
+- `FBS Brain/04 - Operations/Church Onboarding SOP.md` created — 4-phase onboarding checklist (platform setup → admin setup → internal PWA test → go live)
 
 ---
 
