@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog, ImagePlus, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog, ImagePlus, AlertTriangle, CheckCircle2, Copy } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useMemo, useState, useRef, useEffect } from "react";
 
@@ -68,6 +68,8 @@ export default function PlatformChurchDetail() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [appShortName, setAppShortName] = useState("");
   const [savingShortName, setSavingShortName] = useState(false);
+  const [nameCheckStep, setNameCheckStep] = useState<"idle" | "tested" | "confirmed-full" | "set-short">("idle");
+  const [copied, setCopied] = useState(false);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -206,7 +208,15 @@ export default function PlatformChurchDetail() {
 
   useEffect(() => {
     setAppShortName(church?.app_short_name ?? "");
+    setNameCheckStep(church?.app_short_name ? "set-short" : "idle");
   }, [church?.id]);
+
+  const handleCopyName = () => {
+    if (!church) return;
+    navigator.clipboard.writeText(church.name);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleShortNameSave = async () => {
     if (!id) return;
@@ -428,114 +438,128 @@ export default function PlatformChurchDetail() {
         </CardContent>
       </Card>
 
-      {/* App Short Name + Home Screen Preview Card */}
+      {/* App Name Check Card */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
           <CardTitle className="text-sm text-slate-300 flex items-center gap-2">
             <Smartphone className="h-4 w-4 text-violet-400" />
-            App Name & Home Screen Preview
+            App Name & Home Screen
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Short name field */}
-          <div className="space-y-2">
-            <Label className="text-slate-300 text-sm">
-              App Short Name <span className="text-slate-500 font-normal">(optional)</span>
-            </Label>
-            <div className="flex items-center gap-3">
-              <div className="relative max-w-xs flex-1">
-                <Input
-                  value={appShortName}
-                  onChange={(e) => setAppShortName(e.target.value.slice(0, 15))}
-                  onBlur={handleShortNameSave}
-                  placeholder={church.name.length > 15 ? church.name.split(" ")[0] : church.name}
-                  className="bg-slate-800 border-slate-700 text-slate-100 pr-14"
-                  maxLength={15}
-                />
-                <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono pointer-events-none ${appShortName.length >= 15 ? "text-amber-400" : "text-slate-500"}`}>
-                  {appShortName.length}/15
-                </span>
-              </div>
-              {appShortName.trim().length > 0 && !savingShortName && (
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              )}
-              {savingShortName && <Loader2 className="h-4 w-4 animate-spin text-slate-400 shrink-0" />}
-            </div>
-            {church.name.length > 15 && !appShortName.trim() && (
-              <p className="text-xs text-amber-400 flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                "{church.name}" is {church.name.length} characters — may be truncated on some home screens. Set a short name above.
+        <CardContent>
+          {nameCheckStep === "idle" && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                <span className="font-medium text-slate-300">Step 1 of 3</span> — Test the name on your phone before going live.
+                Open Safari → any website → Share → <span className="font-medium text-slate-200">Add to Home Screen</span>. When prompted for a name, paste this:
               </p>
-            )}
-            <p className="text-xs text-slate-500">
-              Shown under the app icon when members add this church to their home screen. Leave blank to use the full name.
-            </p>
-          </div>
-
-          {/* Home screen preview */}
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-slate-400">Home screen preview</p>
-            <div className="flex gap-10">
-              {/* iOS tile */}
-              <div className="flex flex-col items-center gap-2">
-                <div className="rounded-2xl bg-[#1c1c1e] px-6 py-5 flex flex-col items-center gap-2">
-                  <div
-                    className="w-[60px] h-[60px] overflow-hidden bg-slate-700 flex items-center justify-center shrink-0"
-                    style={{ borderRadius: "22%" }}
-                  >
-                    {church.logo_url ? (
-                      <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xl font-bold text-slate-300">{church.name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <span
-                    className="text-center leading-tight text-white"
-                    style={{
-                      fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-                      fontSize: "11px",
-                      maxWidth: "76px",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    } as React.CSSProperties}
-                  >
-                    {appShortName.trim() || church.name}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5">
+                  <span className="text-slate-100 font-medium">{church.name}</span>
                 </div>
-                <span className="text-[11px] text-slate-500">iOS</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-600 text-slate-300 bg-slate-800 hover:bg-slate-700 shrink-0"
+                  onClick={handleCopyName}
+                >
+                  {copied ? <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
               </div>
-
-              {/* Android tile */}
-              <div className="flex flex-col items-center gap-2">
-                <div className="rounded-2xl bg-[#121212] px-6 py-5 flex flex-col items-center gap-2">
-                  <div className="w-[48px] h-[48px] rounded-full overflow-hidden bg-slate-700 flex items-center justify-center shrink-0">
-                    {church.logo_url ? (
-                      <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-base font-bold text-slate-300">{church.name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <span
-                    className="text-center leading-tight text-white"
-                    style={{
-                      fontFamily: "'Roboto', sans-serif",
-                      fontSize: "12px",
-                      maxWidth: "68px",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    } as React.CSSProperties}
-                  >
-                    {appShortName.trim() || church.name}
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-500">Android</span>
-              </div>
+              <p className="text-xs text-slate-500">
+                Check whether the name fits under the icon without being cut off. Then come back here.
+              </p>
+              <Button className="w-full" onClick={() => setNameCheckStep("tested")}>
+                I tested it →
+              </Button>
             </div>
-          </div>
+          )}
+
+          {nameCheckStep === "tested" && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-400">
+                <span className="font-medium text-slate-300">Step 2 of 3</span> — Did the full name fit on the home screen?
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  className="border border-emerald-600 text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg py-4 flex flex-col items-center gap-1.5 transition-colors"
+                  onClick={() => setNameCheckStep("confirmed-full")}
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="text-sm font-medium">Full name fits</span>
+                  <span className="text-xs text-emerald-400/70">Use it as-is</span>
+                </button>
+                <button
+                  className="border border-amber-600 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg py-4 flex flex-col items-center gap-1.5 transition-colors"
+                  onClick={() => setNameCheckStep("set-short")}
+                >
+                  <AlertTriangle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Need to shorten</span>
+                  <span className="text-xs text-amber-400/70">Set a short name</span>
+                </button>
+              </div>
+              <button className="text-xs text-slate-500 hover:text-slate-400 underline" onClick={() => setNameCheckStep("idle")}>
+                ← Back
+              </button>
+            </div>
+          )}
+
+          {nameCheckStep === "confirmed-full" && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Using full name</p>
+                  <p className="text-xs text-slate-400 mt-0.5">"{church.name}" will appear on members' home screens.</p>
+                </div>
+              </div>
+              <button className="text-xs text-slate-500 hover:text-slate-400 underline" onClick={() => setNameCheckStep("idle")}>
+                Redo test
+              </button>
+            </div>
+          )}
+
+          {nameCheckStep === "set-short" && (
+            <div className="space-y-4">
+              {!church.app_short_name && (
+                <p className="text-xs text-slate-400">
+                  <span className="font-medium text-slate-300">Step 3 of 3</span> — Set the abbreviated name (max 15 chars).
+                </p>
+              )}
+              <div className="space-y-2">
+                {church.app_short_name && (
+                  <Label className="text-slate-300 text-sm">App Short Name</Label>
+                )}
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-xs">
+                    <Input
+                      value={appShortName}
+                      onChange={(e) => setAppShortName(e.target.value.slice(0, 15))}
+                      onBlur={handleShortNameSave}
+                      placeholder="e.g. Cornerstone"
+                      className="bg-slate-800 border-slate-700 text-slate-100 pr-14"
+                      maxLength={15}
+                      autoFocus={!church.app_short_name}
+                    />
+                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono pointer-events-none ${appShortName.length >= 15 ? "text-amber-400" : "text-slate-500"}`}>
+                      {appShortName.length}/15
+                    </span>
+                  </div>
+                  {appShortName.trim().length > 0 && !savingShortName && (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  )}
+                  {savingShortName && <Loader2 className="h-4 w-4 animate-spin text-slate-400 shrink-0" />}
+                </div>
+                <p className="text-xs text-slate-500">Click away to save. This appears under the app icon on home screens.</p>
+              </div>
+              {!church.app_short_name && (
+                <button className="text-xs text-slate-500 hover:text-slate-400 underline" onClick={() => setNameCheckStep("tested")}>
+                  ← Back
+                </button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

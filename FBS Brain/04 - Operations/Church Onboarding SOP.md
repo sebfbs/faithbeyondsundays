@@ -18,16 +18,13 @@ Every time a new church is onboarded onto Faith Beyond Sundays, follow this chec
 - [ ] Logo thumbnail shows in the table row
 - [ ] Status shows **Active**
 
-### 1.3 Set the App Short Name (if needed)
+### 1.3 Test and set the App Short Name
 - [ ] Click into the church → open the church detail page
-- [ ] Go to **App Name & Home Screen Preview** card
-- [ ] If the church name is >15 characters, type a short version (max 15 chars)
-  - Good examples: "Overflow Church" → leave as-is. "Cornerstone Community Church" → "Cornerstone" or "CCC"
-  - Set it, then click away to save — watch for the green ✓
-- [ ] Check the **iOS** and **Android** preview tiles:
-  - Does the icon look correct?
-  - Does the name fit without being cut off?
-  - If truncated: shorten the app short name until it looks right
+- [ ] Find the **App Name & Home Screen** card — it has a 3-step flow:
+  - **Step 1:** Copy the church name → open Safari on your iPhone → any website → Share → Add to Home Screen → paste the name when prompted → check if it fits under the icon without being cut off → come back
+  - **Step 2:** Choose "Full name fits" or "Need to shorten"
+  - **Step 3 (if shortening):** Type the abbreviated name (max 15 chars), click away to save — watch for the green ✓
+  - Good short name examples: "Cornerstone Community Church" → "Cornerstone" or "CCC". "Christ Presbyterian Church" → "Christ Pres" or "CPC"
 
 ### 1.4 Assign and invite the church admin
 - [ ] On the church detail page → **Church Admin** card → **Assign Admin** (if not done during creation)
