@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog, ImagePlus } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog, ImagePlus, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 
 async function resizeLogo(file: File, targetSize: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -66,6 +66,8 @@ export default function PlatformChurchDetail() {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [appShortName, setAppShortName] = useState("");
+  const [savingShortName, setSavingShortName] = useState(false);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -201,6 +203,27 @@ export default function PlatformChurchDetail() {
 
   const giveTaps = events.filter((e) => e.event_type === "give_tap").length;
   const appOpens = events.filter((e) => e.event_type === "app_open").length;
+
+  useEffect(() => {
+    setAppShortName(church?.app_short_name ?? "");
+  }, [church?.id]);
+
+  const handleShortNameSave = async () => {
+    if (!id) return;
+    const trimmed = appShortName.trim();
+    setSavingShortName(true);
+    const { error } = await supabase
+      .from("churches")
+      .update({ app_short_name: trimmed || null })
+      .eq("id", id);
+    if (error) {
+      toast.error("Failed to save short name: " + error.message);
+    } else {
+      toast.success("Short name saved");
+      queryClient.invalidateQueries({ queryKey: ["platform", "church", id] });
+    }
+    setSavingShortName(false);
+  };
 
   const memberChart = useMemo(() => {
     const days = 30;
@@ -400,6 +423,117 @@ export default function PlatformChurchDetail() {
                 )}
                 {church.logo_url ? "Change Logo" : "Upload Logo"}
               </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* App Short Name + Home Screen Preview Card */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-300 flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-violet-400" />
+            App Name & Home Screen Preview
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Short name field */}
+          <div className="space-y-2">
+            <Label className="text-slate-300 text-sm">
+              App Short Name <span className="text-slate-500 font-normal">(optional)</span>
+            </Label>
+            <div className="flex items-center gap-3">
+              <div className="relative max-w-xs flex-1">
+                <Input
+                  value={appShortName}
+                  onChange={(e) => setAppShortName(e.target.value.slice(0, 15))}
+                  onBlur={handleShortNameSave}
+                  placeholder={church.name.length > 15 ? church.name.split(" ")[0] : church.name}
+                  className="bg-slate-800 border-slate-700 text-slate-100 pr-14"
+                  maxLength={15}
+                />
+                <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono pointer-events-none ${appShortName.length >= 15 ? "text-amber-400" : "text-slate-500"}`}>
+                  {appShortName.length}/15
+                </span>
+              </div>
+              {appShortName.trim().length > 0 && !savingShortName && (
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              )}
+              {savingShortName && <Loader2 className="h-4 w-4 animate-spin text-slate-400 shrink-0" />}
+            </div>
+            {church.name.length > 15 && !appShortName.trim() && (
+              <p className="text-xs text-amber-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                "{church.name}" is {church.name.length} characters — may be truncated on some home screens. Set a short name above.
+              </p>
+            )}
+            <p className="text-xs text-slate-500">
+              Shown under the app icon when members add this church to their home screen. Leave blank to use the full name.
+            </p>
+          </div>
+
+          {/* Home screen preview */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-slate-400">Home screen preview</p>
+            <div className="flex gap-10">
+              {/* iOS tile */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="rounded-2xl bg-[#1c1c1e] px-6 py-5 flex flex-col items-center gap-2">
+                  <div
+                    className="w-[60px] h-[60px] overflow-hidden bg-slate-700 flex items-center justify-center shrink-0"
+                    style={{ borderRadius: "22%" }}
+                  >
+                    {church.logo_url ? (
+                      <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-bold text-slate-300">{church.name.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <span
+                    className="text-center leading-tight text-white"
+                    style={{
+                      fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                      fontSize: "11px",
+                      maxWidth: "76px",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    } as React.CSSProperties}
+                  >
+                    {appShortName.trim() || church.name}
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500">iOS</span>
+              </div>
+
+              {/* Android tile */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="rounded-2xl bg-[#121212] px-6 py-5 flex flex-col items-center gap-2">
+                  <div className="w-[48px] h-[48px] rounded-full overflow-hidden bg-slate-700 flex items-center justify-center shrink-0">
+                    {church.logo_url ? (
+                      <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-base font-bold text-slate-300">{church.name.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <span
+                    className="text-center leading-tight text-white"
+                    style={{
+                      fontFamily: "'Roboto', sans-serif",
+                      fontSize: "12px",
+                      maxWidth: "68px",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    } as React.CSSProperties}
+                  >
+                    {appShortName.trim() || church.name}
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500">Android</span>
+              </div>
             </div>
           </div>
         </CardContent>

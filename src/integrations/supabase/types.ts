@@ -104,6 +104,7 @@ export type Database = {
       }
       churches: {
         Row: {
+          app_short_name: string | null
           city: string | null
           code: string
           country: string | null
@@ -122,6 +123,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          app_short_name?: string | null
           city?: string | null
           code: string
           country?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          app_short_name?: string | null
           city?: string | null
           code?: string
           country?: string | null

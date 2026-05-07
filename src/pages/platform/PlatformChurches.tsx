@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
-import { Plus, Loader2, CheckCircle2, Send, Trash2, ImagePlus } from "lucide-react";
+import { Plus, Loader2, CheckCircle2, Send, Trash2, ImagePlus, AlertTriangle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -326,6 +326,12 @@ export default function PlatformChurches() {
                   <div className="space-y-2">
                     <Label className="text-slate-300">Name *</Label>
                     <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="bg-slate-800 border-slate-700 text-slate-100" />
+                    {form.name.length > 15 && (
+                      <p className="text-xs text-amber-400 flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        Long name — you can set a short display name on the church profile after creating.
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">

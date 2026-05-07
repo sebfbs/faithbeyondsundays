@@ -21,7 +21,7 @@ export default async function handler(req: any, res: any) {
 
     const { data } = await supabase
       .from("churches")
-      .select("name, logo_url, logo_192_url, logo_512_url")
+      .select("name, logo_url, logo_192_url, logo_512_url, app_short_name")
       .eq("code", church)
       .eq("is_active", true)
       .single();
@@ -32,8 +32,7 @@ export default async function handler(req: any, res: any) {
     const icon192 = data?.logo_192_url || fallback192;
     const icon512 = data?.logo_512_url || fallback512;
     const churchName = data?.name || "Faith Beyond Sundays";
-    // Short name: first two words, max 12 chars
-    const shortName = churchName.split(" ").slice(0, 2).join(" ");
+    const shortName = data?.app_short_name || churchName;
 
     const manifest = {
       name: churchName,
