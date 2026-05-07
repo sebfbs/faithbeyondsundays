@@ -7,9 +7,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog } from "lucide-react";
+import { ArrowLeft, Users, BookOpen, Hand, Smartphone, Loader2, Shield, Send, UserCog, ImagePlus } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+
+async function resizeLogo(file: File, targetSize: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = targetSize;
+      canvas.height = targetSize;
+      const ctx = canvas.getContext("2d")!;
+      const scale = Math.max(targetSize / img.width, targetSize / img.height);
+      const x = (targetSize - img.width * scale) / 2;
+      const y = (targetSize - img.height * scale) / 2;
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("Canvas toBlob failed"))),
+        "image/png"
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+    img.src = url;
+  });
+}
+
+async function uploadChurchLogo(churchId: string, file: File) {
+  const [blob192, blob512] = await Promise.all([resizeLogo(file, 192), resizeLogo(file, 512)]);
+  const uploads = [
+    supabase.storage.from("church-logos").upload(`${churchId}/original.png`, file, { upsert: true, contentType: "image/png" }),
+    supabase.storage.from("church-logos").upload(`${churchId}/logo_192.png`, blob192, { upsert: true, contentType: "image/png" }),
+    supabase.storage.from("church-logos").upload(`${churchId}/logo_512.png`, blob512, { upsert: true, contentType: "image/png" }),
+  ];
+  const results = await Promise.all(uploads);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+  const pub = (path: string) => supabase.storage.from("church-logos").getPublicUrl(path).data.publicUrl;
+  return {
+    logo_url: pub(`${churchId}/original.png`),
+    logo_192_url: pub(`${churchId}/logo_192.png`),
+    logo_512_url: pub(`${churchId}/logo_512.png`),
+  };
+}
 import { format, subDays } from "date-fns";
 import { toast } from "sonner";
 
@@ -22,6 +64,26 @@ export default function PlatformChurchDetail() {
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [changingAdmin, setChangingAdmin] = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    e.target.value = "";
+    setUploadingLogo(true);
+    try {
+      const urls = await uploadChurchLogo(id, file);
+      const { error } = await supabase.from("churches").update(urls).eq("id", id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["platform", "church", id] });
+      toast.success("Logo updated");
+    } catch (err: any) {
+      toast.error("Logo upload failed: " + err.message);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const churchQuery = useQuery({
     queryKey: ["platform", "church", id],
@@ -231,6 +293,35 @@ export default function PlatformChurchDetail() {
         <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-200" onClick={() => navigate("/platform/churches")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+        <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+        <button
+          title="Upload logo"
+          onClick={() => logoInputRef.current?.click()}
+          className="relative w-12 h-12 rounded-xl overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center hover:border-slate-500 transition-colors group shrink-0"
+        >
+          {church.logo_url ? (
+            <>
+              <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <ImagePlus className="h-4 w-4 text-white" />
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-lg font-bold text-slate-400 group-hover:opacity-0 transition-opacity">
+                {church.name.charAt(0).toUpperCase()}
+              </span>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <ImagePlus className="h-4 w-4 text-slate-300" />
+              </div>
+            </>
+          )}
+          {uploadingLogo && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <Loader2 className="h-4 w-4 text-white animate-spin" />
+            </div>
+          )}
+        </button>
         <div>
           <h1 className="text-2xl font-bold text-slate-100">{church.name}</h1>
           <p className="text-sm text-slate-400">{[church.city, church.state].filter(Boolean).join(", ")}</p>
@@ -250,6 +341,69 @@ export default function PlatformChurchDetail() {
           </Card>
         ))}
       </div>
+
+      {/* Church Logo Card */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-sm text-slate-300 flex items-center gap-2">
+            <ImagePlus className="h-4 w-4 text-sky-400" />
+            Church Logo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {/* Logo preview — always present */}
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-800 border-2 border-slate-700 flex items-center justify-center shrink-0">
+              {church.logo_url ? (
+                <img src={church.logo_url} alt={church.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center gap-1.5">
+                  <ImagePlus className="h-7 w-7 text-slate-600" />
+                  <span className="text-[10px] text-slate-600 font-medium">No logo</span>
+                </div>
+              )}
+              {uploadingLogo && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+
+            {/* Info + actions — always present */}
+            <div className="flex-1 space-y-3">
+              <div>
+                {church.logo_url ? (
+                  <span className="inline-flex items-center text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                    ✓ Logo uploaded
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-xs font-medium text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full">
+                    No logo uploaded
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-400">
+                This logo appears as the app icon when members add {church.name} to their home screen.
+              </p>
+              <p className="text-xs text-slate-500">PNG, JPG, or SVG · Square recommended · Auto-resized to 192×192 and 512×512</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 text-slate-200 bg-slate-800 hover:bg-slate-700"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+              >
+                {uploadingLogo ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {church.logo_url ? "Change Logo" : "Upload Logo"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Church Admin Card */}
       <Card className="bg-slate-900 border-slate-800">
