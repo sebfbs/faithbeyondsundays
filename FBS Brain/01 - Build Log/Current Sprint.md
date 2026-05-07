@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Platform dashboard audited + fixed. Logo upload BUILT, not yet tested. Next: test logo upload, then email hook.
+## Status: Session 10 complete. Logo upload ✅, PWA manifest ✅, PWA icon shows church logo ✅, auto-update pipeline fixed ✅. Next: app_short_name field for long church names, then email hook.
 
 ---
 
@@ -96,17 +96,38 @@
 
 ---
 
+## Completed This Sprint (2026-05-07, Session 10)
+
+### Church Logo Card on Detail Page ✅
+- `PlatformChurchDetail.tsx` — new "Church Logo" card always visible between stats and Church Admin card
+- Shows current logo (or "No logo" placeholder), status badge (green ✓ / amber), description, size note, and Change/Upload Logo button — always present regardless of whether a logo exists
+- Upload resizes to 3 sizes, saves to Supabase Storage, updates DB, shows spinner during upload
+
+### PWA Auto-Update Pipeline — Fixed ✅
+- `vercel.json` — `no-cache` headers on `/`, `/index.html`, and `/sw.js`; `/assets/*` immutable
+- `vite.config.ts` — removed `html` from SW precache glob so HTML is never served from cache
+- `main.tsx` — `controllerchange` listener reloads page when new SW takes over (fixed broken `onNeedRefresh` approach)
+- Root cause: `source: "/index.html"` didn't match requests to `/` — fixed by adding explicit `/` rule
+
+### PWA Icon — Church Logo Now Shows ✅
+- `index.html` — removed static `<link rel="apple-touch-icon">` that was overriding manifest icons on iOS
+- `index.html` — cleared `apple-mobile-web-app-title` so manifest `short_name` wins
+- `api/manifest.ts` — removed 12-char truncation on `short_name` so full church names display
+- Tested: Overflow Church PWA icon shows OVF logo, name shows "Overflow Church" ✅
+
+---
+
 ## What's Next
 
-1. **Test logo upload + dynamic manifest** *(Session 10 — do this first)*
-   - Create a new church in `/platform/churches` with a logo → verify thumbnail shows in table
-   - Hover the Overflow Church thumbnail → upload a logo → verify it updates
-   - Visit `[vercel-url]/?church=overflow` → DevTools → Application → Manifest → verify church name + logo appear
-   - Check that `api/manifest` is working on Vercel (auto-deployed with this push)
+1. **`app_short_name` field for long church names** *(next task)*
+   - Add optional `app_short_name` column to `churches` table
+   - Edit field on `PlatformChurchDetail.tsx` church detail page (platform admin sets it)
+   - `api/manifest.ts` uses `app_short_name` if set, falls back to first 2 words of church name
+   - Example: "Cornerstone Community Church" → admin sets "Cornerstone" or "CCC"
 
 2. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
 
-3. **White-label sign-up screen** — *(unblocked now that logo upload is built)* Auth screen reads `?church=` from URL, fetches and shows that church's logo + name. Member auto-linked to that church on sign-up.
+3. **White-label sign-up screen** — Auth screen reads `?church=` from URL, fetches and shows that church's logo + name. Member auto-linked to that church on sign-up.
 
 4. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
 

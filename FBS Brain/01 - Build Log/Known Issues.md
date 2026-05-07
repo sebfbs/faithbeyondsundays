@@ -20,8 +20,7 @@
 
 ## Unverified (Built, Not Tested)
 
-- **Logo upload** — New Church form + existing church hover-to-upload both built (Session 9). Resize + Supabase Storage + DB update all wired. Not tested on real browser yet.
-- **Dynamic PWA manifest** (`/api/manifest`) — Vercel function built + `index.html` updated. Deploys on next push. Not tested live yet.
+_(nothing currently unverified)_
 
 ---
 
@@ -37,6 +36,8 @@
 - ~~`transcribe-journal` using Lovable AI gateway~~ — rewritten 2026-04-27.
 - ~~Streak badges won't fire~~ — resolved 2026-05-01.
 - ~~Founding Member backfill~~ — resolved 2026-05-01.
+- ~~**Logo upload unverified**~~ — tested and working 2026-05-07 (Session 10). All 3 sizes upload correctly.
+- ~~**Dynamic PWA manifest unverified**~~ — tested and working 2026-05-07 (Session 10). `/api/manifest?church=overflow` returns correct logo + name. iOS PWA icon shows church logo.
 
 ---
 
