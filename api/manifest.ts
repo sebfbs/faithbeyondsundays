@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
     const icon512 = data?.logo_512_url || fallback512;
     const churchName = data?.name || "Faith Beyond Sundays";
     // Short name: first two words, max 12 chars
-    const shortName = churchName.split(" ").slice(0, 2).join(" ").slice(0, 12);
+    const shortName = churchName.split(" ").slice(0, 2).join(" ");
 
     const manifest = {
       name: churchName,
