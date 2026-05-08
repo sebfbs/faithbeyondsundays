@@ -13,7 +13,6 @@ export default function AuthScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
-  const [signUpSuccess, setSignUpSuccess] = useState(false);
 
   // Forgot password
   const [forgotMode, setForgotMode] = useState(false);
@@ -48,14 +47,14 @@ export default function AuthScreen() {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: churchCode
+          ? `${window.location.origin}/?church=${churchCode}`
+          : window.location.origin,
         data: { church_code: churchCode },
       },
     });
     if (error) {
       setError(error.message);
-    } else {
-      setSignUpSuccess(true);
     }
     setLoading(null);
   };
@@ -163,30 +162,6 @@ export default function AuthScreen() {
             <button onClick={() => navigate("/privacy")} className="underline">Privacy Policy</button>
           </p>
         </div>
-      </div>
-    );
-  }
-
-  // Sign Up success — check email
-  if (signUpSuccess) {
-    return (
-      <div
-        className="mx-auto flex flex-col min-h-screen px-6 items-center justify-center text-center"
-        style={{ background: "hsl(var(--background))", maxWidth: 430, width: "100%" }}
-      >
-        <div className="w-16 h-16 rounded-full bg-amber/15 flex items-center justify-center mb-5">
-          <Mail size={28} className="text-amber" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Check your email</h1>
-        <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-6">
-          We sent a verification link to <span className="font-semibold text-foreground">{email}</span>. Click the link to activate your account.
-        </p>
-        <button
-          onClick={() => { setSignUpSuccess(false); setMode("signin"); setPassword(""); setError(null); }}
-          className="text-sm font-medium text-amber tap-active"
-        >
-          ← Back to Sign In
-        </button>
       </div>
     );
   }

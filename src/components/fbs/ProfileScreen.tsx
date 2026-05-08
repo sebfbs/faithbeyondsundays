@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Crown, Users, Flame, LogOut, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle, Moon } from "lucide-react";
+import { ArrowLeft, ChevronRight, User, BookOpen, Medal, Crown, Users, Flame, LogOut, ShieldCheck, Check, Bell, BellOff, Phone, Camera, Loader2, Church, Trash2, AlertTriangle, Moon, BadgeCheck, Lock, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   NotificationDaysModal,
@@ -36,9 +36,233 @@ function userBadgeToItem(cfg: UserBadgeConfig): BadgeItem {
   return { label: cfg.label, detail: cfg.detail, howToEarn: cfg.howToEarn, color: cfg.color, gradient: cfg.gradient, animated: cfg.animated, icon: badgeIcon(cfg.type) };
 }
 
+/* ---- Verified Profile Badge ---- */
+
+function VerifiedProfileBadge({ isVerified, email }: { isVerified: boolean; email?: string }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    if (!email || sending || sent) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) {
+        console.error("Verify OTP error:", error);
+        setSendError("Couldn't send the email. Please try again.");
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error("Verify OTP exception:", err);
+      setSendError("Something went wrong. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (isVerified) {
+    // Earned — blue gradient, same style as BadgeCard
+    return (
+      <div
+        style={{
+          borderRadius: 20,
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: "linear-gradient(135deg, #2563EB, #3B82F6, #60A5FA)",
+          boxShadow: "0 4px 20px rgba(59,130,246,0.35)",
+          marginBottom: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.25)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <BadgeCheck size={20} color="white" />
+        </div>
+        <div>
+          <p style={{ color: "white", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>Verified Profile</p>
+          <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>Email Confirmed</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Locked — grayed out card with tap-to-open modal
+  return (
+    <>
+      <div
+        onClick={() => setModalOpen(true)}
+        style={{
+          borderRadius: 20,
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: "hsl(var(--muted))",
+          cursor: "pointer",
+          marginBottom: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "rgba(0,0,0,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            opacity: 0.4,
+          }}
+        >
+          <BadgeCheck size={20} color="#3B82F6" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "hsl(var(--muted-foreground))", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+            Verified Profile
+          </p>
+          <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, opacity: 0.7 }}>Email Confirmed</p>
+        </div>
+        <Lock size={17} color="hsl(var(--muted-foreground))" style={{ flexShrink: 0, opacity: 0.5 }} />
+      </div>
+
+      {modalOpen && (
+        <div
+          onClick={() => { if (!sending) { setModalOpen(false); setSent(false); setSendError(null); } }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9000,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 32px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "hsl(var(--card))",
+              borderRadius: 24,
+              padding: "24px 20px",
+              width: "100%",
+              maxWidth: 320,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              boxShadow: "0 16px 48px rgba(0,0,0,0.3)",
+            }}
+          >
+            {/* Close button */}
+            <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => { setModalOpen(false); setSent(false); setSendError(null); }}
+                style={{
+                  background: "hsl(var(--muted))",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={14} color="hsl(var(--muted-foreground))" />
+              </button>
+            </div>
+
+            {/* Badge icon preview */}
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #2563EB, #3B82F6, #60A5FA)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <BadgeCheck size={24} color="white" />
+            </div>
+
+            {/* Title & body */}
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "hsl(var(--foreground))", fontWeight: 700, fontSize: 17, marginBottom: 4 }}>
+                Verified Profile
+              </p>
+              <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 13, lineHeight: 1.5 }}>
+                {sent
+                  ? "Check your inbox! Tap the link in your email to verify."
+                  : "Verify your email to earn this badge. We'll send a link to your inbox — one tap and you're verified."}
+              </p>
+            </div>
+
+            {/* Error */}
+            {sendError && (
+              <p style={{ color: "hsl(var(--destructive))", fontSize: 12, textAlign: "center" }}>{sendError}</p>
+            )}
+
+            {/* Action button */}
+            {!sent && (
+              <button
+                onClick={handleVerify}
+                disabled={sending}
+                style={{
+                  width: "100%",
+                  padding: "12px 0",
+                  borderRadius: 14,
+                  background: sending ? "hsl(38, 80%, 55%)" : "hsl(38, 100%, 47%)",
+                  border: "none",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: sending ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: sending ? 0.75 : 1,
+                  transition: "opacity 0.2s",
+                }}
+              >
+                {sending && <Loader2 size={15} className="animate-spin" />}
+                {sending ? "Sending…" : "Verify Profile Now"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const isEmailVerified = !!(authUser?.email_confirmed_at);
   const { theme, setTheme } = useTheme();
   const { isDemo } = useDemoMode();
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
@@ -252,7 +476,12 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
           />
         </div>
         <h2 className="text-lg font-bold text-foreground mt-3">{user.firstName} {user.lastName}</h2>
-        <p className="text-sm text-muted-foreground">@{user.username}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-muted-foreground">@{user.username}</p>
+          {isEmailVerified && (
+            <BadgeCheck size={18} color="#3B82F6" />
+          )}
+        </div>
 
         {user.instagramHandle && (
           <button
@@ -287,7 +516,21 @@ export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }:
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-5">
           Badges
         </p>
-        <BadgeStackGroup label="Special"     earned={specialEarned}    locked={specialLocked}    isOwn={true} />
+        {/* Special group — Verified Profile badge always rendered first */}
+        <div style={{ marginBottom: 24 }}>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest" style={{ marginBottom: 10 }}>
+            Special
+            {(specialEarned.length > 0 || isEmailVerified) && (
+              <span className="ml-2 font-normal normal-case" style={{ color: "rgba(255,255,255,0.25)" }}>
+                {specialEarned.length + (isEmailVerified ? 1 : 0)} earned
+              </span>
+            )}
+          </p>
+          <VerifiedProfileBadge isVerified={isEmailVerified} email={authUser?.email ?? undefined} />
+          {specialEarned.length > 0 || specialLocked.length > 0 ? (
+            <BadgeStackGroup label="" earned={specialEarned} locked={specialLocked} isOwn={true} />
+          ) : null}
+        </div>
         <BadgeStackGroup label="Streaks"     earned={streakEarned}     locked={streakLocked}     isOwn={true} />
         <BadgeStackGroup label="Reflections" earned={reflectionEarned} locked={reflectionLocked} isOwn={true} />
         <BadgeStackGroup label="Scripture"   earned={scriptEarned}     locked={scriptLocked}     isOwn={true} />
