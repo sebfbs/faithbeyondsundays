@@ -12,7 +12,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<"google" | "apple" | "email" | null>(null);
+  const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
 
   // Forgot password
@@ -32,19 +32,6 @@ export default function AuthScreen() {
     }
   };
 
-  const handleAppleSignIn = async () => {
-    setError(null);
-    setLoading("apple");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      setError(error.message || "Apple sign-in failed");
-      setLoading(null);
-    }
-  };
-
   const handleEmailSignUp = async () => {
     setError(null);
     if (!email.trim() || !password.trim()) {
@@ -56,10 +43,14 @@ export default function AuthScreen() {
       return;
     }
     setLoading("email");
+    const churchCode = localStorage.getItem('fbs_church_code');
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { church_code: churchCode },
+      },
     });
     if (error) {
       setError(error.message);
@@ -90,8 +81,13 @@ export default function AuthScreen() {
       return;
     }
     setLoading("email");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const churchCode = localStorage.getItem('fbs_church_code');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { church_code: churchCode },
+      },
     });
     if (error) {
       setError(error.message);
@@ -134,22 +130,6 @@ export default function AuthScreen() {
               </svg>
             )}
             Continue with Google
-          </button>
-
-          {/* Apple Sign In */}
-          <button
-            onClick={handleAppleSignIn}
-            disabled={loading !== null}
-            className="w-full flex items-center justify-center gap-3 bg-black text-white font-semibold text-base py-4 rounded-2xl tap-active shadow-card transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {loading === "apple" ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-              </svg>
-            )}
-            Continue with Apple
           </button>
 
           {/* Divider */}
@@ -224,11 +204,11 @@ export default function AuthScreen() {
           <ArrowLeft size={24} className="text-foreground" />
         </button>
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          {forgotMode ? "Reset Password" : isSignUp ? "Create Account" : "Welcome Back"}
+          {forgotMode ? "Sign In with Email" : isSignUp ? "Create Account" : "Welcome Back"}
         </h1>
         <p className="text-sm text-muted-foreground">
           {forgotMode
-            ? "Enter your email and we'll send a reset link"
+            ? "Enter your email and we'll send you a login link"
             : isSignUp ? "Sign up with your email" : "Sign in to your account"}
         </p>
       </div>
@@ -277,15 +257,15 @@ export default function AuthScreen() {
             onClick={() => { setForgotMode(true); setError(null); }}
             className="text-xs font-medium text-amber tap-active ml-1"
           >
-            Forgot password?
+            Forgot password? Get a login link
           </button>
         )}
 
         {/* Reset sent confirmation */}
         {resetSent && (
           <div className="bg-amber/10 rounded-2xl p-4 text-center animate-fade-in">
-            <p className="text-sm font-semibold text-foreground mb-1">Reset link sent!</p>
-            <p className="text-xs text-muted-foreground">Check your email for the password reset link.</p>
+            <p className="text-sm font-semibold text-foreground mb-1">Login link sent!</p>
+            <p className="text-xs text-muted-foreground">Check your email and tap the link to sign in.</p>
           </div>
         )}
 
@@ -313,20 +293,6 @@ export default function AuthScreen() {
               )}
               Continue with Google
             </button>
-            <button
-              onClick={handleAppleSignIn}
-              disabled={loading !== null}
-              className="w-full flex items-center justify-center gap-3 bg-foreground text-background font-medium text-sm py-3.5 rounded-2xl tap-active shadow-card transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {loading === "apple" ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                </svg>
-              )}
-              Continue with Apple
-            </button>
           </div>
         )}
       </div>
@@ -340,7 +306,7 @@ export default function AuthScreen() {
               className="w-full flex items-center justify-center gap-2 bg-amber text-primary-foreground font-semibold text-base py-4 rounded-2xl tap-active shadow-amber transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {loading === "email" ? <Loader2 size={18} className="animate-spin" /> : null}
-              Send Reset Link
+              Send Login Link
             </button>
             <button
               onClick={() => { setForgotMode(false); setResetSent(false); setError(null); }}

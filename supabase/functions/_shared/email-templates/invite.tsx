@@ -20,28 +20,31 @@ interface InviteEmailProps {
   siteName: string
   siteUrl: string
   confirmationUrl: string
+  churchName: string
+  churchLogoUrl: string | null
 }
 
-const LOGO_URL = 'https://imkpdqtjfgxblvzdlvjc.supabase.co/storage/v1/object/public/email-assets/FBS_Logo_Horizon.png'
-
 export const InviteEmail = ({
-  siteName,
   siteUrl,
   confirmationUrl,
+  churchName,
+  churchLogoUrl,
 }: InviteEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>You've been invited to Faith Beyond Sundays</Preview>
+    <Preview>You've been invited to join {churchName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Section style={logoSection}>
-          <Img src={LOGO_URL} alt="Faith Beyond Sundays" width="56" height="56" style={logo} />
-        </Section>
+        {churchLogoUrl && (
+          <Section style={logoSection}>
+            <Img src={churchLogoUrl} alt={churchName} height="80" style={logo} />
+          </Section>
+        )}
         <Heading style={h1}>You've been invited!</Heading>
         <Text style={text}>
           You've been invited to join{' '}
           <Link href={siteUrl} style={link}>
-            <strong>Faith Beyond Sundays</strong>
+            <strong>{churchName}</strong>
           </Link>
           . Click below to accept and create your account.
         </Text>
@@ -63,7 +66,7 @@ export default InviteEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
 const container = { padding: '40px 32px' }
 const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
-const logo = { margin: '0 auto' }
+const logo = { margin: '0 auto', maxWidth: '200px' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,

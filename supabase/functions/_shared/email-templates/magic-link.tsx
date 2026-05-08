@@ -18,25 +18,28 @@ import {
 interface MagicLinkEmailProps {
   siteName: string
   confirmationUrl: string
+  churchName: string
+  churchLogoUrl: string | null
 }
 
-const LOGO_URL = 'https://imkpdqtjfgxblvzdlvjc.supabase.co/storage/v1/object/public/email-assets/FBS_Logo_Horizon.png'
-
 export const MagicLinkEmail = ({
-  siteName,
   confirmationUrl,
+  churchName,
+  churchLogoUrl,
 }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your login link for Faith Beyond Sundays</Preview>
+    <Preview>Your login link for {churchName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Section style={logoSection}>
-          <Img src={LOGO_URL} alt="Faith Beyond Sundays" width="56" height="56" style={logo} />
-        </Section>
-        <Heading style={h1}>Your login link</Heading>
+        {churchLogoUrl && (
+          <Section style={logoSection}>
+            <Img src={churchLogoUrl} alt={churchName} height="80" style={logo} />
+          </Section>
+        )}
+        <Heading style={h1}>Sign in to {churchName}</Heading>
         <Text style={text}>
-          Click below to sign in to Faith Beyond Sundays. This link will expire shortly.
+          Tap the button below to sign in. This link will expire shortly.
         </Text>
         <Section style={buttonSection}>
           <Button style={button} href={confirmationUrl}>
@@ -56,7 +59,7 @@ export default MagicLinkEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
 const container = { padding: '40px 32px' }
 const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
-const logo = { margin: '0 auto' }
+const logo = { margin: '0 auto', maxWidth: '200px' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,

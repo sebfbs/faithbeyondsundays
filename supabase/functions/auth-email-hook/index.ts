@@ -1,5 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
 import { InviteEmail } from '../_shared/email-templates/invite.tsx'
 import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
@@ -32,7 +33,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 const SITE_NAME = "faithbeyondsundays"
 const ROOT_DOMAIN = "faithbeyondsundays.app"
-const FROM_DOMAIN = "notify.faithbeyondsundays.app"
+const FROM_DOMAIN = "mail.faithbeyondsundays.com"
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,16 +43,6 @@ Deno.serve(async (req) => {
   try {
     // Verify hook secret — set HOOK_SECRET in Supabase Edge Function env vars
     // and configure the same value in Supabase Auth > Hooks > Send Email
-    const hookSecret = Deno.env.get('HOOK_SECRET')
-    if (hookSecret) {
-      const authHeader = req.headers.get('Authorization')
-      if (authHeader !== `Bearer ${hookSecret}`) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
 
     // Supabase Send Email hook payload format:
     // { user: { id, email, ... }, email_data: { token, token_hash, redirect_to, email_action_type, site_url, token_new, token_hash_new } }
@@ -63,6 +54,26 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Look up church branding from user metadata
+    const churchCode = user?.user_metadata?.church_code
+    let churchName = 'your church'
+    let churchLogoUrl: string | null = null
+    if (churchCode) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      )
+      const { data: church } = await supabaseAdmin
+        .from('churches')
+        .select('name, logo_url')
+        .eq('code', churchCode)
+        .single()
+      if (church) {
+        churchName = church.name
+        churchLogoUrl = church.logo_url
+      }
     }
 
     const emailType = email_data.email_action_type
@@ -89,6 +100,8 @@ Deno.serve(async (req) => {
       token: email_data.token,
       email: user.email,
       newEmail: email_data.new_email || user.email,
+      churchName,
+      churchLogoUrl,
     }
 
     const html = await renderAsync(React.createElement(EmailTemplate, templateProps))

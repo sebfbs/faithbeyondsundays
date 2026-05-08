@@ -18,33 +18,36 @@ import {
 interface RecoveryEmailProps {
   siteName: string
   confirmationUrl: string
+  churchName: string
+  churchLogoUrl: string | null
 }
 
-const LOGO_URL = 'https://imkpdqtjfgxblvzdlvjc.supabase.co/storage/v1/object/public/email-assets/FBS_Logo_Horizon.png'
-
 export const RecoveryEmail = ({
-  siteName,
   confirmationUrl,
+  churchName,
+  churchLogoUrl,
 }: RecoveryEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Reset your password for Faith Beyond Sundays</Preview>
+    <Preview>Sign in to {churchName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Section style={logoSection}>
-          <Img src={LOGO_URL} alt="Faith Beyond Sundays" width="56" height="56" style={logo} />
-        </Section>
-        <Heading style={h1}>Reset your password</Heading>
+        {churchLogoUrl && (
+          <Section style={logoSection}>
+            <Img src={churchLogoUrl} alt={churchName} height="80" style={logo} />
+          </Section>
+        )}
+        <Heading style={h1}>Sign in to {churchName}</Heading>
         <Text style={text}>
-          We received a request to reset your password. Click below to choose a new one.
+          Tap the button below to sign in. This link will expire shortly.
         </Text>
         <Section style={buttonSection}>
           <Button style={button} href={confirmationUrl}>
-            Reset Password
+            Sign In
           </Button>
         </Section>
         <Text style={footer}>
-          If you didn't request this, you can safely ignore this email. Your password won't change.
+          If you didn't request this, you can safely ignore this email.
         </Text>
       </Container>
     </Body>
@@ -56,7 +59,7 @@ export default RecoveryEmail
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
 const container = { padding: '40px 32px' }
 const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
-const logo = { margin: '0 auto' }
+const logo = { margin: '0 auto', maxWidth: '200px' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,
