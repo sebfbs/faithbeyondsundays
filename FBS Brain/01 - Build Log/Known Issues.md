@@ -2,7 +2,9 @@
 
 ## High Priority
 
-- **Email hook not configured in new Supabase project** — When the Supabase project was switched (Session 7), the Resend + auth email hook setup from Session 1 was left behind on the old Lovable project. Currently: password reset emails fail with "Hook requires authorization token." This blocks password reset AND admin invite emails. Fix: re-configure the auth email hook in the new project dashboard (Auth → Hooks → Send Email) pointing to the `auth-email-hook` edge function, and set `HOOK_SECRET` + `RESEND_API_KEY` in Edge Function secrets.
+- **Verified badge auto-earned on signup** — `email_confirmed_at` is auto-set by Supabase when "Confirm email" is OFF. Badge logic needs to check `manually_verified` column instead. Fix: add `manually_verified boolean default false` to `profiles`, detect OTP sign-in event, set it to true. Files: SQL migration + `ProfileScreen.tsx` + auth state listener.
+
+- **Churchless signup flow** — New members signing up without a church QR code URL are created churchless. Prayer/Give pages stay locked even after manually joining a church mid-session. Likely resolves once QR code → `?church=` URL flow is built. Needs investigation.
 
 - `APNS_BUNDLE_ID` not yet set in Supabase Edge Function secrets — iOS push notifications will error until configured. Note: APNS/FCM is wrong for a PWA anyway — Web Push (VAPID) is the correct path and is planned as a dedicated sprint.
 

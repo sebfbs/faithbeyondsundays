@@ -1,6 +1,32 @@
 # Current Sprint
 
-## Status: Session 11 complete. App short name field ✅, 3-step home screen name-check flow ✅, church onboarding SOP ✅. Next: email hook setup (Resend + Supabase auth hook on new project).
+## Status: Session 12 complete (2026-05-08). Email hook live ✅, church-branded emails ✅, Apple sign-in removed ✅, magic link for forgot password ✅, verified profile badge ✅, signup no longer gates on email confirmation ✅. Next session: fix verified badge logic + community page checkmark + iOS padding issues (see issues below).
+
+---
+
+## Issues Found During Session 12 Testing (fix next session)
+
+### 1. Verified Profile Badge shows earned immediately — needs fix
+- **Problem:** When "Confirm email" is OFF in Supabase, `email_confirmed_at` is auto-set on signup. Our badge checks this field, so every new user sees the badge as already earned without verifying.
+- **Fix:** Add `manually_verified boolean default false` column to `profiles` table. Badge checks this field instead. When user taps the magic link and returns to the app, detect the OTP sign-in event and set `manually_verified = true`.
+- **Files:** SQL migration + `ProfileScreen.tsx` + auth state listener (likely `AuthProvider.tsx`)
+
+### 2. Verified checkmark missing from Community page member list
+- **Problem:** The blue BadgeCheck icon shows next to @username on the profile page when verified, but NOT on the Church Members list in `CommunityScreen.tsx`.
+- **Fix:** Show `<BadgeCheck size={14} color="#3B82F6" />` next to the username for verified members in the church member list. Requires fetching `manually_verified` (once that column exists) or a similar flag.
+
+### 3. Churchless signup — new accounts created without a church
+- **Problem:** Signing up directly (not via a church QR code URL) creates an account with no church attached. Prayer and Give pages remain locked after manually joining a church.
+- **Note:** This will likely resolve once the QR code → `?church=overflow` URL flow is built. Needs verification after QR flow is implemented.
+- **Investigate:** Why do Prayer/Give pages stay locked after a user manually searches and joins a church mid-session?
+
+### 4. Onboarding banners cut off — iOS safe area padding needed
+- **Problem:** Notification banners during onboarding appear too high on screen and are cut off. Needs proper iOS top safe area padding.
+- **Fix:** Add `env(safe-area-inset-top)` padding to banner positioning in the onboarding flow.
+
+### 5. Onboarding wizard progress dots cut off
+- **Problem:** The dot indicators showing onboarding step progress are too high and nearly cut off on iOS.
+- **Fix:** Apply iOS safe area padding to the top of the onboarding wizard container.
 
 ---
 
