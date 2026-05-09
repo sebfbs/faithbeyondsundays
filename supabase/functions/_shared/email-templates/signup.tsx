@@ -26,40 +26,26 @@ interface SignupEmailProps {
 }
 
 export const SignupEmail = ({
-  siteUrl,
-  recipient,
   confirmationUrl,
   churchName,
   churchLogoUrl,
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Welcome to {churchName} — confirm your email</Preview>
+    <Preview>Welcome to {churchName} — one tap to activate your account</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Section style={accentBar} />
         {churchLogoUrl && (
           <Section style={logoSection}>
             <Img src={churchLogoUrl} alt={churchName} height="80" style={logo} />
           </Section>
         )}
         <Heading style={h1}>Welcome to {churchName}!</Heading>
-        <Text style={text}>
-          Thanks for joining{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{churchName}</strong>
-          </Link>
-          . Stay connected to Sunday's message all week long.
-        </Text>
-        <Text style={text}>
-          Confirm your email (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) to get started:
-        </Text>
+        <Text style={text}>One tap and you're in.</Text>
         <Section style={buttonSection}>
           <Button style={button} href={confirmationUrl}>
-            Get Started
+            Activate My Account
           </Button>
         </Section>
         <Text style={footer}>
@@ -72,31 +58,36 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
-const container = { padding: '40px 32px' }
-const logoSection = { textAlign: 'center' as const, marginBottom: '24px' }
+const main = { backgroundColor: '#FFFBF4', fontFamily: "'DM Sans', 'Open Sans', Arial, sans-serif" }
+const container = { backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0 0 40px', maxWidth: '520px', margin: '32px auto' }
+const accentBar = { backgroundColor: '#1D2333', height: '6px', borderRadius: '16px 16px 0 0' }
+const logoSection = { textAlign: 'center' as const, padding: '32px 0 16px' }
 const logo = { margin: '0 auto', maxWidth: '200px' }
 const h1 = {
-  fontSize: '24px',
+  fontSize: '26px',
   fontWeight: 'bold' as const,
   color: '#1D2333',
   margin: '0 0 16px',
+  padding: '0 32px',
+  lineHeight: '1.3',
 }
 const text = {
   fontSize: '15px',
-  color: '#7A8299',
-  lineHeight: '1.6',
-  margin: '0 0 20px',
+  color: '#4B5563',
+  lineHeight: '1.7',
+  margin: '0 0 16px',
+  padding: '0 32px',
 }
-const link = { color: '#E09A00', textDecoration: 'underline' }
-const buttonSection = { textAlign: 'center' as const, margin: '8px 0 32px' }
+const link = { color: '#F59E0B', textDecoration: 'underline' }
+const buttonSection = { textAlign: 'center' as const, margin: '24px 0 32px' }
 const button = {
-  backgroundColor: '#E09A00',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: '600' as const,
-  borderRadius: '16px',
-  padding: '14px 28px',
+  backgroundColor: '#ffffff',
+  color: '#1D2333',
+  fontSize: '16px',
+  fontWeight: '700' as const,
+  borderRadius: '50px',
+  padding: '16px 36px',
   textDecoration: 'none',
+  border: '2px solid #1D2333',
 }
-const footer = { fontSize: '12px', color: '#9ca3af', margin: '24px 0 0' }
+const footer = { fontSize: '12px', color: '#9ca3af', margin: '0', padding: '0 32px' }

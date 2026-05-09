@@ -51,7 +51,7 @@ function VerifiedProfileBadge({ isVerified, email }: { isVerified: boolean; emai
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: `${window.location.origin}/verify-profile` },
       });
       if (error) {
         console.error("Verify OTP error:", error);
@@ -262,9 +262,24 @@ function VerifiedProfileBadge({ isVerified, email }: { isVerified: boolean; emai
 export default function ProfileScreen({ onBack, user, onSignOut, onUpdateUser }: ProfileScreenProps) {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const isEmailVerified = !!(authUser?.email_confirmed_at);
   const { theme, setTheme } = useTheme();
   const { isDemo } = useDemoMode();
+
+  const { data: verifiedData } = useQuery({
+    queryKey: ["profile-manually-verified", authUser?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("manually_verified")
+        .eq("user_id", authUser!.id)
+        .single();
+      return data as any;
+    },
+    enabled: !!authUser && !isDemo,
+    refetchOnWindowFocus: true,
+  });
+
+  const isEmailVerified = !!(verifiedData?.manually_verified);
   const [daysModal, setDaysModal] = useState<NotificationType | null>(null);
   const [timeModal, setTimeModal] = useState<NotificationType | null>(null);
   const { preferences, updatePreference } = useNotificationPreferences();
