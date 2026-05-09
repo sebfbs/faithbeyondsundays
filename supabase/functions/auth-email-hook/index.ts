@@ -92,6 +92,9 @@ Deno.serve(async (req) => {
     const redirectTo = email_data.redirect_to || `https://${ROOT_DOMAIN}`
     const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${email_data.token_hash}&type=${emailType}&redirect_to=${encodeURIComponent(redirectTo)}`
 
+    // Detect profile verification magic links (vs regular sign-in magic links)
+    const isVerification = emailType === 'magiclink' && redirectTo.includes('/verify-profile')
+
     const templateProps = {
       siteName: SITE_NAME,
       siteUrl: `https://${ROOT_DOMAIN}`,
@@ -102,6 +105,7 @@ Deno.serve(async (req) => {
       newEmail: email_data.new_email || user.email,
       churchName,
       churchLogoUrl,
+      isVerification,
     }
 
     const html = await renderAsync(React.createElement(EmailTemplate, templateProps))
@@ -126,7 +130,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
         to: [user.email],
-        subject: EMAIL_SUBJECTS[emailType] || 'Notification',
+        subject: isVerification ? 'Verify your profile' : (EMAIL_SUBJECTS[emailType] || 'Notification'),
         html,
         text,
       }),

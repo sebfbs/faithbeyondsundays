@@ -234,7 +234,7 @@ function VerifiedProfileBadge({ isVerified, email }: { isVerified: boolean; emai
                   width: "100%",
                   padding: "12px 0",
                   borderRadius: 14,
-                  background: sending ? "hsl(38, 80%, 55%)" : "hsl(38, 100%, 47%)",
+                  background: sending ? "hsl(43, 78%, 52%)" : "hsl(43, 78%, 61%)",
                   border: "none",
                   color: "white",
                   fontWeight: 700,
