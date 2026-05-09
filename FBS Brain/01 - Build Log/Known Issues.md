@@ -2,7 +2,7 @@
 
 ## High Priority
 
-- **Verified badge auto-earned on signup** — `email_confirmed_at` is auto-set by Supabase when "Confirm email" is OFF. Badge logic needs to check `manually_verified` column instead. Fix: add `manually_verified boolean default false` to `profiles`, detect OTP sign-in event, set it to true. Files: SQL migration + `ProfileScreen.tsx` + auth state listener.
+- **Verified checkmark missing from Community page member list** — `CommunityScreen.tsx` doesn't show the blue BadgeCheck next to verified members' usernames. Requires fetching `manually_verified` from `profiles`. Fix next session.
 
 - **Churchless signup flow** — New members signing up without a church QR code URL are created churchless. Prayer/Give pages stay locked even after manually joining a church mid-session. Likely resolves once QR code → `?church=` URL flow is built. Needs investigation.
 
