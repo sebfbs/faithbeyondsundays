@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Medal, Crown, Users, Flame, BookOpen, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Medal, Crown, Users, Flame, BookOpen, MoreHorizontal, BadgeCheck } from "lucide-react";
 import ReportBlockSheet from "./ReportBlockSheet";
 import { type CommunityMember } from "./communityData";
 import { useAccentColors } from "./themeColors";
@@ -132,7 +132,12 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
                 </span>
               )}
             </span>
-            <span className="text-xs font-medium text-muted-foreground">@{member.username}</span>
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-0.5">
+              @{member.username}
+              {member.manually_verified && (
+                <BadgeCheck size={13} className="text-blue-500 shrink-0" />
+              )}
+            </span>
           </div>
 
           {member.instagramHandle && (
