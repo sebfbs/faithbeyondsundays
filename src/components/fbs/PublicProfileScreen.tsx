@@ -7,8 +7,6 @@ import { getBadgeTier, getUserBadgeConfig, BADGE_TIERS, type UserBadgeConfig } f
 import BadgeStackGroup, { type BadgeItem } from "./BadgeStackGroup";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
-import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
 import { getAvatarColor } from "./avatarColors";
 
 interface PublicProfileScreenProps {
@@ -33,6 +31,19 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
       return ((data || []) as any[]).map((r) => getBadgeTier(r.milestone)).filter(Boolean) as ReturnType<typeof getBadgeTier>[];
     },
     enabled: !!member.userId && !isDemo,
+  });
+
+  const { data: churchLogoUrl } = useQuery({
+    queryKey: ["church-logo", churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("churches")
+        .select("logo_url")
+        .eq("id", churchId!)
+        .maybeSingle();
+      return data?.logo_url ?? null;
+    },
+    enabled: !!churchId && !isDemo,
   });
 
   const { data: earnedUserBadges = [] } = useQuery({
@@ -109,9 +120,17 @@ export default function PublicProfileScreen({ member, onBack, isDemo, churchId }
 
         <div className="flex items-center flex-wrap gap-2 mt-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
-            <span className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center relative">
-              <img src={fbsBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <img src={fbsLogoWhite} alt="" className="relative w-3 h-3" />
+            <span
+              className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center shrink-0"
+              style={{ background: churchLogoUrl ? undefined : colors.accentBg }}
+            >
+              {churchLogoUrl ? (
+                <img src={churchLogoUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[8px] font-bold text-white">
+                  {(member.churchName || "C")[0].toUpperCase()}
+                </span>
+              )}
             </span>
             <span className="text-xs font-medium text-muted-foreground">@{member.username}</span>
           </div>
