@@ -233,7 +233,7 @@ export default function OnboardingScreen() {
         className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
         style={{ background: "hsl(var(--background))" }}
       >
-        <div className="pt-14 pb-6">
+        <div className="pb-6" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}>
           <ProgressDots current="details" />
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-2xl bg-amber-bg flex items-center justify-center">
@@ -397,7 +397,7 @@ export default function OnboardingScreen() {
       className="app-container mx-auto flex flex-col min-h-screen px-6 animate-fade-in !max-w-[430px]"
       style={{ background: "hsl(var(--background))" }}
     >
-      <div className="pt-14 pb-4">
+      <div className="pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}>
         <ProgressDots current={currentStep} />
       </div>
 
@@ -465,7 +465,7 @@ export default function OnboardingScreen() {
         style={{ background: "hsl(var(--background))" }}
       >
         <style>{tour2aStyles}</style>
-        <div className="pt-14 pb-4">
+        <div className="pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}>
           <ProgressDots current="tour2a" />
         </div>
 
@@ -545,7 +545,7 @@ export default function OnboardingScreen() {
         className="app-container mx-auto flex flex-col min-h-screen px-6 !max-w-[430px]"
         style={{ background: "hsl(var(--background))" }}
       >
-        <div className="pt-14 pb-4">
+        <div className="pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}>
           <ProgressDots current="tour2" />
         </div>
 

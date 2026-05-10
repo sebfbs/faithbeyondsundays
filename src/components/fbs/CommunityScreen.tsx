@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Users, Share2, Loader2, MessageCircle, ChevronRight } from "lucide-react";
+import { ArrowLeft, Users, Share2, Loader2, MessageCircle, ChevronRight, BadgeCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DEMO_MEMBERS, markInviteSent, type CommunityMember } from "./communityData";
 import { DEMO_GROUPS } from "./demoData";
@@ -147,6 +147,7 @@ export default function CommunityScreen({
           instagramHandle: p.instagram_handle || undefined,
           reflectionMilestone: badgeMap.get(p.user_id),
           userId: p.user_id,
+          manually_verified: (p as any).manually_verified ?? false,
         })) as CommunityMember[];
     },
     enabled: !isDemo && !!userChurchCode,
@@ -271,6 +272,9 @@ export default function CommunityScreen({
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
                   @{member.username}
+                  {member.manually_verified && (
+                    <BadgeCheck size={13} className="inline ml-0.5 relative -top-px text-blue-500" />
+                  )}
                   {member.role === "pastor" && (
                     <span
                       className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold"

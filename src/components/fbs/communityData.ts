@@ -17,6 +17,8 @@ export interface CommunityMember {
   role?: "pastor";
   instagramHandle?: string;
   userId?: string;
+  manually_verified?: boolean;
+  reflectionMilestone?: number;
 }
 
 export const DEMO_MEMBERS: CommunityMember[] = [
