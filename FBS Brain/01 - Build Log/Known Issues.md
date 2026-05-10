@@ -2,7 +2,6 @@
 
 ## High Priority
 
-- **Verified checkmark missing from Community page member list** — `CommunityScreen.tsx` doesn't show the blue BadgeCheck next to verified members' usernames. Requires fetching `manually_verified` from `profiles`. Fix next session.
 
 - **Churchless signup flow** — New members signing up without a church QR code URL are created churchless. Prayer/Give pages stay locked even after manually joining a church mid-session. Likely resolves once QR code → `?church=` URL flow is built. Needs investigation.
 
