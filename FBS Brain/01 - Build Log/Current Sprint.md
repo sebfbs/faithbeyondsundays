@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Session 14 complete (2026-05-10). Verified checkmark now shows in community member list AND on public profile screen ✅. iOS safe area padding fixed for all onboarding steps ✅. Church logo replaces FBS logo on public profile username pill ✅. Next session: churchless signup investigation + white-label sign-up screen + QR code flow.
+## Status: Session 15 complete (2026-05-11). Churchless signup eliminated by design — `/?church=overflow` now goes straight into the app, church auto-linked. Find Your Church screen built for users with no church code. Church requests flow (DB + email + platform dashboard). `joined_via` tracking on all profiles. Church Onboarding Checklist added to FBS Brain. Next session: church landing page (PWA install instructions template).
 
 ---
 
@@ -155,7 +155,14 @@
 
 ## What's Next
 
-1. **`app_short_name` field for long church names** *(next task)*
+1. **Church landing page** *(next session)*
+   - Dedicated design session for the page members see when they scan a church QR code or open the church link
+   - Device-specific PWA install instructions (iOS Safari → Share → Add to Home Screen, Android Chrome → ⋮ → Add to Home Screen, Chrome on iOS → "Open in Safari")
+   - Church logo + name displayed at top
+   - Lives at `/?church=[code]` — currently routes straight to the app; this replaces it with a proper install-first experience
+   - `ChurchLandingPage.tsx` already built as a placeholder — needs proper visual design and real device screenshots/guidance
+
+2. **`app_short_name` field for long church names** *(done — see below)*
    - Add optional `app_short_name` column to `churches` table
    - Edit field on `PlatformChurchDetail.tsx` church detail page (platform admin sets it)
    - `api/manifest.ts` uses `app_short_name` if set, falls back to first 2 words of church name
