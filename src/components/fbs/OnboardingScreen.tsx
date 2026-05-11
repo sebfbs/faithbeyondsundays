@@ -189,9 +189,13 @@ export default function OnboardingScreen() {
     if (!user || !username || usernameError) return;
     setSaving(true);
 
+    const churchId = churchIdFromUrl || localStorage.getItem("fbs_church_id") || null;
+    const joinedVia = localStorage.getItem("fbs_joined_via") || "church_link";
+
     const { error } = await supabase.from("profiles").insert({
       user_id: user.id,
-      church_id: churchIdFromUrl || null,
+      church_id: churchId,
+      joined_via: joinedVia,
       username,
       first_name: firstName.trim() || null,
       last_name: lastName.trim() || null,
