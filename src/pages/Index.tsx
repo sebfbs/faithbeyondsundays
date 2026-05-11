@@ -94,6 +94,24 @@ export default function Index() {
   const prevSermons: SermonUIData[] = isDemo ? DEMO_PREVIOUS_SERMONS : (previousSermons || []);
   const journalEntries: JournalEntry[] = isDemo ? demoJournalEntries : dbJournalEntries;
 
+  // Ensure church info is in localStorage from URL param (fallback for direct PWA opens)
+  useEffect(() => {
+    const churchCode = new URLSearchParams(location.search).get("church");
+    if (!churchCode || localStorage.getItem("fbs_church_id")) return;
+    supabase
+      .from("churches")
+      .select("id, name")
+      .eq("code", churchCode)
+      .eq("is_active", true)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        localStorage.setItem("fbs_church_id", data.id);
+        localStorage.setItem("fbs_church_name", data.name);
+        localStorage.setItem("fbs_church_code", churchCode);
+      });
+  }, []);
+
   // Log app_open event once per session
   useEffect(() => {
     if (!profile || isDemo || !profile.church_id) return;

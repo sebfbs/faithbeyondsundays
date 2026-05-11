@@ -1,12 +1,23 @@
 import { usePlatformAnalytics } from "@/hooks/usePlatformAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Church, Users, BookOpen, Hand, Smartphone, Loader2, UserCheck, UserCheck2, BarChart3 } from "lucide-react";
+import { Church, Users, BookOpen, Hand, Smartphone, Loader2, UserCheck, UserCheck2, BarChart3, CheckCircle2, Circle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import FinancialOverview from "@/components/platform/FinancialOverview";
 import EngagementMetrics from "@/components/platform/EngagementMetrics";
 import PlatformHealthCard from "@/components/platform/PlatformHealthCard";
+
+interface ChurchRequest {
+  id: string;
+  church_name: string;
+  requester_email: string;
+  requester_name: string | null;
+  contacted: boolean;
+  created_at: string;
+}
 
 export default function PlatformDashboard() {
   const analytics = usePlatformAnalytics();
@@ -20,6 +31,24 @@ export default function PlatformDashboard() {
   const avgMembersPerChurch = activeChurches > 0 ? (totalMembers / activeChurches).toFixed(1) : "—";
 
   const [chartMetric, setChartMetric] = useState<"signups" | "app_open" | "give_tap">("signups");
+
+  const { data: churchRequests = [], refetch: refetchRequests } = useQuery<ChurchRequest[]>({
+    queryKey: ["church-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("church_requests")
+        .select("id, church_name, requester_email, requester_name, contacted, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as ChurchRequest[];
+    },
+    staleTime: 1000 * 60,
+  });
+
+  const toggleContacted = async (id: string, current: boolean) => {
+    await supabase.from("church_requests").update({ contacted: !current }).eq("id", id);
+    refetchRequests();
+  };
 
   const chartData = useMemo(() => {
     const days = 30;
@@ -192,6 +221,55 @@ export default function PlatformDashboard() {
                 <div key={i} className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">{c.name}</span>
                   <span className="text-sm font-medium text-slate-400">{c.events} events</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Church Requests */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm text-slate-300">Church Requests</CardTitle>
+            {churchRequests.length > 0 && (
+              <span className="text-xs text-slate-500">
+                {churchRequests.filter((r) => !r.contacted).length} pending
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {churchRequests.length === 0 ? (
+            <p className="text-sm text-slate-500">No church requests yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {churchRequests.map((r) => (
+                <div key={r.id} className="flex items-start justify-between gap-3 py-2 border-b border-slate-800 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-medium ${r.contacted ? "text-slate-500" : "text-slate-200"}`}>
+                      {r.church_name}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">{r.requester_email}</p>
+                    {r.requester_name && (
+                      <p className="text-xs text-slate-600">{r.requester_name}</p>
+                    )}
+                    <p className="text-xs text-slate-700 mt-0.5">
+                      {format(new Date(r.created_at), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleContacted(r.id, r.contacted)}
+                    className="flex-shrink-0 mt-0.5 tap-active"
+                    title={r.contacted ? "Mark as not contacted" : "Mark as contacted"}
+                  >
+                    {r.contacted ? (
+                      <CheckCircle2 size={18} className="text-emerald-500" />
+                    ) : (
+                      <Circle size={18} className="text-slate-600" />
+                    )}
+                  </button>
                 </div>
               ))}
             </div>

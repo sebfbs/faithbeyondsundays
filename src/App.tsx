@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/fbs/AuthProvider";
 import DemoModeBadge from "@/components/fbs/DemoModeBadge";
 import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
+import ChurchGateway from "./pages/ChurchGateway";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import ResetPassword from "./pages/ResetPassword";
@@ -61,7 +62,8 @@ const App = () => {
           <DemoModeProvider>
             <DemoModeBadge />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<ChurchGateway />} />
+              <Route path="/app" element={<Index />} />
               <Route path="/home" element={<Index />} />
               <Route path="/sermon" element={<Index />} />
               <Route path="/journal" element={<Index />} />

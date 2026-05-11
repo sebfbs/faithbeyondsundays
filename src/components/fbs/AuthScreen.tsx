@@ -5,9 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Mode = "welcome" | "signin" | "signup";
 
+function getChurchBranding() {
+  const name = localStorage.getItem("fbs_church_name");
+  const logo = localStorage.getItem("fbs_church_logo") || null;
+  return name ? { name, logo } : null;
+}
+
 export default function AuthScreen() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("welcome");
+  const [churchBranding] = useState(getChurchBranding);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -106,10 +113,33 @@ export default function AuthScreen() {
             "linear-gradient(180deg, hsl(207, 65%, 62%) 0%, hsl(207, 55%, 75%) 25%, hsl(22, 55%, 88%) 60%, hsl(40, 30%, 97%) 100%)",
         }}
       >
-        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <p className="text-lg font-semibold max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
-            Stay connected to Sunday's message all week long
-          </p>
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
+          {churchBranding ? (
+            <>
+              {churchBranding.logo ? (
+                <img
+                  src={churchBranding.logo}
+                  alt={churchBranding.name}
+                  className="w-20 h-20 rounded-2xl shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-white/25 flex items-center justify-center shadow-lg">
+                  <span className="text-3xl font-bold text-white">{churchBranding.name[0]}</span>
+                </div>
+              )}
+              <div>
+                <p className="text-xl font-bold text-white">Welcome to</p>
+                <p className="text-xl font-bold text-white">{churchBranding.name}</p>
+              </div>
+              <p className="text-sm text-white/75 max-w-[240px] leading-relaxed">
+                Stay connected to Sunday's message all week long
+              </p>
+            </>
+          ) : (
+            <p className="text-lg font-semibold max-w-[260px] leading-relaxed" style={{ color: "hsl(0, 0%, 100%)" }}>
+              Stay connected to Sunday's message all week long
+            </p>
+          )}
         </div>
         <div className="w-full max-w-[430px] px-8 pb-12 space-y-3">
           {/* Google Sign In */}
