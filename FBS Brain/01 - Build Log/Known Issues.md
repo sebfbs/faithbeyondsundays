@@ -2,6 +2,9 @@
 
 ## High Priority
 
+- **`send-church-request` Edge Function not deployed** — The church request form ("Don't see your church?") in FindChurchScreen returns an error for every user right now. Edge Functions are never deployed automatically on git push. Fix: run `npx supabase functions deploy send-church-request` in terminal. Found by automated review 2026-05-11.
+
+- ~~**Church branding doesn't show for first-time QR code visitors**~~ — FIXED ✅ Session 16. `ChurchLandingPage` now renders for `/?church=` URLs and writes church info to localStorage before the user ever sees the sign-up screen.
 
 - **Churchless signup flow** — New members signing up without a church QR code URL are created churchless. Prayer/Give pages stay locked even after manually joining a church mid-session. Likely resolves once QR code → `?church=` URL flow is built. Needs investigation.
 

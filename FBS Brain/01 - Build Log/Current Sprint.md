@@ -1,6 +1,14 @@
 # Current Sprint
 
-## Status: Session 15 complete (2026-05-11). Churchless signup eliminated by design — `/?church=overflow` now goes straight into the app, church auto-linked. Find Your Church screen built for users with no church code. Church requests flow (DB + email + platform dashboard). `joined_via` tracking on all profiles. Church Onboarding Checklist added to FBS Brain. Next session: church landing page (PWA install instructions template).
+## Status: Session 16 complete (2026-05-11). Church landing page wired up — `/?church=overflow` now shows install instructions instead of going straight into the app. iOS PWA steps corrected to match real device flow (··· → Share → View More → Add to Home Screen → Add). Next: test on real iPhone, deploy `send-church-request` Edge Function, email hook setup.
+
+## ⚠️ Deployment Pending — Run Before Sharing Find Your Church With Anyone
+
+```bash
+npx supabase functions deploy send-church-request
+```
+
+The church request form ("Don't see your church?") is broken until this is deployed. Found by automated review 2026-05-11.
 
 ---
 
