@@ -39,16 +39,19 @@ function IOSSafariInstructions({ churchName }: { churchName: string }) {
       </div>
       <div className="space-y-4">
         <Step number={1}>
-          Tap the <span className="inline-flex items-center gap-1 font-semibold text-blue-600"><ShareIcon /> Share</span> button at the bottom of Safari
+          Tap the <span className="font-semibold text-gray-900 tracking-widest">···</span> button at the bottom right of Safari
         </Step>
         <Step number={2}>
-          Scroll down and tap <span className="font-semibold text-gray-900">"Add to Home Screen"</span>
+          Tap <span className="font-semibold text-gray-900">"Share"</span> from the menu
         </Step>
         <Step number={3}>
-          Tap <span className="font-semibold text-gray-900">"Add"</span> in the top right corner
+          Scroll down and tap <span className="font-semibold text-gray-900">"View More"</span>
         </Step>
         <Step number={4}>
-          Open <span className="font-semibold text-gray-900">{churchName}</span> from your home screen to get started
+          Tap <span className="font-semibold text-gray-900">"Add to Home Screen"</span>
+        </Step>
+        <Step number={5}>
+          Tap <span className="font-semibold text-gray-900">"Add"</span> — you're in. Open <span className="font-semibold text-gray-900">{churchName}</span> from your home screen to get started
         </Step>
       </div>
     </div>
@@ -108,7 +111,7 @@ function DesktopMessage() {
       <div className="text-center space-y-2">
         <p className="text-base font-bold text-gray-900">Open on Your Phone</p>
         <p className="text-sm text-gray-600 leading-relaxed">
-          Scan the QR code your church shared, or open this link on your iPhone or Android phone to install the app.
+          Open this link on your iPhone or Android phone to install the app.
         </p>
       </div>
     </div>
