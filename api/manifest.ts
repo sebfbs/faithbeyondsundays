@@ -38,7 +38,7 @@ export default async function handler(req: any, res: any) {
       name: churchName,
       short_name: shortName,
       description: `${churchName} — daily faith content`,
-      start_url: `/?church=${encodeURIComponent(church)}`,
+      start_url: `/app`,
       scope: "/",
       display: "standalone",
       orientation: "portrait",
