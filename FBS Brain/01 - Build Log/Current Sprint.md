@@ -1,6 +1,6 @@
 # Current Sprint
 
-## Status: Session 16 complete (2026-05-11). Church landing page wired up — `/?church=overflow` now shows install instructions instead of going straight into the app. iOS PWA steps corrected to match real device flow (··· → Share → View More → Add to Home Screen → Add). Next: test on real iPhone, deploy `send-church-request` Edge Function, email hook setup.
+## Status: Session 16 complete (2026-05-11). Church landing page fully working end-to-end — `/?church=overflow` shows iOS install instructions, PWA installs correctly, launches into the app (not the landing page). Two iOS PWA bugs fixed: wrong start_url in manifest + Safari ignores manifest start_url so standalone mode detection added. Next: deploy `send-church-request` Edge Function, email hook setup.
 
 ## ⚠️ Deployment Pending — Run Before Sharing Find Your Church With Anyone
 
