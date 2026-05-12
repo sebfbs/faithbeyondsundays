@@ -167,6 +167,11 @@ export default function ChurchLandingPage() {
   const [device] = useState<Device>(detectDevice);
 
   useEffect(() => {
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      navigate("/app", { replace: true });
+      return;
+    }
+
     if (!churchCode) {
       navigate("/", { replace: true });
       return;
