@@ -163,26 +163,48 @@ The church request form ("Don't see your church?") is broken until this is deplo
 
 ## What's Next
 
-1. **Church landing page** *(next session)*
-   - Dedicated design session for the page members see when they scan a church QR code or open the church link
-   - Device-specific PWA install instructions (iOS Safari → Share → Add to Home Screen, Android Chrome → ⋮ → Add to Home Screen, Chrome on iOS → "Open in Safari")
-   - Church logo + name displayed at top
-   - Lives at `/?church=[code]` — currently routes straight to the app; this replaces it with a proper install-first experience
-   - `ChurchLandingPage.tsx` already built as a placeholder — needs proper visual design and real device screenshots/guidance
+### 🚀 App Store Distribution — Active Sprint
 
-2. **`app_short_name` field for long church names** *(done — see below)*
-   - Add optional `app_short_name` column to `churches` table
-   - Edit field on `PlatformChurchDetail.tsx` church detail page (platform admin sets it)
-   - `api/manifest.ts` uses `app_short_name` if set, falls back to first 2 words of church name
-   - Example: "Cornerstone Community Church" → admin sets "Cornerstone" or "CCC"
+Full decision + rationale logged in Decisions Log (2026-05-12). Sebastian has an Apple Developer account. Build plan:
 
-2. **Email hook setup** — Re-configure Resend + Supabase auth email hook on the new project. Currently broken — "Hook requires authorization token." Blocks password reset and admin invite emails.
+#### Phase 1 — Capacitor Setup *(do first)*
+- Install Capacitor into the existing React/Vite app
+- Configure iOS project (`ios/` folder generated)
+- Verify the app builds and runs in Xcode simulator
+- No code changes to the React app — Capacitor wraps it as-is
+- **Estimated:** 1 session
+
+#### Phase 2 — Per-Church Build Config Script
+- Script takes church name, code, and logo → outputs correct `capacitor.config.ts`, bundle ID (`com.faithbeyondsundays.[code]`), and full iOS icon set (all required sizes)
+- Makes adding each new church repeatable and fast
+- **Estimated:** 1 session
+
+#### Phase 3 — First App Store Submission (Overflow Church)
+- Apple Developer account: ✅ (Sebastian has one)
+- App Store Connect: create app entry for Overflow Church
+- Build `.ipa` from Xcode, submit for review
+- App Store listing: name, description, screenshots, age rating
+- Review notes: explicitly explain per-church content model to satisfy Guideline 4.3
+- **Estimated:** 1 session setup + 2-4 days Apple review
+
+#### Phase 4 — Fastlane Automation *(defer until 3+ churches)*
+- Automates build + App Store submission to a single command
+- Makes scaling to many churches operationally sane
+- **Estimated:** 1-2 sessions
+
+---
+
+### Remaining Backlog (post-App Store setup)
+
+1. ~~**Church landing page**~~ — Superseded by App Store distribution. PWA landing page no longer the primary install path.
+
+2. ~~**Email hook setup**~~ — DONE ✅ (Session 12, 2026-05-08)
 
 3. **White-label sign-up screen** — Auth screen reads `?church=` from URL, fetches and shows that church's logo + name. Member auto-linked to that church on sign-up.
 
-4. **End-to-end app walkthrough** — Walk through every screen as a member, document what works vs what's broken.
+4. **End-to-end app walkthrough** — Walk through every screen as a real member, document what works vs what's broken.
 
-5. **QR code → church landing page flow** — PWA install wizard per device type. Full spec in `02 - Backlog/PWA Install Flow.md`.
+5. **Churchless signup investigation** — Prayer/Give pages stay locked after manually joining a church mid-session.
 
 ---
 

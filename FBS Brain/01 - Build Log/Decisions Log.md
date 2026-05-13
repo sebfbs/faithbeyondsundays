@@ -4,6 +4,36 @@ _Decisions already made — don't relitigate these._
 
 ---
 
+## 2026-05-12 — App Store Distribution (Replaces PWA-Only)
+
+**Decision:** FBS will distribute via the Apple App Store (and Google Play) as per-church white-labeled native apps — not PWA-only.
+
+**Why:** Asking 300 congregants to scan a QR code, land on a web page, and follow "Add to Home Screen" instructions has too much drop-off. It looks unpolished. App Store distribution is the standard expectation. Apple review is 2-4 days (not 3 weeks as previously assumed), making the timeline acceptable.
+
+**Architecture:** Capacitor wraps the existing React/TypeScript app in a native shell. No rewrite needed. Each church gets its own build with a unique bundle ID, app name, and icon. Same codebase, different config per church.
+
+**Apple Guideline 4.3 (template apps):** FBS passes this because each church app serves genuinely different content — different sermons, Daily Sparks (AI-generated from that church's uploads), members, community groups, announcements, and prayer requests. This is not a skin swap; it is a different content experience. Each App Store submission should include review notes explaining this explicitly.
+
+**What needs to be built:**
+1. Capacitor installed and configured on the existing codebase
+2. Per-church build config script — takes church name, code, and logo → outputs a build with correct bundle ID, app name, and icon set
+3. Fastlane for automated build + App Store submission (reduces new church onboarding from hours to a script run)
+4. APNs push notification certificates per church app
+5. App Store Connect entry per church (name, description, screenshots)
+
+**What this replaces:**
+- The PWA church landing page (`ChurchLandingPage.tsx`) and "Add to Home Screen" wizard — no longer the primary install path
+- The dynamic PWA manifest (`/api/manifest`) — still useful for web users but no longer the core distribution mechanism
+- The QR code still exists but now deep-links to the App Store listing instead of the landing page
+
+**What stays the same:**
+- The entire React app codebase — untouched
+- Supabase backend, Edge Functions, all data
+- Church branding (logo, name) pulled dynamically at runtime from Supabase — same as before
+- The `?church=` URL param flow — still used for deep linking into the correct church after app install
+
+---
+
 ## 2026-05-05 — Logo Upload, Dynamic Manifest, and QR Code Are One Flow
 
 **Decision:** Church logo upload, the dynamic PWA manifest, and the QR code → install flow are not three separate features. They are one interconnected system. Build them as a unit.

@@ -41,9 +41,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify hook secret — set HOOK_SECRET in Supabase Edge Function env vars
-    // and configure the same value in Supabase Auth > Hooks > Send Email
-
     // Supabase Send Email hook payload format:
     // { user: { id, email, ... }, email_data: { token, token_hash, redirect_to, email_action_type, site_url, token_new, token_hash_new } }
     const payload = await req.json()
