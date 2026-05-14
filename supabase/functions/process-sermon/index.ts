@@ -74,6 +74,7 @@ serve(async (req) => {
               worker_id: null,
               locked_until: null,
               current_stage: null,
+              error_details: null,
               error_message: "Auto-recovered from stale processing state",
             })
             .eq("id", stale.id);
@@ -159,17 +160,25 @@ serve(async (req) => {
     let transcriptText = existingTranscript?.full_text || "";
     let wordTimings: { text: string; start: number; end: number }[] = [];
 
-    if (!existingTranscript) {
-      await refreshLease("transcribing");
-      await supabase
-        .from("sermons")
-        .update({ status: "transcribing" })
-        .eq("id", sermon.id);
+    // Already submitted to ElevenLabs async — don't re-send while lease is still valid
+    if (!existingTranscript && job.error_details?.elevenlabs_request_id) {
+      const leaseValid = job.locked_until && new Date(job.locked_until) > new Date();
+      if (leaseValid) {
+        console.log(`Job ${job.id} already submitted to ElevenLabs (request_id: ${job.error_details.elevenlabs_request_id}), waiting for webhook`);
+        return new Response(JSON.stringify({ message: "Waiting for ElevenLabs webhook" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`Job ${job.id} ElevenLabs request stale (lease expired), re-sending`);
+    }
 
+    if (!existingTranscript) {
       console.log("Generating signed URL for:", sermon.storage_path);
+      // 2-hour expiry — gives ElevenLabs time to queue and download before URL expires
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from("sermon-media")
-        .createSignedUrl(sermon.storage_path!, 3600);
+        .createSignedUrl(sermon.storage_path!, 7200);
 
       if (signedUrlError || !signedUrlData?.signedUrl) {
         await failJob(supabase, job.id, "Failed to generate signed URL for media file");
@@ -180,12 +189,14 @@ serve(async (req) => {
         });
       }
 
-      console.log("Transcribing with ElevenLabs via signed URL...");
+      console.log("Submitting async transcription to ElevenLabs...");
       const transcribeForm = new FormData();
       transcribeForm.append("model_id", "scribe_v2");
       transcribeForm.append("cloud_storage_url", signedUrlData.signedUrl);
       transcribeForm.append("tag_audio_events", "false");
       transcribeForm.append("diarize", "false");
+      transcribeForm.append("webhook", "true");
+      transcribeForm.append("webhook_metadata", JSON.stringify({ job_id: job.id, sermon_id: sermon.id }));
 
       const transcribeResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
         method: "POST",
@@ -204,38 +215,30 @@ serve(async (req) => {
         });
       }
 
-      const transcription = await transcribeResponse.json();
-      transcriptText = transcription.text || "";
-      wordTimings = (transcription.words || []).map((w: any) => ({
-        text: w.text,
-        start: w.start,
-        end: w.end,
-      }));
+      const asyncResponse = await transcribeResponse.json();
+      const elevenlabsRequestId = asyncResponse.request_id;
+      console.log(`Async transcription submitted for sermon ${sermon.id}, ElevenLabs request_id: ${elevenlabsRequestId}`);
 
-      const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
-      const lastWord = wordTimings.length > 0 ? wordTimings[wordTimings.length - 1] : null;
-      const firstWord = wordTimings.length > 0 ? wordTimings[0] : null;
-      console.log(`Transcript stats: ${wordCount} words in text, ${wordTimings.length} words with timings`);
-      console.log(`Timing range: ${firstWord ? firstWord.start + 's' : 'none'} → ${lastWord ? lastWord.end + 's' : 'none'} (${lastWord ? (lastWord.end / 60).toFixed(1) + ' min' : '0 min'})`);
+      // 2-hour lease matches the signed URL expiry — stale recovery resets after this
+      const twoHourLease = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from("sermon_jobs")
+        .update({
+          current_stage: "transcribing",
+          locked_until: twoHourLease,
+          error_details: { elevenlabs_request_id: elevenlabsRequestId },
+        })
+        .eq("id", job.id);
 
-      const { error: transcriptError } = await supabase
-        .from("sermon_transcripts")
-        .insert({
-          sermon_id: sermon.id,
-          full_text: transcriptText,
-          word_count: wordCount,
-          language: "en",
-        });
+      await supabase.from("sermons").update({ status: "transcribing" }).eq("id", sermon.id);
 
-      if (transcriptError) {
-        console.error("Transcript save error:", transcriptError);
-        await failJob(supabase, job.id, "Failed to save transcript");
-        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermon.id);
-        return new Response(JSON.stringify({ error: "Failed to save transcript" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      return new Response(JSON.stringify({
+        message: "Transcription submitted async — waiting for ElevenLabs webhook",
+        request_id: elevenlabsRequestId,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
