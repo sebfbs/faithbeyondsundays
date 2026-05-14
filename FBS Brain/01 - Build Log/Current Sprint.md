@@ -1,14 +1,45 @@
 # Current Sprint
 
-## Status: Session 16 complete (2026-05-11). Church landing page fully working end-to-end — `/?church=overflow` shows iOS install instructions, PWA installs correctly, launches into the app (not the landing page). Two iOS PWA bugs fixed: wrong start_url in manifest + Safari ignores manifest start_url so standalone mode detection added. Next: deploy `send-church-request` Edge Function, email hook setup.
+## Status: Session 18 complete (2026-05-14). Sermon pipeline audited, reliability fixes built + deployed (DB webhook + 1-min cron + chapter timestamp grounding). Next session: async ElevenLabs transcription + admin color fix.
 
-## ⚠️ Deployment Pending — Run Before Sharing Find Your Church With Anyone
+## 🔴 Build Next Session — Async Transcription (REQUIRED before real sermon testing)
 
+### Why this is urgent
+60-minute sermon videos will hit Supabase's 150-second Edge Function timeout during synchronous ElevenLabs transcription. The pipeline will fail on every real sermon upload until this is fixed.
+
+### Plan: 3 files, fully designed
+
+**NEW: `supabase/functions/elevenlabs-webhook/index.ts`**
+- Receives completed transcript POST from ElevenLabs
+- Verifies via `ELEVENLABS_WEBHOOK_SECRET` env var (matched against `?secret=` query param)
+- Saves transcript + word timings to `sermon_transcripts`
+- Handles "completed" → resets job to "queued" so poller triggers AI generation
+- Handles "failed" → marks job as retrying or failed
+- Returns 200 immediately (critical — ElevenLabs retries if we don't)
+- On payload parse failure: return 200, mark job failed, log raw payload to error_details
+
+**MODIFIED: `supabase/functions/process-sermon/index.ts`**
+- Transcription: send async (`webhook: true`), save `request_id` to `error_details`, lease = 2 hours, return immediately
+- If `error_details.elevenlabs_request_id` exists + lease valid: refresh lease, return (don't re-send)
+- Stale recovery: also clear `error_details` so webhook-less jobs re-send on next run
+- Signed URL expiry: 1 hour → 2 hours for async mode
+
+**MODIFIED: `src/index.css`**
+- `--primary`: `43 78% 61%` → `43 78% 72%` (lighter amber, matches member app)
+- Two lines — light mode block + dark mode block
+
+**No DB migration needed** — `request_id` stored in existing `error_details JSONB`
+
+### Deploy after build
 ```bash
-npx supabase functions deploy send-church-request
+npx supabase functions deploy elevenlabs-webhook
+npx supabase functions deploy process-sermon
 ```
 
-The church request form ("Don't see your church?") is broken until this is deployed. Found by automated review 2026-05-11.
+### Config step (Sebastian does once)
+ElevenLabs Dashboard → Webhooks → set URL to:
+`https://[project-ref].supabase.co/functions/v1/elevenlabs-webhook?secret=YOUR_SECRET`
+Add `ELEVENLABS_WEBHOOK_SECRET=YOUR_SECRET` to Supabase Edge Function env vars
 
 ---
 

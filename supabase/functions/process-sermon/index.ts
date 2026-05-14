@@ -239,6 +239,7 @@ serve(async (req) => {
     }
 
     const transcriptWithTimings = embedTimingMarkers(transcriptText, wordTimings);
+    const validTimestamps = extractTimestampsFromTranscript(transcriptWithTimings);
 
     console.log("Generating AI content with Claude...");
     await refreshLease("generating");
@@ -256,7 +257,7 @@ serve(async (req) => {
       { type: "takeaways", prompt: buildTakeawaysPrompt(sermon.title, transcriptText) },
       { type: "reflection_questions", prompt: buildReflectionPrompt(sermon.title, transcriptText) },
       { type: "scriptures", prompt: buildScripturesPrompt(sermon.title, transcriptText) },
-      { type: "chapters", prompt: buildChaptersPrompt(sermon.title, transcriptWithTimings) },
+      { type: "chapters", prompt: buildChaptersPrompt(sermon.title, transcriptWithTimings, validTimestamps) },
     ];
 
     const missingTypes = allContentTypes.filter((ct) => !existingTypes.has(ct.type));
@@ -301,7 +302,11 @@ serve(async (req) => {
           throw new Error(`No tool use in AI response for ${ct.type}`);
         }
 
-        const content = toolUse.input;
+        let content = toolUse.input;
+
+        if (ct.type === "chapters" && content.chapters && validTimestamps.length > 1) {
+          content = { chapters: validateChapterTimestamps(content.chapters, validTimestamps) };
+        }
 
         await supabase.from("sermon_content").insert({
           sermon_id: sermon.id,
@@ -448,12 +453,16 @@ async function handleRegeneration(supabase: any, anthropicApiKey: string, sermon
 
     const transcriptText = transcript.full_text;
 
+    const regenValidTimestamps = contentType === "chapters"
+      ? extractTimestampsFromTranscript(transcriptText)
+      : [];
+
     const promptBuilders: Record<string, (title: string, text: string) => string> = {
       spark: buildSparkPrompt,
       takeaways: buildTakeawaysPrompt,
       reflection_questions: buildReflectionPrompt,
       scriptures: buildScripturesPrompt,
-      chapters: buildChaptersPrompt,
+      chapters: (title, text) => buildChaptersPrompt(title, text, regenValidTimestamps),
     };
 
     const builder = promptBuilders[contentType];
@@ -502,7 +511,8 @@ async function handleRegeneration(supabase: any, anthropicApiKey: string, sermon
       } else if (contentType === "scriptures") {
         singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nIdentify ONE scripture passage from the sermon that is different from: "${currentItem.reference}". It must be a passage the pastor directly quoted or explicitly discussed (not a passing mention). Group consecutive verses from the same chapter. Provide the reference in standard format and one sentence describing how it was used.`;
       } else {
-        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.\n\nRules:\n- Only create a chapter where there is a genuine shift in topic, theme, or focus\n- The chapter should represent a meaningful, distinct section — not a brief aside or transition\n- Make sure the chapter fits naturally within the full sermon duration and doesn't duplicate coverage of existing chapters`;
+        const tsList = regenValidTimestamps.length > 1 ? `\n\nValid timestamps (use ONLY one of these): ${regenValidTimestamps.join(", ")}` : "";
+        singlePrompt = `Sermon title: "${sermon.title}"\n\nTranscript:\n${transcriptText}\n\nGenerate ONE sermon chapter/section that is different from: "${currentItem.title}". Include title, summary, order number ${currentItem.order || itemIndex + 1}, and timestamp.${tsList}\n\nRules:\n- Only create a chapter where there is a genuine shift in topic, theme, or focus\n- The chapter should represent a meaningful, distinct section — not a brief aside or transition\n- Make sure the chapter fits naturally within the full sermon duration and doesn't duplicate coverage of existing chapters`;
       }
 
       const tool = buildToolSchema(contentType);
@@ -594,7 +604,11 @@ async function handleRegeneration(supabase: any, anthropicApiKey: string, sermon
 
     const aiResult = await aiResponse.json();
     const toolUse = aiResult.content?.find((c: any) => c.type === "tool_use");
-    const content = toolUse?.input || {};
+    let content = toolUse?.input || {};
+
+    if (contentType === "chapters" && content.chapters && regenValidTimestamps.length > 1) {
+      content = { chapters: validateChapterTimestamps(content.chapters, regenValidTimestamps) };
+    }
 
     await supabase
       .from("sermon_content")
@@ -666,6 +680,65 @@ function embedTimingMarkers(
 
   console.log(`embedTimingMarkers: built transcript from ${wordTimings.length} words, last marker at ${formatTimestamp(lastMarkerTime)}`);
   return result.trim();
+}
+
+// ─── Timestamp helpers for chapter grounding ───
+
+function extractTimestampsFromTranscript(transcript: string): string[] {
+  const matches = transcript.match(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g) || [];
+  const parsed = matches.map((m) => m.slice(1, -1));
+  return Array.from(new Set(["0:00", ...parsed]));
+}
+
+function parseTimestampToSeconds(ts: string): number | null {
+  const parts = ts.split(":");
+  if (parts.length === 2) {
+    const m = parseInt(parts[0], 10);
+    const s = parseInt(parts[1], 10);
+    if (isNaN(m) || isNaN(s) || s >= 60) return null;
+    return m * 60 + s;
+  }
+  if (parts.length === 3) {
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const s = parseInt(parts[2], 10);
+    if (isNaN(h) || isNaN(m) || isNaN(s) || m >= 60 || s >= 60) return null;
+    return h * 3600 + m * 60 + s;
+  }
+  return null;
+}
+
+function findNearestTimestamp(validTimestamps: string[], targetSeconds: number): string {
+  let nearest = validTimestamps[0];
+  let nearestDiff = Infinity;
+  for (const ts of validTimestamps) {
+    const secs = parseTimestampToSeconds(ts);
+    if (secs !== null) {
+      const diff = Math.abs(secs - targetSeconds);
+      if (diff < nearestDiff) {
+        nearestDiff = diff;
+        nearest = ts;
+      }
+    }
+  }
+  return nearest;
+}
+
+function validateChapterTimestamps(
+  chapters: { title: string; summary: string; order: number; timestamp: string }[],
+  validTimestamps: string[]
+): { title: string; summary: string; order: number; timestamp: string }[] {
+  return chapters.map((chapter) => {
+    if (validTimestamps.includes(chapter.timestamp)) return chapter;
+    const secs = parseTimestampToSeconds(chapter.timestamp);
+    const corrected = secs !== null
+      ? findNearestTimestamp(validTimestamps, secs)
+      : validTimestamps[0];
+    if (corrected !== chapter.timestamp) {
+      console.warn(`Chapter "${chapter.title}": timestamp "${chapter.timestamp}" not in valid list — substituted "${corrected}"`);
+    }
+    return { ...chapter, timestamp: corrected };
+  });
 }
 
 // ─── Tool schemas for structured output (Anthropic format) ───
@@ -856,7 +929,8 @@ Identify only the scripture passages that were directly quoted or explicitly dis
 7. For each reference, return only the book, chapter and verse range, and one sentence describing how it was used.`;
 }
 
-function buildChaptersPrompt(title: string, transcriptWithTimings: string) {
+function buildChaptersPrompt(title: string, transcriptWithTimings: string, validTimestamps: string[]) {
+  const tsList = validTimestamps.join(", ");
   return `You are a sermon chapter generator. Sermon title: "${title}"
 
 Transcript (with timing markers like [5:23]):
@@ -876,12 +950,12 @@ For each chapter:
 - Give it a clear, descriptive title
 - Write a 1-2 sentence summary
 - Assign an order number (1, 2, 3, ...)
-- Use the nearest timing marker [M:SS] or [H:MM:SS] as the timestamp for where this chapter begins
+- Use ONLY a timestamp from this exact list: ${tsList}
 
 CRITICAL RULES:
 - Keep the total number of chapters between 6 and 10.
-- The first chapter MUST start at or near 0:00.
-- The last chapter MUST begin in the final portion of the sermon.
+- The first chapter MUST use timestamp 0:00.
+- The last chapter MUST use a timestamp from the final third of the sermon.
 - Chapters MUST span the ENTIRE sermon duration — do NOT cluster them in the first half.
-- Use the timing markers embedded in the transcript to determine accurate timestamps.`;
+- Do NOT invent timestamps. Every timestamp you use must appear in the list above.`;
 }

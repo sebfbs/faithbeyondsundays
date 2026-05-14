@@ -117,21 +117,6 @@ serve(async (req) => {
       console.error("Job insert error:", jobError);
     }
 
-    // Fire-and-forget trigger processing
-    try {
-      const processUrl = `${supabaseUrl}/functions/v1/process-sermon`;
-      fetch(processUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")}`,
-        },
-        body: JSON.stringify({}),
-      }).catch((err) => console.error("Fire-and-forget process trigger failed:", err));
-    } catch (triggerErr) {
-      console.error("Failed to trigger immediate processing:", triggerErr);
-    }
-
     return new Response(JSON.stringify({
       success: true,
       sermon_id: sermon.id,
