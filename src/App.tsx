@@ -37,6 +37,7 @@ const AdminSetup = lazy(() => import("./pages/admin/AdminSetup"));
 const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAnnouncements = lazy(() => import("./pages/admin/AdminAnnouncements"));
+const AdminPromptLab = lazy(() => import("./pages/admin/AdminPromptLab"));
 
 import fbsBg from "@/assets/FBS_with_grain_and_blue.png";
 import fbsLogoWhite from "@/assets/FBS_Logo_white_2.png";
@@ -105,6 +106,7 @@ const App = () => {
                 <Route path="team" element={<AdminTeam />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="announcements" element={<AdminAnnouncements />} />
+                <Route path="prompt-lab" element={<AdminPromptLab />} />
               </Route>
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
