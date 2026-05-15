@@ -42,78 +42,81 @@ serve(async (req) => {
 
   console.log("elevenlabs-webhook: payload keys:", Object.keys(payload));
 
-  // webhook_metadata may arrive as a string or parsed object depending on ElevenLabs version
+  // ElevenLabs wraps everything under payload.data
+  const data = payload.data || payload;
+  const transcription = data.transcription || data;
+
+  // Look up job: try webhook_metadata first, then request_id stored in error_details
+  let jobId: string | undefined;
+  let sermonId: string | undefined;
+
   let meta: Record<string, any> = {};
   if (typeof payload.webhook_metadata === "string") {
-    try { meta = JSON.parse(payload.webhook_metadata); } catch { /* leave empty */ }
+    try { meta = JSON.parse(payload.webhook_metadata); } catch { /* ignore */ }
   } else if (payload.webhook_metadata && typeof payload.webhook_metadata === "object") {
     meta = payload.webhook_metadata;
   }
+  jobId = meta.job_id;
+  sermonId = meta.sermon_id;
 
-  const jobId: string | undefined = meta.job_id;
-  const sermonId: string | undefined = meta.sermon_id;
+  if (!jobId || !sermonId) {
+    const requestId = data.request_id || payload.request_id || payload.transcription_id;
+    console.log(`elevenlabs-webhook: trying request_id lookup: ${requestId}`);
+
+    if (requestId) {
+      const { data: job } = await supabase
+        .from("sermon_jobs")
+        .select("id, sermon_id")
+        .filter("error_details->>elevenlabs_request_id", "eq", requestId)
+        .maybeSingle();
+
+      if (job) {
+        jobId = job.id;
+        sermonId = job.sermon_id;
+        console.log(`elevenlabs-webhook: found job ${jobId} via request_id`);
+      }
+    }
+  }
 
   if (!jobId || !sermonId) {
     console.error(
-      "elevenlabs-webhook: missing job_id or sermon_id in webhook_metadata. Payload (first 500):",
+      "elevenlabs-webhook: could not resolve job. Payload (first 500):",
       JSON.stringify(payload).slice(0, 500)
     );
     return ok();
   }
 
-  // Error payload: has message_type field
+  // Error payload
   if (payload.message_type) {
-    console.error(
-      `elevenlabs-webhook: transcription error for job ${jobId}: ${payload.message_type} — ${payload.error}`
-    );
-
-    const { data: job } = await supabase
-      .from("sermon_jobs")
-      .select("attempts, max_attempts")
-      .eq("id", jobId)
-      .single();
-
+    console.error(`elevenlabs-webhook: error for job ${jobId}: ${payload.message_type}`);
+    const { data: job } = await supabase.from("sermon_jobs").select("attempts, max_attempts").eq("id", jobId).single();
     if (job) {
       const isFinal = job.attempts >= job.max_attempts;
       const update: Record<string, any> = {
         status: isFinal ? "failed" : "retrying",
-        error_message: `ElevenLabs transcription error: ${payload.message_type} — ${payload.error || "unknown"}`,
-        error_details: null,
-        current_stage: null,
-        locked_until: null,
-        worker_id: null,
+        error_message: `ElevenLabs error: ${payload.message_type}`,
+        error_details: null, current_stage: null, locked_until: null, worker_id: null,
       };
-      if (isFinal) {
-        update.failed_at = new Date().toISOString();
-        await supabase.from("sermons").update({ status: "failed" }).eq("id", sermonId);
-      }
+      if (isFinal) { update.failed_at = new Date().toISOString(); await supabase.from("sermons").update({ status: "failed" }).eq("id", sermonId); }
       await supabase.from("sermon_jobs").update(update).eq("id", jobId);
     }
-
     return ok();
   }
 
-  // Success payload: has text field
-  const transcriptText: string = payload.text || "";
+  // Success — transcript is nested under data.transcription
+  const transcriptText: string = transcription.text || "";
   if (!transcriptText) {
-    console.error(
-      "elevenlabs-webhook: no text in payload. Raw (first 500):",
-      rawBody.slice(0, 500)
-    );
+    console.error("elevenlabs-webhook: no text found. Raw (first 500):", rawBody.slice(0, 500));
     await supabase.from("sermon_jobs").update({
-      status: "failed",
-      error_message: "ElevenLabs webhook: no transcript text in payload",
+      status: "failed", error_message: "ElevenLabs webhook: no transcript text",
       error_details: { raw_payload: rawBody.slice(0, 2000) },
-      failed_at: new Date().toISOString(),
-      current_stage: null,
-      locked_until: null,
-      worker_id: null,
+      failed_at: new Date().toISOString(), current_stage: null, locked_until: null, worker_id: null,
     }).eq("id", jobId);
     return ok();
   }
 
   // Build word timings array (filter out audio events like [laughter])
-  const wordTimings = (payload.words || [])
+  const wordTimings = (transcription.words || [])
     .filter((w: any) => w.type === "word" || !w.type)
     .map((w: any) => ({ text: w.text, start: w.start, end: w.end }));
 
@@ -128,7 +131,7 @@ serve(async (req) => {
       sermon_id: sermonId,
       full_text: fullText,
       word_count: wordCount,
-      language: payload.language_code || "en",
+      language: transcription.language_code || "en",
     });
 
   if (transcriptError) {

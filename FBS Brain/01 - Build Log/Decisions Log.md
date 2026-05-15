@@ -4,6 +4,29 @@ _Decisions already made — don't relitigate these._
 
 ---
 
+## 2026-05-14 — Sermon Video Storage: Scale Problem to Solve Before Launch
+
+**Current setup:** Sermon videos upload directly to Supabase Storage. Pro plan includes 100GB total. A typical 51-minute 1080p sermon video is ~700MB.
+
+**The math:**
+- 100GB ÷ 700MB = ~140 sermons before overage fees
+- At 1 sermon/week per church, 10 churches = 10 sermons/week = full in ~14 weeks
+- Supabase overage pricing: ~$0.021/GB/month — manageable at small scale, but adds up fast
+
+**Short-term fix (do before 5+ churches):**
+Strip the video down to audio-only before storing. MP3 at 128kbps for a 51-minute sermon ≈ 50MB. Same transcript quality. 14x smaller. 100GB now holds ~2,000 sermons. This buys significant runway without changing anything else.
+
+**Long-term consideration (10+ churches):**
+Supabase Storage is not purpose-built for large media files. At scale, look at:
+- **Cloudflare R2** — S3-compatible, zero egress fees, much cheaper for video. ~$0.015/GB storage, $0 egress vs Supabase's fees.
+- **Cloudflare Stream** — built specifically for video. Handles encoding, playback, CDN. Priced per minute of video stored (~$5/1,000 min). 1,000 sermons × 60 min = $300/mo at scale but handles everything.
+
+**Decision deferred until:** 5+ active churches OR storage hits 50GB, whichever comes first. At that point evaluate audio stripping vs. R2 migration vs. Cloudflare Stream.
+
+**What NOT to do:** Don't migrate storage mid-product before there's real scale. Supabase Storage works fine for V1.
+
+---
+
 ## 2026-05-12 — App Store Distribution (Replaces PWA-Only)
 
 **Decision:** FBS will distribute via the Apple App Store (and Google Play) as per-church white-labeled native apps — not PWA-only.

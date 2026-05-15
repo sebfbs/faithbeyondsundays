@@ -1,6 +1,44 @@
 # Current Sprint
 
-## Status: Session 18 complete (2026-05-14). Sermon pipeline audited, reliability fixes built + deployed (DB webhook + 1-min cron + chapter timestamp grounding). Next session: async ElevenLabs transcription + admin color fix.
+## Status: Session 19 complete (2026-05-14). Async ElevenLabs transcription fully working — first real 51-min sermon processed end-to-end. Next session: sermon pipeline step tracker UI.
+
+---
+
+## 🔴 Build Next Session — Sermon Pipeline Step Tracker
+
+### The problem
+Admin uploads a sermon and sees "Transcribing audio…" for 5-15 minutes with no indication of what's happening or how far along they are. Looks broken. They have no idea if it's working.
+
+### What to build
+Replace the current single status label with a 3-step pipeline tracker:
+
+```
+① Upload  →  ② Transcribe  →  ③ Generate Content
+   ✅              🔄                  ⏳
+```
+
+- **Green checkmark** = done
+- **Spinning icon** = currently running
+- **Gray / dimmed** = not started yet
+
+### The 3 steps map to these sermon statuses:
+| Step | Active when sermon status is... |
+|------|--------------------------------|
+| Upload | `pending`, `uploading` |
+| Transcribe | `transcribing` |
+| Generate Content | `generating` |
+
+All 3 are complete when status = `review`.
+
+### Copy for each step
+- Step 1: "Uploaded" (once done), "Uploading…" (while active)
+- Step 2: "Extracting the Word… full sermons take 5–15 minutes." (while active), "Transcribed" (once done)
+- Step 3: "Generating your week of content…" (while active), "Content ready" (once done)
+
+### Where to build it
+- File: `src/pages/admin/AdminSermons.tsx`
+- Component: `ProcessingProgress` (around line 103) — replace the current single-status display with the step tracker
+- No backend changes needed — all driven by existing `sermon.status` field
 
 ## 🔴 Build Next Session — Async Transcription (REQUIRED before real sermon testing)
 

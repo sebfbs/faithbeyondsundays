@@ -2,6 +2,8 @@
 
 ## High Priority
 
+- **Sermon pipeline step tracker not built yet** — Admin sees "Transcribing audio…" for 5-15 min with no progress indication. Spec is in Current Sprint. Build next session.
+
 - **`send-church-request` Edge Function not deployed** — The church request form ("Don't see your church?") in FindChurchScreen returns an error for every user right now. Edge Functions are never deployed automatically on git push. Fix: run `npx supabase functions deploy send-church-request` in terminal. Found by automated review 2026-05-11.
 
 - ~~**Church branding doesn't show for first-time QR code visitors**~~ — FIXED ✅ Session 16. `ChurchLandingPage` now renders for `/?church=` URLs and writes church info to localStorage before the user ever sees the sign-up screen.

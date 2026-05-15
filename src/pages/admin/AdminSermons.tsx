@@ -101,7 +101,9 @@ const WIZARD_STEP_LABELS: Record<WizardStep, string> = {
 };
 
 function ProcessingProgress({ sermonId, status, createdAt }: { sermonId: string; status: string; createdAt: string }) {
-  const isStale = Date.now() - new Date(createdAt).getTime() > 10 * 60 * 1000; // 10 minutes
+  const isTranscribing = status === "transcribing";
+  const staleThreshold = isTranscribing ? 25 * 60 * 1000 : 10 * 60 * 1000;
+  const isStale = Date.now() - new Date(createdAt).getTime() > staleThreshold;
   const queryClient = useQueryClient();
 
   const { data: contentCount } = useQuery({
@@ -143,7 +145,7 @@ function ProcessingProgress({ sermonId, status, createdAt }: { sermonId: string;
     return (
       <div className="mt-3 space-y-1.5">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-blue-700">Transcribing audio…</p>
+          <p className="text-xs font-medium text-blue-700">Extracting the Word… full sermons take 5–15 minutes.</p>
           {isStale && (
             <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={(e) => { e.stopPropagation(); retrySermon(); }}>
               <RefreshCw className="h-3 w-3 mr-1" /> Retry
@@ -1380,14 +1382,14 @@ const uploadMessages: Record<string, string[]> = {
     "Your sermon is on its way… 🚀",
     "Hang tight, good things take a moment ✨",
     "Almost there! 🙌",
-    "Uploading the good stuff… 📖",
+    "Uploading your sermon",
   ],
   finalizing: [
     "Finishing up the magic… ✨",
-    "Just a few more seconds… 🎶",
-    "Wrapping things up nicely 🎁",
+    "Just a few more seconds…",
+    "Wrapping things up nicely",
   ],
-  done: ["You're all set! 🎉"],
+  done: ["Your sermon has been uploaded"],
 };
 
 function getUploadMessage(step: UploadStep, percent: number): string {
