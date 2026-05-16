@@ -190,8 +190,9 @@ export default function AdminPromptLab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sermons")
-        .select("id, title, sermon_transcripts!inner(sermon_id)")
+        .select("id, title")
         .eq("church_id", churchId)
+        .eq("status", "review")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as { id: string; title: string }[];
@@ -238,7 +239,14 @@ export default function AdminPromptLab() {
       setOutput(data.content);
       setConvMessages(data.messages);
     } catch (e: any) {
-      toast({ title: "Generation failed", description: e.message || "Unknown error", variant: "destructive" });
+      const isApiDown = e.message?.includes("non-2xx") || e.message?.includes("500");
+      toast({
+        title: "Generation failed",
+        description: isApiDown
+          ? "Claude API may be experiencing issues. Try again in a few minutes."
+          : e.message || "Unknown error",
+        variant: "destructive",
+      });
     } finally {
       setGenerating(false);
     }

@@ -19,6 +19,7 @@ import {
   UserCog,
   Flag,
   Megaphone,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -44,6 +45,24 @@ export default function AdminLayout() {
   const [churchName, setChurchName] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const { data: anthropicStatus } = useQuery({
+    queryKey: ["anthropic-status"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("https://status.anthropic.com/api/v2/status.json");
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.status as { indicator: string; description: string };
+      } catch {
+        return null;
+      }
+    },
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
+    retry: false,
+  });
 
   const { data: prayerCount = 0 } = useQuery({
     queryKey: ["admin-unanswered-prayers", churchId],
@@ -203,6 +222,30 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto md:pt-0 pt-14">
+        {anthropicStatus && anthropicStatus.indicator !== "none" && !bannerDismissed && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-start gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800 flex-1">
+              <span className="font-semibold">Anthropic API is currently experiencing issues.</span>{" "}
+              Sermon processing may be delayed.{" "}
+              <a
+                href="https://status.anthropic.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium hover:text-amber-900"
+              >
+                Check status →
+              </a>
+            </p>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-amber-500 hover:text-amber-700 transition-colors shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <Outlet context={{ churchId, role: "admin" }} />
       </main>
     </div>
